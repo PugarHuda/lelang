@@ -1,7 +1,7 @@
 // Offline checks of the parts that must never be wrong: sealing, signatures, hard rules.
 import assert from 'node:assert/strict';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck } from '../src/lelang.js';
+import { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores } from '../src/lelang.js';
 import { DEMO_RFQ } from '../src/demo.js';
 
 const rfq = createRfq({ ...DEMO_RFQ, title: 'selftest' });
@@ -26,4 +26,9 @@ assert.deepEqual(ruleCheck(rfq, good), []);
 assert.match(ruleCheck(rfq, { ...good, delivery_days: 45 }).join(), /delivery 45d/);
 assert.match(ruleCheck(rfq, { ...good, specs: { ...good.specs, ram_gb: 4 } }).join(), /ram_gb 4 below required 8/);
 assert.match(ruleCheck(rfq, { ...good, total_usd: null }).join(), /exceeds cap/, 'missing price must fail, not pass');
+const s = weightedScores(DEMO_RFQ.weights, [
+  { label: 'A', terms: { total_usd: 79600, warranty_months: 24, delivery_days: 21 } },
+  { label: 'C', terms: { total_usd: 88000, warranty_months: 36, delivery_days: 14 } },
+]);
+assert.deepEqual(s, { A: 0.833, C: 0.952 });
 console.log('selftest OK');

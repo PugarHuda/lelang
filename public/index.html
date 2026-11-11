@@ -43,7 +43,7 @@
       <div class="stack">
         <span class="pill">Kite: sealed commits, bonds, settlement</span>
         <span class="pill">SERV: Prompt Guard, Kronos, Shadow Agent</span>
-        <span class="pill">Jev: injection check, award choice</span>
+        <span class="pill">Decision nodes: manipulation check, award choice</span>
         <span class="pill">Dolphin: reads bid documents</span>
         <span class="pill">Reppo: independent audit</span>
       </div>
@@ -67,7 +67,7 @@ function bidCard(b, rfq) {
     <h3>${esc(b.label)}</h3>${status}
     ${t ? `<div class="kv">$${esc(t.total_usd)} · ${esc(t.delivery_days)}d · ${esc(t.warranty_months)}mo<br>${esc(t.specs?.ram_gb)}GB RAM · ${esc(t.specs?.storage_gb)}GB · ${esc(t.specs?.battery_hours)}h</div>` : ''}
     ${b.disqualified ? `<div class="kv bad">${esc(b.disqualified)}</div>` : ''}
-    ${p != null ? `<div class="kv">Jev p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
+    ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
     ${b.bondTx ? `<div class="kv"><a href="https://testnet.kitescan.ai/tx/${b.bondTx}" target="_blank">bond tx</a></div>` : ''}
   </div>`;
 }
