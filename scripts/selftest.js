@@ -21,11 +21,13 @@ assert.equal(getRfq(rfq.id).bids[label].revealOk, false, 'edited bid must fail r
 reveal(rfq.id, label, { doc, salt: 'salt1' });
 assert.equal(getRfq(rfq.id).bids[label].revealOk, true);
 
-const good = { total_usd: 79600, delivery_days: 21, specs: { ram_gb: 8, storage_gb: 256, battery_hours: 10 } };
+const good = { total_usd: 79600, delivery_days: 21, warranty_months: 24, specs: { ram_gb: 8, storage_gb: 256, battery_hours: 10 } };
 assert.deepEqual(ruleCheck(rfq, good), []);
 assert.match(ruleCheck(rfq, { ...good, delivery_days: 45 }).join(), /delivery 45d/);
+assert.match(ruleCheck(rfq, { ...good, delivery_days: 0 }).join(), /delivery 0d/, 'zero days must fail');
+assert.match(ruleCheck(rfq, { ...good, total_usd: -5 }).join(), /total/, 'negative price must fail');
 assert.match(ruleCheck(rfq, { ...good, specs: { ...good.specs, ram_gb: 4 } }).join(), /ram_gb 4 below required 8/);
-assert.match(ruleCheck(rfq, { ...good, total_usd: null }).join(), /exceeds cap/, 'missing price must fail, not pass');
+assert.match(ruleCheck(rfq, { ...good, total_usd: null }).join(), /above cap/, 'missing price must fail, not pass');
 const s = weightedScores(DEMO_RFQ.weights, [
   { label: 'A', terms: { total_usd: 79600, warranty_months: 24, delivery_days: 21 } },
   { label: 'C', terms: { total_usd: 88000, warranty_months: 36, delivery_days: 14 } },

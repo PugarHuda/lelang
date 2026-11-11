@@ -66,9 +66,11 @@ export function reveal(rfqId, label, { doc, salt }) {
 export function ruleCheck(rfq, t) {
   const fails = [];
   // Missing values fail (in JS `null <= cap` is true, so require real numbers).
-  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : NaN);
-  if (!(num(t.total_usd) <= rfq.budgetCapUsd)) fails.push(`total $${t.total_usd} exceeds cap $${rfq.budgetCapUsd}`);
-  if (!(num(t.delivery_days) <= rfq.maxDeliveryDays)) fails.push(`delivery ${t.delivery_days}d exceeds ${rfq.maxDeliveryDays}d`);
+  // Zero/negative values would divide-by-zero or dominate the scoring formula, so they fail too.
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : NaN);
+  if (!(num(t.total_usd) <= rfq.budgetCapUsd)) fails.push(`total $${t.total_usd} missing, invalid or above cap $${rfq.budgetCapUsd}`);
+  if (!(num(t.delivery_days) <= rfq.maxDeliveryDays)) fails.push(`delivery ${t.delivery_days}d missing, invalid or above ${rfq.maxDeliveryDays}d`);
+  if (!(num(t.warranty_months) <= 120)) fails.push(`warranty ${t.warranty_months}mo missing or implausible`);
   for (const [k, min] of Object.entries(rfq.minSpecs)) {
     if (!(num(t.specs?.[k]) >= min)) fails.push(`${k} ${t.specs?.[k]} below required ${min}`);
   }
@@ -144,7 +146,11 @@ export async function evaluate(rfqId) {
   const w = await choice([`Tender: ${rfq.title}`, `Published award weights: ${JSON.stringify(rfq.weights)}`], 'Which eligible bid gives the best value under the published award weights?', criteria);
   const { confidence } = w;
   const agree = w.choice === formulaWinner;
-  const decision = agree && confidence >= rfq.minConfidence ? 'award' : 'escalate';
+  const flagged = eligible.filter((b) => b.review).map((b) => b.label);
+  const sane = Object.values(scores).every(Number.isFinite);
+  // Any open review flag (e.g. a Prompt Guard block without verified evidence) keeps the tender out of auto-award.
+  const decision = agree && sane && !flagged.length && confidence >= rfq.minConfidence ? 'award' : 'escalate';
+  if (flagged.length) log(rfq, 'review', `${flagged.join(', ')} still under review: no automatic award`);
   rfq.award = { decision, winner: w.choice, formulaWinner, scores, probabilities: w.probabilities, confidence, engine: w.engine };
   log(rfq, 'award', decision === 'award'
     ? `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), matching the published formula`
