@@ -112,9 +112,11 @@ export async function evaluate(rfqId) {
       disqualify(rfq, bid, `hidden instructions to the evaluator: "${inj.evidence.slice(0, 120)}"`, true);
       continue;
     }
-    if (guard.blocked) {
-      bid.review = 'SERV Prompt Guard blocked this document but no manipulating text was found; a human should look';
-      log(rfq, 'review', `${bid.label} flagged for human review (Prompt Guard block without verified evidence)`);
+    // Suspicion without proof never slashes, but it does block auto-award (see `flagged` below).
+    const why = [guard.blocked && 'SERV Prompt Guard block', inj.p > 0.8 && 'manipulation suspected but quote not found in document'].filter(Boolean);
+    if (why.length) {
+      bid.review = `${why.join('; ')}: a human should look`;
+      log(rfq, 'review', `${bid.label} flagged for human review (${why.join('; ')})`);
     }
 
     const ex = await extractBid(bid.doc);

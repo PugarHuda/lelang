@@ -78,7 +78,7 @@ export async function findManipulation(doc) {
     doc,
     { type: 'object', properties: { probability: { type: 'number' }, evidence: { type: 'string' } }, required: ['probability', 'evidence'], additionalProperties: false },
   );
-  const norm = (x) => x.normalize('NFKC').replace(/[​-‍⁠﻿]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const norm = (x) => x.normalize('NFKC').replace(/[\p{Cf}\p{Mn}]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
   const verified = out.evidence.trim().length >= 12 && norm(doc).includes(norm(out.evidence));
   return { engine: ENGINE, p: Math.min(1, Math.max(0, out.probability)), evidence: out.evidence, verified };
 }
