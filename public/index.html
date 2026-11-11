@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lelang</title>
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; }
+  h1 { margin:0; font-size:28px; letter-spacing:-.02em; }
+  h1 small { font-size:14px; color:var(--mute); font-weight:400; margin-left:8px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
+  button { background:var(--ink); color:var(--bg); border:0; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .stack { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .pill { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:2px 10px; color:var(--mute); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .bid h3 { margin:0 0 6px; font-size:15px; }
+  .bid .st { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); } .mute { color:var(--mute); }
+  .kv { font-size:13px; color:var(--mute); }
+  .win { outline:2px solid var(--ok); }
+  ol { list-style:none; padding:0; margin:0; }
+  ol li { display:grid; grid-template-columns:90px 92px 1fr; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  ol li .t { color:var(--mute); font-variant-numeric:tabular-nums; font-size:12px; }
+  ol li .s { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--acc); }
+  a { color:var(--acc); }
+  pre { white-space:pre-wrap; font:13px/1.55 ui-monospace, monospace; margin:0; }
+  .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; } .bar i { display:block; height:100%; background:var(--acc); }
+  @media (max-width:600px) { ol li { grid-template-columns:1fr; gap:2px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Lelang <small>sealed-bid tenders run by agents</small></h1>
+      <div class="stack">
+        <span class="pill">Kite: sealed commits, bonds, settlement</span>
+        <span class="pill">SERV: Prompt Guard, Kronos, Shadow Agent</span>
+        <span class="pill">Jev: injection check, award choice</span>
+        <span class="pill">Dolphin: reads bid documents</span>
+        <span class="pill">Reppo: independent audit</span>
+      </div>
+    </div>
+    <button id="run">Run demo tender</button>
+  </header>
+  <div id="view"><p class="mute">No tender yet. Run the demo.</p></div>
+</main>
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+let current = null;
+
+function bidCard(b, rfq) {
+  const won = rfq.award?.winner === b.label && rfq.award?.decision === 'award';
+  const status = b.disqualified ? `<span class="st bad">Disqualified${b.slash ? ' · bond slashed' : ''}</span>`
+    : won ? '<span class="st ok">Winner</span>' : b.terms ? '<span class="st mute">Eligible</span>' : '<span class="st mute">Sealed</span>';
+  const t = b.terms;
+  const p = rfq.award?.probabilities?.[b.label];
+  return `<div class="card bid ${won ? 'win' : ''}">
+    <h3>${esc(b.label)}</h3>${status}
+    ${t ? `<div class="kv">$${esc(t.total_usd)} · ${esc(t.delivery_days)}d · ${esc(t.warranty_months)}mo<br>${esc(t.specs?.ram_gb)}GB RAM · ${esc(t.specs?.storage_gb)}GB · ${esc(t.specs?.battery_hours)}h</div>` : ''}
+    ${b.disqualified ? `<div class="kv bad">${esc(b.disqualified)}</div>` : ''}
+    ${p != null ? `<div class="kv">Jev p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
+    ${b.bondTx ? `<div class="kv"><a href="https://testnet.kitescan.ai/tx/${b.bondTx}" target="_blank">bond tx</a></div>` : ''}
+  </div>`;
+}
+
+function render(rfq) {
+  const bids = Object.values(rfq.bids);
+  const r = rfq.reppo;
+  $('#view').innerHTML = `
+    <h2>Tender · ${esc(rfq.phase)}</h2>
+    <div class="card"><strong>${esc(rfq.title)}</strong>
+      <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
+      ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${rfq.anchorTx}" target="_blank">sealed commits on Kite</a>` : ''}</div></div>
+    <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
+    ${rfq.award ? `<h2>Decision</h2><div class="card">
+      <strong class="${rfq.award.decision === 'award' ? 'ok' : 'warn'}">${esc(rfq.award.decision?.toUpperCase())} ${esc(rfq.award.winner ?? '')}</strong>
+      <span class="kv"> · ${esc(rfq.award.engine)} · confidence ${rfq.award.confidence?.toFixed?.(2) ?? '-'}</span>
+      ${rfq.award.rationale ? `<pre style="margin-top:10px">${esc(rfq.award.rationale)}</pre>` : ''}</div>` : ''}
+    ${r ? `<h2>Independent audit (Reppo)</h2><div class="card">
+      <strong class="${r.route === 'ship' ? 'ok' : r.route === 'block' ? 'bad' : 'warn'}">${esc(r.route ?? r.status)}</strong>
+      <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p></div>` : ''}
+    <h2>Trace</h2><div class="card"><ol>${rfq.events.map((e) => `<li><span class="t">${e.t.slice(11, 19)}</span><span class="s">${esc(e.step)}</span><span>${esc(e.msg)}
+      ${e.data?.tx ? ` <a href="${esc(e.data.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>`;
+}
+
+async function tick() {
+  try {
+    const { rfqs, running } = await (await fetch('/api/rfqs')).json();
+    $('#run').disabled = Boolean(running);
+    const id = running || current || rfqs[0]?.id;
+    if (id) render(await (await fetch(`/api/rfqs/${id}`)).json());
+  } catch {}
+}
+$('#run').onclick = async () => {
+  const token = new URLSearchParams(location.search).get('token') || '';
+  const res = await fetch(`/api/demo?token=${encodeURIComponent(token)}`, { method: 'POST' });
+  const body = await res.json();
+  if (body.id) current = body.id; else alert(body.error);
+  tick();
+};
+tick(); setInterval(tick, 2000);
+</script>
+</body>
+</html>

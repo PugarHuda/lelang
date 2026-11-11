@@ -1,0 +1,21 @@
+{
+  "name": "lelang",
+  "version": "1.0.0",
+  "description": "Sealed-bid procurement run by agents: SERV + Jev decide, Dolphin reads, Reppo audits, Kite settles",
+  "main": "index.js",
+  "scripts": {
+    "test": "node scripts/selftest.js",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "demo": "node --env-file-if-exists=.env scripts/demo.js",
+    "probe": "node --env-file-if-exists=.env scripts/probe.js",
+    "wallets": "node --env-file-if-exists=.env scripts/wallets.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "openai": "^7.55.0",
+    "viem": "^2.57.18"
+  }
+}
