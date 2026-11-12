@@ -16,7 +16,7 @@ for each revealed bid (all untrusted text is spotlighted/datamarked first):
    SERV Prompt Guard + manipulation check that must quote the injection verbatim
       → quote verified in code → disqualified, bond slashed with keccak(quote) on-chain
       → suspicion without a verifiable quote → human review, never a slash
-   bid reader (Dolphin when keyed, SERV meanwhile) → price, delivery, warranty, specs
+   bid reader (Dolphin, SERV as fallback) → price, delivery, warranty, specs
    hard rules in code (cap, deadline, minimum specs, sane numbers) → non-compliant bids out
 published formula (in code) and an independent decision node must pick the same winner
 SERV (Kronos + Shadow Agent) writes the anonymous, criterion-by-criterion rationale
@@ -29,7 +29,7 @@ LelangEscrow.settle: one tx refunds compliant bonds, slashes with evidence hashe
 | **Kite** | `LelangEscrow` contract holds bonds, enforces commit → reveal → settle, records evidence hashes, lets bidders withdraw if the buyer vanishes | bids can change after the deadline, the buyer can keep anyone's bond, decisions never become money |
 | **SERV Reasoning** | Prompt Guard on every bid, structured decision nodes, Kronos + Shadow Agent on the rationale, Shadow Agent steered by Reppo feedback in the repair loop | an injected bid can steer the evaluator; rationales drift from the decision |
 | **Reppo** | independent panel verdict on the award, gating settlement; its rubric routes the repair loop | the system grades its own decision |
-| **Dolphin** | bid reading is wired in `extractBid` and tried first. Our API key authenticates (`/v1/models` lists DeepSeek V4.1 Flash, Gemma-4 and Qwen3.6) but inference returns 402 until the hackathon coupon credits arrive; meanwhile SERV reads the bids and every trace line names the reason (`Dolphin 402: insufficient credits`). Dolphin output is schema-checked before use | extraction costs frontier prices per bid |
+| **Dolphin** | reads every revealed bid (price, delivery, warranty, specs) in `extractBid` on DeepSeek V4.1 Flash, after spotlighting; its output is schema-checked before use, and if Dolphin is unavailable (e.g. 402) SERV reads the bid instead and the trace names the reason | extraction runs at frontier prices per bid, on the same model that judges the bid |
 
 Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (absent from `/v1/models`), so decision nodes run on SERV `gpt-6-luna` with a strict JSON schema; the call sites take Jev unchanged once it is available.
 
