@@ -8,7 +8,8 @@
     "start": "node --env-file-if-exists=.env src/server.js",
     "demo": "node --env-file-if-exists=.env scripts/demo.js",
     "probe": "node --env-file-if-exists=.env scripts/probe.js",
-    "wallets": "node --env-file-if-exists=.env scripts/wallets.js"
+    "wallets": "node --env-file-if-exists=.env scripts/wallets.js",
+    "snapshot": "node scripts/snapshot.js"
   },
   "keywords": [],
   "author": "",

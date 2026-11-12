@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lelang</title>
+<link rel="icon" href="data:,">
 <style>
   :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
   @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
@@ -50,6 +51,7 @@
     </div>
     <button id="run">Run demo tender</button>
   </header>
+  <p id="note" class="kv" hidden>Recorded tender from a real run on Kite testnet: every <em>tx</em> link opens the on-chain transaction. Clone the repo and run <code>npm start</code> to run a live tender.</p>
   <div id="view"><p class="mute">No tender yet. Run the demo.</p></div>
 </main>
 <script>
@@ -97,9 +99,21 @@ function render(rfq) {
       ${e.data?.tx ? ` <a href="${esc(e.data.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>`;
 }
 
+// Static deploys (e.g. Vercel) have no tender server: show the recorded run from tender.json instead.
+let staticMode = false;
+async function loadStatic() {
+  staticMode = true;
+  $('#run').hidden = true;
+  $('#note').hidden = false;
+  render(await (await fetch('tender.json')).json());
+}
+
 async function tick() {
+  if (staticMode) return;
   try {
-    const { rfqs, running } = await (await fetch('/api/rfqs')).json();
+    const res = await fetch('/api/rfqs');
+    if (!res.ok) return loadStatic();
+    const { rfqs, running } = await res.json();
     $('#run').disabled = Boolean(running);
     const id = running || current || rfqs[0]?.id;
     if (!id) return;
