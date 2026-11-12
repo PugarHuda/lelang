@@ -45,6 +45,25 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 | Open Contracting Data Standard | every tender exports a valid OCDS 1.1.5 release package (+ official Bids extension); a deliberately broken release is rejected | `npm run ocds:validate` |
 | Offline logic | sealing, signatures, hard rules, scoring formula, double-approve lock, strictest-audit gate, datamarking | `npm test` |
 
+## Does Reppo feedback actually improve the rationale?
+
+Five deliberately flawed rationales for the settled 5-bid tender were audited by Reppo, rewritten by SERV against the panel's stated reason (decision and numbers frozen), and audited again (`node --env-file=.env scripts/reppo-bench.js`, raw verdicts in [`docs/reports/reppo-bench.json`](docs/reports/reppo-bench.json)).
+
+| Planted defect | Reppo before | After one rewrite | Weakest rubric before → after |
+|---|---|---|---|
+| wrong numbers (scores swapped) | review 86 | **ship 95** | correctness 59 → 100 |
+| missing criteria (price only) | review, no score returned | ship 96 | — |
+| scope creep (invented site visit, post-deadline discount) | block 29 | review 70 | correctness 25 → 43 |
+| hedged ("probably fine, didn't check") | review 94 | ship 96 | scope 94 → 100 |
+| "other bids were not considered" | **ship 96** | rewrite not submitted | — |
+
+What this shows, including the parts that don't flatter us:
+- Every scored pair improved (3/3, mean **+17.3**); 0 got worse. Earlier runs, before the writer got code-computed `scoreBreakdown`, went the other way (69→14, 71→29, 52→42); that regression is what led to the fix.
+- Feedback fixes text, not facts: invented claims (scope creep) improved but still don't pass (correctness 43). The gate stays strict, so that award would still go to a human.
+- The panel is not infallible: it shipped a rationale that admits ignoring the other bids. That is why Lelang never relies on the audit alone (formula + independent decision node must agree first).
+- The guard against contradictory rewrites fired once: SERV's revision changed the decision line, so it was never submitted.
+- n = 5 on one tender; treat it as a measured signal, not a statistic.
+
 ## Safety rules learned while building
 
 - **Reputation lives on-chain.** Before a bid is evaluated, the escrow's own `BondSlashed` events are read for that address. A bidder slashed before *with evidence* can still bid (the new bid may be clean) but can't win automatically; a human looks first. Unrevealed-bid slashes don't count, an unreadable history fails closed, and only tenders opened by a trusted buyer count: the escrow is permissionless, so anyone could open a tender and slash its bidders with a made-up hash to frame them. No database, no operator list: anyone can recompute it from the chain.

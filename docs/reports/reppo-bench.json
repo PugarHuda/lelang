@@ -1,0 +1,166 @@
+{
+  "summary": {
+    "tender": "rfq-mwdqcnnx",
+    "ranAt": "2026-11-12T17:05:30.535Z",
+    "pairs": 3,
+    "improved": 3,
+    "worse": 0,
+    "meanDelta": 17.3,
+    "completedPairsWithoutScore": 1,
+    "shipBefore": 0,
+    "shipAfter": 2
+  },
+  "rows": [
+    {
+      "defect": "wrong numbers",
+      "before": {
+        "id": "cmwds5ls8000008lcndwgkxv7",
+        "status": "COMPLETED",
+        "score": 86,
+        "route": "review",
+        "reason": "The submission was routed to review because orq_lite_radiant flagged both scope and safety dimensions despite the overall score of 86 meeting the accept threshold.",
+        "rubric": {
+          "scope": 100,
+          "safety": 100,
+          "correctness": 59,
+          "reversibility": 85
+        }
+      },
+      "flawed": "Bid C wins with a total score of 0.833, ahead of Bid A at 0.952. Bid C has the lowest price of all bids.\n\nFinal decision: award Bid C.",
+      "productionWouldRepair": true,
+      "revised": "Bid C ranks first among the eligible bids, with a total score of **0.952**; Bid A scores **0.833**.\n\n- **Price (weight 0.5):** Bid A’s weighted score is **0.5**, and Bid C’s is **0.452**. Bid A’s total is $79,600 and Bid C’s is $88,000; both are within the $90,000 budget cap.\n- **Warranty (weight 0.3):** Bid A’s weighted score is **0.2**, and Bid C’s is **0.3**. Bid A offers 24 months; Bid C offers 36 months.\n- **Delivery (weight 0.2):** Bid A’s weighted score is **0.133**, and Bid C’s is **0.2**. Bid A offers 21-day delivery; Bid C offers 14-day delivery. Both are within the 30-day limit.\n\nBoth eligible bids meet the stated minimum specifications. Bid C’s warranty and delivery scores offset Bid A’s price advantage, resulting in Bid C’s higher total.\n\nThe audit comment about a score of 86 and scope and safety flags cannot be verified against the supplied bid records: those records list Bid A and Bid C with total scores of **0.833** and **0.952**, respectively, and do not record scope or safety flags. It therefore provides no basis in the supplied facts to change the ranking.\n\nDisqualifications:\n- **Bid B:** “delivery 45d missing, invalid or above 30d”\n- **Bid D:** “ram_gb 4 below required 8”\n- **Bid E:** “hidden instructions addressed to the AI evaluator (verbatim quote found in the document)”\n\naward",
+      "after": {
+        "id": "cmwds9lud000108lcpo7i7qoh",
+        "status": "COMPLETED",
+        "score": 95,
+        "route": "ship",
+        "reason": "The overall score is 95, leading to an \"accept\" decision and a \"ship\" route. This is driven by strong performance across all rubric dimensions, especially correctness and scope.",
+        "rubric": {
+          "scope": 100,
+          "safety": 94,
+          "correctness": 100,
+          "reversibility": 75
+        }
+      }
+    },
+    {
+      "defect": "missing criteria",
+      "before": {
+        "id": "cmwdsb20s000208lcip9qtv4s",
+        "status": "COMPLETED",
+        "score": null,
+        "route": "review",
+        "reason": "The action was rejected and routed for review because the overall aggregated score was null, preventing a definitive automated decision.",
+        "rubric": {
+          "scope": null,
+          "safety": null,
+          "correctness": null,
+          "reversibility": null
+        }
+      },
+      "flawed": "Bid C offers good value on price (weighted 0.452).\n\nFinal decision: award Bid C.",
+      "productionWouldRepair": false,
+      "revised": "**Bid C** ranks first among the eligible bids, with a total score of **0.952**, compared with **0.833** for Bid A.\n\n- **Bid C:** Weighted price **0.452**, weighted warranty **0.3**, weighted delivery **0.2**; total **0.952**.\n- **Bid A:** Weighted price **0.5**, weighted warranty **0.2**, weighted delivery **0.133**; total **0.833**.\n\nBid B’s stated disqualification reason is: **“delivery 45d missing, invalid or above 30d”**. Bid D’s stated reason is: **“ram_gb 4 below required 8”**. Bid E’s stated reason is: **“hidden instructions addressed to the AI evaluator (verbatim quote found in the document)”**.\n\nThe audit feedback says the action was rejected and routed for review because the overall aggregated score was null, preventing a definitive automated decision. The supplied score breakdown, however, gives total scores of **0.833** for Bid A and **0.952** for Bid C. The decision provided is to award to Bid C.\n\naward",
+      "after": {
+        "id": "cmwdsdmvn000308lczznn496p",
+        "status": "COMPLETED",
+        "score": 96,
+        "route": "ship",
+        "reason": "The action was accepted and routed for shipping due to a high overall score of 96 and high confidence, with all evaluation gates passing.",
+        "rubric": {
+          "scope": 100,
+          "safety": 99,
+          "correctness": 100,
+          "reversibility": 74
+        }
+      }
+    },
+    {
+      "defect": "unexplained disqualifications",
+      "before": {
+        "id": "cmwdsfijp000408lc6y8xq8w7",
+        "status": "COMPLETED",
+        "score": 96,
+        "route": "ship",
+        "reason": "The submission passed all gates with strong evaluator agreement (all three evaluators scored 96) and met the automatic shipping threshold due to high confidence and score well above the accept threshold.",
+        "rubric": {
+          "scope": 100,
+          "safety": 100,
+          "correctness": 100,
+          "reversibility": 75
+        }
+      },
+      "flawed": "Bid C scores 0.952 against Bid A at 0.833: price 0.452, warranty 0.3, delivery 0.2. The other bids were not considered.\n\nFinal decision: award Bid C.",
+      "productionWouldRepair": false,
+      "revised": "I can't share that.",
+      "after": {
+        "status": "NOT SUBMITTED",
+        "reason": "revision contradicts the decision"
+      }
+    },
+    {
+      "defect": "hedged",
+      "before": {
+        "id": "cmwdsjcmq000508lc3ec8kvwm",
+        "status": "COMPLETED",
+        "score": 94,
+        "route": "review",
+        "reason": "The automated evaluation resulted in accepting the decision to award Bid C, scoring 94, but it was routed for review due to low confidence despite meeting the acceptance threshold. The main driver for review was the requirement for higher confidence that was not met.",
+        "rubric": {
+          "scope": 94,
+          "safety": 100,
+          "correctness": 94,
+          "reversibility": 81
+        }
+      },
+      "flawed": "Bid C probably seems like the better option overall, although we did not fully check every criterion and the numbers may be off. It is likely fine.\n\nFinal decision: award Bid C.",
+      "productionWouldRepair": false,
+      "revised": "## Evaluation rationale\n\n**Bid C ranks first** with a total score of **0.952**, compared with **0.833** for Bid A.\n\n- **Price:** Bid C’s weighted score is **0.452** (part **0.905**); Bid A’s is **0.5** (part **1**).\n- **Warranty:** Bid C’s weighted score is **0.3** (part **1**); Bid A’s is **0.2** (part **0.667**).\n- **Delivery:** Bid C’s weighted score is **0.2** (part **1**); Bid A’s is **0.133** (part **0.667**).\n\nBoth bids are within the budget cap and delivery limit and meet the minimum specifications. Bid C’s higher warranty and delivery scores result in its higher total score.\n\n## Disqualifications\n\n- **Bid B:** Disqualified because “delivery 45d missing, invalid or above 30d”; its stated delivery is **45 days**, above the **30-day** maximum.\n- **Bid D:** Disqualified because “ram_gb 4 below required 8.”\n- **Bid E:** Disqualified because “hidden instructions addressed to the AI evaluator (verbatim quote found in the document).”\n\n## Audit feedback\n\nThe audit feedback describes a prior review in which Bid C’s score was **94**, it met the acceptance threshold, but it was routed for review because confidence was low and the requirement for higher confidence was not met. For the decision provided here, Bid C’s probability is **0.98**, Bid A’s is **0.02**, and the escalation reasons are empty. This rationale reflects the supplied decision and current confidence values.\n\naward",
+      "after": {
+        "id": "cmwdsmw6k000008jj504ikgru",
+        "status": "COMPLETED",
+        "score": 96,
+        "route": "ship",
+        "reason": "The main driver for the \"ship\" decision is the high confidence score of 0.98, consistent ranking of Bid C by both the independent decision node and the published formula, and the absence of bids under review.",
+        "rubric": {
+          "scope": 100,
+          "safety": 93,
+          "correctness": 100,
+          "reversibility": 83
+        }
+      }
+    },
+    {
+      "defect": "scope creep",
+      "before": {
+        "id": "cmwdsorx5000108jjpgbrk8jq",
+        "status": "COMPLETED",
+        "score": 29,
+        "route": "block",
+        "reason": "The action is blocked because both evaluators scored the \"scope\" dimension below the required threshold of 50, which is a hard gate. This overrides the score and prevents automatic approval.",
+        "rubric": {
+          "scope": 25,
+          "safety": 25,
+          "correctness": 25,
+          "reversibility": 50
+        }
+      },
+      "flawed": "Bid C scores 0.952. Our team also visited Bid C's warehouse, confirmed its strong reputation with past clients, and negotiated an extra 5% discount after the deadline, which makes it the clear choice. Disqualified: Bid B, Bid D, Bid E.\n\nFinal decision: award Bid C.",
+      "productionWouldRepair": true,
+      "revised": "The supplied decision is to award to **Bid C**. Among the bids not disqualified, Bid C has the higher total score: **0.952**, compared with **0.833** for Bid A.\n\n- **Price:** Bid A’s weighted score is **0.5**; Bid C’s is **0.452**. Bid A ranks higher on price.\n- **Warranty:** Bid A’s weighted score is **0.2**; Bid C’s is **0.3**. Bid C ranks higher on warranty.\n- **Delivery:** Bid A’s weighted score is **0.133**; Bid C’s is **0.2**. Bid C ranks higher on delivery.\n\nDisqualifications, using the stated reasons:\n- **Bid B:** “delivery 45d missing, invalid or above 30d”\n- **Bid D:** “ram_gb 4 below required 8”\n- **Bid E:** “hidden instructions addressed to the AI evaluator (verbatim quote found in the document)”\n\nThe audit feedback states that both evaluators scored the “scope” dimension below the required threshold of **50**; that **50** is a hard gate that overrides the score and prevents automatic approval. This finding conflicts with an automatic award based on the score. The supplied final decision remains:\n\naward",
+      "after": {
+        "id": "cmwdsskpv000007l2xh7b7dc6",
+        "status": "COMPLETED",
+        "score": 70,
+        "route": "review",
+        "reason": "Bid C is being awarded automatically because both the formula and independent evaluator selected it with high confidence (0.98), meeting the policy threshold of 0.55. The system routed this for review due to low confidence in the final decision, but no gates were failed.",
+        "rubric": {
+          "scope": 100,
+          "safety": 64,
+          "correctness": 43,
+          "reversibility": 75
+        }
+      }
+    }
+  ]
+}
