@@ -27,7 +27,7 @@ LelangEscrow.settle: one tx refunds compliant bonds, slashes with evidence hashe
 | **Kite** | `LelangEscrow` contract holds bonds, enforces commit → reveal → settle, records evidence hashes, lets bidders withdraw if the buyer vanishes | bids can change after the deadline, the buyer can keep anyone's bond, decisions never become money |
 | **SERV Reasoning** | Prompt Guard on every bid, structured decision nodes, Kronos + Shadow Agent on the rationale, Shadow Agent steered by Reppo feedback in the repair loop | an injected bid can steer the evaluator; rationales drift from the decision |
 | **Reppo** | independent panel verdict on the award, gating settlement; its rubric routes the repair loop | the system grades its own decision |
-| **Dolphin** | bid reading is wired in `extractBid` and switches on with `DOLPHIN_API_KEY`. The hackathon coupon has been requested; until it arrives SERV reads the bids and every trace line says so | extraction costs frontier prices per bid |
+| **Dolphin** | bid reading is wired in `extractBid` and tried first. Our API key authenticates (`/v1/models` lists DeepSeek V4.1 Flash, Gemma-4 and Qwen3.6) but inference returns 402 until the hackathon coupon credits arrive; meanwhile SERV reads the bids and every trace line names the reason (`Dolphin 402: insufficient credits`). Dolphin output is schema-checked before use | extraction costs frontier prices per bid |
 
 Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (absent from `/v1/models`), so decision nodes run on SERV `gpt-6-luna` with a strict JSON schema; the call sites take Jev unchanged once it is available.
 
