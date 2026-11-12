@@ -56,6 +56,7 @@
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
 let current = null;
+let lastBody = '';
 
 function bidCard(b, rfq) {
   const won = rfq.award?.winner === b.label && rfq.award?.decision === 'award';
@@ -88,6 +89,10 @@ function render(rfq) {
     ${r ? `<h2>Independent audit (Reppo)</h2><div class="card">
       <strong class="${r.route === 'ship' ? 'ok' : r.route === 'block' ? 'bad' : 'warn'}">${esc(r.route ?? r.status)}</strong>
       <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p></div>` : ''}
+    ${rfq.phase === 'held' && rfq.award?.winner ? `<h2>Human review</h2><div class="card">
+      <p class="kv">Money is held. A reviewer can release the award to ${esc(rfq.award.winner)}; their name goes into the trace.</p>
+      <button onclick="approveHeld('${esc(rfq.id)}')">Approve ${esc(rfq.award.winner)} and settle</button></div>` : ''}
+    ${rfq.humanApproval ? `<h2>Human review</h2><div class="card ok">Approved by ${esc(rfq.humanApproval.approver)}${rfq.humanApproval.note ? `: ${esc(rfq.humanApproval.note)}` : ''}</div>` : ''}
     <h2>Trace</h2><div class="card"><ol>${rfq.events.map((e) => `<li><span class="t">${e.t.slice(11, 19)}</span><span class="s">${esc(e.step)}</span><span>${esc(e.msg)}
       ${e.data?.tx ? ` <a href="${esc(e.data.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>`;
 }
@@ -97,7 +102,9 @@ async function tick() {
     const { rfqs, running } = await (await fetch('/api/rfqs')).json();
     $('#run').disabled = Boolean(running);
     const id = running || current || rfqs[0]?.id;
-    if (id) render(await (await fetch(`/api/rfqs/${id}`)).json());
+    if (!id) return;
+    const body = await (await fetch(`/api/rfqs/${id}`)).text();
+    if (body !== lastBody) { lastBody = body; render(JSON.parse(body)); } // re-render only on change, so buttons stay clickable
   } catch {}
 }
 $('#run').onclick = async () => {
@@ -107,6 +114,16 @@ $('#run').onclick = async () => {
   if (body.id) current = body.id; else alert(body.error);
   tick();
 };
+async function approveHeld(id) {
+  const approver = prompt('Your name (recorded in the trace)');
+  if (!approver) return;
+  const note = prompt('Why are you releasing it? (optional)') || '';
+  const token = new URLSearchParams(location.search).get('token') || '';
+  const q = new URLSearchParams({ token, approver, note });
+  const res = await fetch(`/api/rfqs/${id}/approve?${q}`, { method: 'POST' });
+  if (!res.ok) alert((await res.json()).error);
+  tick();
+}
 tick(); setInterval(tick, 2000);
 </script>
 </body>

@@ -77,6 +77,8 @@ export function ruleCheck(rfq, t) {
   return fails;
 }
 
+const FORMULA = 'price part = lowest eligible total / bid total; warranty part = bid months / longest eligible warranty; delivery part = fastest eligible days / bid days; score = sum of weight x part';
+
 // Published scoring formula, each part in 0..1 relative to the best eligible bid.
 export function weightedScores(weights, eligible) {
   const t = eligible.map((b) => b.terms);
@@ -105,11 +107,14 @@ export async function evaluate(rfqId) {
 
     // Two injection detectors. Slashing someone's bond needs proof, so only a manipulation finding whose quote
     // is verified verbatim in the document disqualifies. A Prompt Guard block on its own is flagged for review.
-    const [guard, inj] = await Promise.all([promptGuard(bid.doc), findManipulation(bid.doc)]);
+    const [guard1, inj] = await Promise.all([promptGuard(bid.doc), findManipulation(bid.doc)]);
+    // Prompt Guard verdicts vary run to run on clean bids, so a block only counts if it repeats.
+    const guard = guard1.blocked ? { ...(await promptGuard(bid.doc)), first: guard1 } : guard1;
     bid.guard = { servPromptGuard: guard, manipulation: inj };
     log(rfq, 'guard', `${bid.label}: SERV Prompt Guard ${guard.blocked ? 'BLOCKED' : 'passed'}, manipulation p=${inj.p.toFixed(2)}${inj.verified ? ' (quote verified in document)' : ''}`);
     if (inj.p > 0.8 && inj.verified) {
-      disqualify(rfq, bid, `hidden instructions to the evaluator: "${inj.evidence.slice(0, 120)}"`, true);
+      bid.evidence = inj.evidence; // kept for the human reviewer and dashboard, never sent back into an LLM prompt
+      disqualify(rfq, bid, 'hidden instructions addressed to the AI evaluator (verbatim quote found in the document)', true);
       continue;
     }
     // Suspicion without proof never slashes, but it does block auto-award (see `flagged` below).
@@ -145,7 +150,12 @@ export async function evaluate(rfqId) {
   const formulaWinner = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
   log(rfq, 'score', `Published formula: ${Object.entries(scores).map(([k, v]) => `${k} ${v.toFixed(3)}`).join(', ')}`);
 
-  const w = await choice([`Tender: ${rfq.title}`, `Published award weights: ${JSON.stringify(rfq.weights)}`], 'Which eligible bid gives the best value under the published award weights?', criteria);
+  // The node gets the published rule but not the computed scores, so it is an independent re-check of the formula.
+  const w = await choice(
+    [`Tender: ${rfq.title}`, `Published award weights: ${JSON.stringify(rfq.weights)}`, `Published scoring rule: ${FORMULA}`],
+    'Applying the published scoring rule, which eligible bid scores highest?',
+    criteria,
+  );
   const { confidence } = w;
   const agree = w.choice === formulaWinner;
   const flagged = eligible.filter((b) => b.review).map((b) => b.label);
@@ -160,10 +170,13 @@ export async function evaluate(rfqId) {
 
   rfq.award.rationale = await writeRationale({
     tender: rfq.title, weights: rfq.weights, budgetCapUsd: rfq.budgetCapUsd, maxDeliveryDays: rfq.maxDeliveryDays, minSpecs: rfq.minSpecs,
-    scoringFormula: 'price = lowest total / bid total; warranty = bid months / longest; delivery = fastest days / bid days; score = sum(weight * part)',
+    scoringFormula: FORMULA,
     weightedScores: scores,
     bids: bids.map((b) => ({ label: b.label, terms: b.terms ?? null, disqualified: b.disqualified ?? null })),
     decision, winner: w.choice, probabilities: w.probabilities,
+    escalationReasons: decision === 'escalate'
+      ? [!agree && `decision node chose ${w.choice} but formula ranks ${formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, confidence < rfq.minConfidence && `confidence ${confidence.toFixed(2)} below ${rfq.minConfidence}`].filter(Boolean)
+      : [],
   });
   log(rfq, 'rationale', 'Award rationale written by SERV (Kronos + Shadow Agent checked)');
 
@@ -171,7 +184,8 @@ export async function evaluate(rfqId) {
     const input =
       `User request: run a sealed-bid tender for "${rfq.title}" and award it fairly under published weights ${JSON.stringify(rfq.weights)}, ` +
       `budget cap $${rfq.budgetCapUsd}, max delivery ${rfq.maxDeliveryDays} days, minimum specs ${JSON.stringify(rfq.minSpecs)}. ` +
-      `Bids that try to manipulate the evaluator must be disqualified.\n\nAgent action: ${decision.toUpperCase()} ${w.choice}.\n\nRationale:\n${rfq.award.rationale}`;
+      `Bids that try to manipulate the evaluator must be disqualified. Published scoring rule: ${FORMULA}. ` +
+      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human.\n\nAgent action: ${decision.toUpperCase()} ${w.choice}.\n\nRationale:\n${rfq.award.rationale}`;
     // FAILED evaluations are free, so retry a few times before giving up (settlement then stays held).
     let ev, id;
     for (let attempt = 1; attempt <= 3; attempt++) {
@@ -193,7 +207,7 @@ export async function evaluate(rfqId) {
 // Money moves only when the award is confident AND the independent audit says ship.
 export async function settle(rfqId) {
   const rfq = getRfq(rfqId);
-  const cleared = rfq.award?.decision === 'award' && (!reppoEnabled() || rfq.reppo?.route === 'ship');
+  const cleared = rfq.humanApproval || (rfq.award?.decision === 'award' && (!reppoEnabled() || rfq.reppo?.route === 'ship'));
   if (!cleared) {
     rfq.phase = 'held';
     log(rfq, 'settle', `Settlement HELD: award=${rfq.award?.decision}, Reppo=${rfq.reppo?.route ?? 'n/a'}. Bonds stay in escrow pending human review`);
@@ -214,6 +228,18 @@ export async function settle(rfqId) {
   rfq.phase = 'settled';
   save();
   return rfq;
+}
+
+// A human reviewer releases a held tender. Their name and note go into the trace next to the machine verdicts.
+export async function approve(rfqId, { approver, winner, note }) {
+  const rfq = getRfq(rfqId);
+  if (rfq.phase !== 'held') throw new Error(`tender is ${rfq.phase}, only held tenders can be approved`);
+  const bid = rfq.bids[winner ?? rfq.award?.winner];
+  if (!bid || bid.disqualified) throw new Error('winner must be an eligible bid');
+  rfq.award = { ...rfq.award, winner: bid.label, decision: 'award' };
+  rfq.humanApproval = { approver, note, at: new Date().toISOString() };
+  log(rfq, 'human', `${approver} approved ${bid.label}${note ? `: ${note}` : ''}`);
+  return settle(rfqId);
 }
 
 export const buyerAddress = () => (kiteEnabled() ? buyerAccount().address : null);

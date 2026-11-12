@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { randomBytes } from 'node:crypto';
 import { createRfq, submitCommit, closeCommits, reveal, evaluate, settle, commitHash, commitMessage } from './lelang.js';
-import { kiteEnabled, transferPie, sendGas } from './kite.js';
+import { kiteEnabled, transferPie, sendGas, balances } from './kite.js';
 
 export const DEMO_RFQ = {
   title: '200 student laptops for 10 rural schools',
@@ -61,10 +61,15 @@ export async function runDemo(onCreated = () => {}) {
     const signature = await acct.signMessage({ message: commitMessage(rfq.id, hash) });
     let bondTx = null;
     if (kiteEnabled()) {
-      // ponytail: the buyer pre-funds each demo supplier so it can post its own bond; real suppliers bring their own funds.
-      await sendGas(process.env.BUYER_PRIVATE_KEY, acct.address, '0.01');
-      await transferPie(process.env.BUYER_PRIVATE_KEY, acct.address, rfq.bondPie);
-      bondTx = await transferPie(pk, privateKeyToAccount(process.env.BUYER_PRIVATE_KEY).address, rfq.bondPie);
+      // ponytail: the buyer tops up each demo supplier so it can post its own bond, and sweeps back what earlier
+      // demo runs paid out (faucet gives 2 USDT/day). Real suppliers bring their own funds.
+      const buyer = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY).address;
+      const bal = await balances(acct.address);
+      const stable = Number(Object.entries(bal).find(([k]) => k !== 'kite')[1]);
+      if (Number(bal.kite) < 0.01) await sendGas(process.env.BUYER_PRIVATE_KEY, acct.address, '0.01');
+      if (stable < rfq.bondPie) await transferPie(process.env.BUYER_PRIVATE_KEY, acct.address, rfq.bondPie);
+      if (stable > rfq.bondPie + 0.001) await transferPie(pk, buyer, +(stable - rfq.bondPie).toFixed(6));
+      bondTx = await transferPie(pk, buyer, rfq.bondPie);
     }
     const label = await submitCommit(rfq.id, { supplier: acct.address, hash, signature, bondTx });
     sealed.push({ label, doc, salt });

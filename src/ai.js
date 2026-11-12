@@ -143,7 +143,9 @@ export async function writeRationale(context) {
         role: 'system',
         content:
           'You write the award rationale for a sealed-bid public tender. Refer to bids only by their anonymous label. ' +
-          'Justify the award criterion by criterion with the numbers given, explain every disqualification, and state the final decision in one line.',
+          'Justify the ranking criterion by criterion with the numbers given and explain every disqualification using its stated reason. ' +
+          'If decision is "escalate", do NOT award: say the leading bid, list the escalationReasons, and state that a human must decide. ' +
+          'End with one line that states exactly the given decision.',
       },
       { role: 'user', content: JSON.stringify(context) },
     ],
@@ -154,7 +156,7 @@ export async function writeRationale(context) {
           hint: {
             type: 'string',
             default:
-              'Must cite each weighted criterion with numbers, must never name a supplier, must explain each disqualification, must match the decided winner.',
+              'Must cite each weighted criterion with numbers, must never name a supplier, must explain each disqualification with its given reason, and the final line must match the given decision (award or escalate) exactly.',
           },
           max_iterations: { type: 'integer', default: 3 },
         },
