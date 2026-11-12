@@ -1,6 +1,6 @@
 # Lelang
 
-**Sealed-bid tenders run by agents.** *Lelang* is Indonesian for a public tender.
+**Sealed-bid tenders run by agents.** Live dashboard of a recorded on-chain tender: https://lelang-ten.vercel.app *Lelang* is Indonesian for a public tender.
 
 Agents will soon both buy and sell. When a buyer's agent runs a tender, three things break: bids can be changed after a rival's price leaks, a supplier can hide instructions for the AI evaluator inside its bid document, and nobody can check why the winner won. Lelang fixes all three, and money moves only when an independent panel agrees with the decision.
 
