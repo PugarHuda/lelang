@@ -34,7 +34,14 @@ createServer(async (req, res) => {
       if (!authorized) return json(res, 403, { error: 'demo token required' });
       const approver = (url.searchParams.get('approver') || 'human reviewer').slice(0, 60);
       const note = (url.searchParams.get('note') || '').slice(0, 200);
-      return json(res, 200, await approve(a[1], { approver, note }));
+      if (!getRfq(a[1])) return json(res, 404, { error: 'not found' });
+      try {
+        return json(res, 200, await approve(a[1], { approver, note }));
+      } catch (e) {
+        // Wrong state (already settled / settling) is the caller's conflict, not a server fault.
+        if (/only held tenders|already|eligible bid/.test(e.message)) return json(res, 409, { error: e.message });
+        throw e;
+      }
     }
     if (url.pathname === '/api/demo' && req.method === 'POST') {
       if (!authorized) return json(res, 403, { error: 'demo token required' });

@@ -5,7 +5,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -77,4 +77,9 @@ assert.deepEqual(
   const attack = spotlight(`a${forged.marker}b`);
   if (attack.marker === forged.marker) assert.equal(unmark(attack.text, attack.marker), 'a b');
 }
+// audit gate never loosens: a later 'ship' can't override an earlier 'review' or 'block'
+assert.equal(strictestRound([{ status: 'COMPLETED', route: 'review', score: 71 }, { status: 'COMPLETED', route: 'ship', score: 95 }]).route, 'review');
+assert.equal(strictestRound([{ status: 'COMPLETED', route: 'ship' }, { status: 'COMPLETED', route: 'block' }]).route, 'block');
+assert.equal(strictestRound([{ status: 'FAILED' }, { status: 'COMPLETED', route: 'ship' }]).route, 'ship');
+assert.equal(strictestRound([{ status: 'FAILED' }]), null);
 console.log('selftest OK');

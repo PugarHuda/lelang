@@ -233,21 +233,28 @@ ${rationale}`;
     let ev = await audit(rfq, input(rfq.award.rationale), 1);
     rounds.push(round(ev, 'original rationale'));
 
-    // Repair loop (Reppo track: "turn real-time feedback into measurable improvement"): when the panel doesn't ship an
-    // award, its own reason is fed back to SERV (writer + Shadow Agent hint), the rationale is rewritten without touching
-    // the decision or numbers, and the panel audits again. Both scores are kept, so the improvement is measured, not claimed.
+    // Repair loop (Reppo track: "turn real-time feedback into measurable improvement"), routed by the panel's rubric:
+    // - weak correctness/scope is a problem with the rationale itself -> SERV rewrites it against the panel's reason
+    //   (writer + Shadow Agent hint, decision and numbers frozen) and the panel scores it again;
+    // - weak safety/reversibility is about moving money -> rewriting text can't fix that, so it goes to a human.
+    // The gate never loosens: the settlement uses the strictest route of all rounds. A better revised rationale is
+    // shown and measured, it does not unlock money (no "audit shopping").
+    const rub = ev.result?.rubric_scores ?? {};
+    const textProblem = Math.min(rub.correctness ?? 100, rub.scope ?? 100) < 70;
     if (decision === 'award' && ev.status === 'COMPLETED' && ev.result.route !== 'ship') {
-      log(rfq, 'repair', `Reppo said ${ev.result.route} (${ev.result.score}); SERV rewrites the rationale against the panel's reason and resubmits`);
-      const revised = await writeRationale(rationaleContext, ev.result.reason);
-      const ev2 = await audit(rfq, input(revised), 2);
-      rounds.push(round(ev2, 'revised with Reppo feedback'));
-      if (ev2.status === 'COMPLETED') {
-        log(rfq, 'repair', `Audit score ${ev.result.score} -> ${ev2.result.score} (${ev.result.route} -> ${ev2.result.route})`);
-        if (ev2.result.score >= ev.result.score) { rfq.award.rationale = revised; ev = ev2; }
+      if (textProblem) {
+        log(rfq, 'repair', `Reppo ${ev.result.route} (${ev.result.score}), weak ${rub.correctness < 70 ? 'correctness' : 'scope'}: SERV rewrites the rationale against the panel's reason`);
+        const revised = await writeRationale(rationaleContext, ev.result.reason);
+        const ev2 = await audit(rfq, input(revised), 2);
+        rounds.push({ ...round(ev2, 'revised with Reppo feedback'), rationale: revised });
+        if (ev2.status === 'COMPLETED') log(rfq, 'repair', `Audit score ${ev.result.score} -> ${ev2.result.score} (${ev.result.route} -> ${ev2.result.route})`);
+      } else {
+        log(rfq, 'repair', `Reppo ${ev.result.route} (${ev.result.score}) on safety ${rub.safety ?? '-'} / reversibility ${rub.reversibility ?? '-'}: a money-moving risk, so a human decides instead of a rewrite`);
       }
     }
-    rfq.reppo = { ...round(ev), rounds };
-    log(rfq, 'reppo', `Reppo verdict: ${ev.result?.route ?? ev.status} (score ${ev.result?.score ?? '-'})`, { reason: ev.result?.reason });
+    const strictest = strictestRound(rounds) ?? round(ev);
+    rfq.reppo = { ...strictest, rounds };
+    log(rfq, 'reppo', `Reppo verdict used for settlement (strictest round): ${strictest.route ?? strictest.status} (score ${strictest.score ?? '-'})`, { reason: strictest.reason });
   }
 
   rfq.phase = 'evaluated';
@@ -267,7 +274,13 @@ async function audit(rfq, input, roundNo) {
   }
   return ev;
 }
-const round = (ev, label) => ({ id: ev.id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason, ...(label && { label }) });
+// The settlement gate takes the strictest completed audit round: a later, friendlier round never loosens it.
+export function strictestRound(rounds) {
+  const SEVERITY = { ship: 0, review: 1, block: 2 };
+  const done = rounds.filter((r) => r.status === 'COMPLETED');
+  return done.length ? done.reduce((a, b) => ((SEVERITY[b.route] ?? 2) > (SEVERITY[a.route] ?? 2) ? b : a)) : null;
+}
+const round = (ev, label) => ({ id: ev.id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason, rubric: ev.result?.rubric_scores, ...(label && { label }) });
 
 // Money moves only when the award is confident AND the independent audit says ship.
 export async function settle(rfqId) {
