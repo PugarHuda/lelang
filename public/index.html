@@ -121,9 +121,12 @@ async function loadStatic() {
   $('#run').hidden = true;
   $('#note').hidden = false;
   const index = await (await fetch('tenders.json')).json();
+  let wanted = null;
   const show = async (id) => {
+    wanted = id;
     for (const b of document.querySelectorAll('#tenders button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
-    render(await (await fetch(`tenders/${encodeURIComponent(id)}.json`)).json());
+    const rfq = await (await fetch(`tenders/${encodeURIComponent(id)}.json`)).json();
+    if (wanted === id) render(rfq); // a slower earlier click must not overwrite the tab the visitor chose last
   };
   const nav = $('#tenders');
   nav.innerHTML = index.map((t) => `<button type="button" data-id="${esc(t.id)}" aria-pressed="false">${esc(t.label)}</button>`).join('');
@@ -213,13 +216,14 @@ window.verifyOnChain = async (rfq) => {
     if (!cache.has(key)) cache.set(key, check(rfq));
     const { rows, block } = await cache.get(key);
     const all = rows.every((r) => r.ok);
-    if (!el()) return;
+    // the visitor may have switched tenders while the RPC answered: never show one tender's proof under another
+    if (!el() || window.__lastRfq?.id !== rfq.id) return;
     el().innerHTML = `<p><strong class="${all ? 'ok' : 'bad'}">${all ? '✓ Everything above matches Kite testnet' : '✗ Mismatch with Kite testnet'}</strong>
       <span class="kv"> · read live from rpc-testnet.gokite.ai at block ${block}</span></p>
       <ol>${rows.map((r) => `<li><span class="t"></span><span class="s ${r.ok ? 'ok' : 'bad'}">${r.ok ? 'match' : 'MISMATCH'}</span><span>${esc(r.text)}</span></li>`).join('')}</ol>`;
   } catch (e) {
     cache.delete(key);
-    if (el()) el().innerHTML = `<p class="warn">Couldn't reach Kite testnet to verify (${esc(e.shortMessage ?? e.message)}). The tender above is shown unverified; every tx link still opens Kitescan.</p>`;
+    if (el() && window.__lastRfq?.id === rfq.id) el().innerHTML = `<p class="warn">Couldn't reach Kite testnet to verify (${esc(e.shortMessage ?? e.message)}). The tender above is shown unverified; every tx link still opens Kitescan.</p>`;
   }
 };
 // The classic script may have rendered before this module loaded.
