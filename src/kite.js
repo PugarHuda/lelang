@@ -119,5 +119,15 @@ export async function escrowSettle(chainId, winner, slash, evidence, downPayment
   return { hash, events };
 }
 
+// Reputation without a database: every evidence-backed slash of this bidder, read from the escrow's own events.
+// A zero evidence hash means "never revealed", which is not proven manipulation, so it is reported separately.
+export async function slashHistory(bidder) {
+  if (!ESCROW() || !ESCROW_ABI.length) return [];
+  const logs = await pub.getContractEvents({
+    address: ESCROW(), abi: ESCROW_ABI, eventName: 'BondSlashed', args: { bidder }, fromBlock: BigInt(deployment?.escrow.block ?? 0),
+  });
+  return logs.map((l) => ({ tender: l.args.id.toString(), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
+}
+
 export const escrowAddress = () => ESCROW();
 export const explorerAddress = (a) => `${kiteTestnet.blockExplorers.default.url}/address/${a}`;

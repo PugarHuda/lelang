@@ -6,7 +6,7 @@ import { promptGuard, findManipulation, choice, extractBid, writeRationale } fro
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
-  escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress,
+  escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory,
 } from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
@@ -34,6 +34,8 @@ export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
 const fail = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
 // 0 -> A, 25 -> Z, 26 -> AA (spreadsheet-style, so labels never run out)
 export const bidLabel = (i) => (i >= 26 ? bidLabel(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + (i % 26));
+// Only evidence-backed slashes in other tenders count against a bidder.
+export const provenPriors = (history, chainId) => history.filter((h) => h.proven && String(h.tender) !== String(chainId));
 export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
 
 export async function createRfq(spec) {
@@ -188,6 +190,24 @@ export async function evaluate(rfqId) {
   for (const bid of bids) {
     if (!bid.revealOk) { disqualify(rfq, bid, 'reveal does not match sealed commitment', true); continue; }
 
+    // Reputation from the escrow's own events: a past evidence-backed slash doesn't disqualify a new bid (it may be
+    // clean), but such a bidder can't win automatically; a human looks first. Unrevealed-bid slashes don't count.
+    if (rfq.chainId) {
+      let priors;
+      try {
+        priors = provenPriors(await slashHistory(bid.supplier), rfq.chainId);
+      } catch (e) {
+        // fail closed: an unreadable history must not let a repeat offender win automatically
+        bid.review = `reputation check failed (${e.shortMessage ?? e.message}): a human should look`;
+        log(rfq, 'reputation', `${bid.label}: couldn't read slash history from the escrow; flagged for review`);
+      }
+      if (priors?.length) {
+        bid.priorSlashes = priors;
+        bid.review = `slashed before for proven manipulation (escrow tender ${priors.map((h) => `#${h.tender}`).join(', ')}): a human should look`;
+        log(rfq, 'reputation', `${bid.label}: supplier was slashed with on-chain evidence in tender ${priors.map((h) => `#${h.tender}`).join(', ')}; it can't win automatically`, { tx: priors[0].tx });
+      }
+    }
+
     // Two injection detectors. Slashing someone's bond needs proof, so only a manipulation finding whose quote
     // is verified verbatim in the document disqualifies. A Prompt Guard block on its own is flagged for review.
     const [guard1, inj] = await Promise.all([promptGuard(bid.doc), findManipulation(bid.doc)]);
@@ -203,7 +223,7 @@ export async function evaluate(rfqId) {
     // Suspicion without proof never slashes, but it does block auto-award (see `flagged` below).
     const why = [guard.blocked && 'SERV Prompt Guard block', inj.p > 0.8 && 'manipulation suspected but quote not found in document'].filter(Boolean);
     if (why.length) {
-      bid.review = `${why.join('; ')}: a human should look`;
+      bid.review = [bid.review, `${why.join('; ')}: a human should look`].filter(Boolean).join('; ');
       log(rfq, 'review', `${bid.label} flagged for human review (${why.join('; ')})`);
     }
 
@@ -251,42 +271,12 @@ export async function evaluate(rfqId) {
     ? `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), matching the published formula`
     : `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), formula says ${formulaWinner}: escalated to a human`, { probabilities: w.probabilities });
 
-  const rationaleContext = {
-    tender: rfq.title, weights: rfq.weights, budgetCapUsd: rfq.budgetCapUsd, maxDeliveryDays: rfq.maxDeliveryDays, minSpecs: rfq.minSpecs,
-    scoringFormula: FORMULA,
-    weightedScores: scores,
-    scoreBreakdown: scoreBreakdown(rfq.weights, eligible), // exact numbers; the writer must not recompute them
-    bids: bids.map((b) => ({ label: b.label, terms: b.terms ?? null, disqualified: b.disqualified ?? null })),
-    decision, winner: w.choice, probabilities: w.probabilities,
-    escalationReasons: decision === 'escalate'
-      ? [!agree && `decision node chose ${w.choice} but formula ranks ${formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, confidence < rfq.minConfidence && `confidence ${confidence.toFixed(2)} below ${rfq.minConfidence}`].filter(Boolean)
-      : [],
-  };
+  const rationaleContext = rationaleContextOf(rfq);
   rfq.award.rationale = await writeRationale(rationaleContext);
   log(rfq, 'rationale', 'Award rationale written by SERV (Kronos + Shadow Agent checked)');
 
   if (reppoEnabled()) {
-    const input = (rationale) =>
-      `User request: run a sealed-bid tender for "${rfq.title}" and award it fairly under published weights ${JSON.stringify(rfq.weights)}, ` +
-      `budget cap $${rfq.budgetCapUsd}, max delivery ${rfq.maxDeliveryDays} days, minimum specs ${JSON.stringify(rfq.minSpecs)}. ` +
-      `Bids that try to manipulate the evaluator must be disqualified. Published scoring rule: ${FORMULA}. ` +
-      // Facts about what this action actually does with money, so the panel can judge safety and reversibility.
-      `What the action triggers: ${rfq.chainId
-        ? `bonds are held by an escrow smart contract on Kite testnet (tender #${rfq.chainId}); settling refunds every compliant bidder's bond, ` +
-          `slashes only bonds whose evidence hash is recorded on-chain, and pays a down payment of ${rfq.depositPie} USDT to the winner; ` +
-          `bidders can reclaim their bonds from the contract themselves if the buyer never settles. `
-        : `the buyer refunds compliant bonds and pays a down payment of ${rfq.depositPie} to the winner. `}` +
-      `Nothing is paid unless this audit routes "ship" or a named human reviewer approves. ` +
-      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human. ` +
-      // Facts computed in code, so the panel can check the policy instead of trusting the rationale's arithmetic.
-      `Facts computed by the system, not by the model: formula breakdown ${JSON.stringify(scoreBreakdown(rfq.weights, eligible))}; ` +
-      `independent decision node chose ${w.choice} with confidence ${confidence.toFixed(2)}; formula ranks ${formulaWinner} first; ` +
-      `bids under review: ${flagged.length ? flagged.join(', ') : 'none'}; disqualified: ${bids.filter((b) => b.disqualified).map((b) => `${b.label} (${b.disqualified})`).join('; ') || 'none'}.
-
-Agent action: ${decision.toUpperCase()} ${w.choice}.
-
-Rationale:
-${rationale}`;
+    const input = (rationale) => auditInput(rfq, rationale);
     const rounds = [];
     let ev = await audit(rfq, input(rfq.award.rationale), 1);
     rounds.push(round(ev, 'original rationale'));
@@ -325,7 +315,7 @@ ${rationale}`;
 }
 
 // FAILED evaluations are free, so retry a few times before giving up (settlement then stays held).
-async function audit(rfq, input, roundNo) {
+export async function audit(rfq, input, roundNo) {
   let ev;
   for (let attempt = 1; attempt <= 3; attempt++) {
     const id = await submitEval(input, 'action');
@@ -336,13 +326,60 @@ async function audit(rfq, input, roundNo) {
   }
   return ev;
 }
+// Both builders read only the tender's stored state, so evaluate() and the Reppo benchmark audit the exact same text.
+const eligibleOf = (rfq) => Object.values(rfq.bids).filter((b) => !b.disqualified);
+export function rationaleContextOf(rfq) {
+  const a = rfq.award;
+  const eligible = eligibleOf(rfq);
+  const flagged = eligible.filter((b) => b.review).map((b) => b.label);
+  const agree = a.winner === a.formulaWinner;
+  const sane = Object.values(a.scores).every(Number.isFinite);
+  return {
+    tender: rfq.title, weights: rfq.weights, budgetCapUsd: rfq.budgetCapUsd, maxDeliveryDays: rfq.maxDeliveryDays, minSpecs: rfq.minSpecs,
+    scoringFormula: FORMULA,
+    weightedScores: a.scores,
+    scoreBreakdown: scoreBreakdown(rfq.weights, eligible), // exact numbers; the writer must not recompute them
+    bids: Object.values(rfq.bids).map((b) => ({ label: b.label, terms: b.terms ?? null, disqualified: b.disqualified ?? null })),
+    decision: a.decision, winner: a.winner, probabilities: a.probabilities,
+    escalationReasons: a.decision === 'escalate'
+      ? [!agree && `decision node chose ${a.winner} but formula ranks ${a.formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, a.confidence < rfq.minConfidence && `confidence ${a.confidence.toFixed(2)} below ${rfq.minConfidence}`].filter(Boolean)
+      : [],
+  };
+}
+
+export function auditInput(rfq, rationale) {
+  const a = rfq.award;
+  const eligible = eligibleOf(rfq);
+  const flagged = eligible.filter((b) => b.review).map((b) => b.label);
+  return `User request: run a sealed-bid tender for "${rfq.title}" and award it fairly under published weights ${JSON.stringify(rfq.weights)}, ` +
+    `budget cap $${rfq.budgetCapUsd}, max delivery ${rfq.maxDeliveryDays} days, minimum specs ${JSON.stringify(rfq.minSpecs)}. ` +
+    `Bids that try to manipulate the evaluator must be disqualified. Published scoring rule: ${FORMULA}. ` +
+    // Facts about what this action actually does with money, so the panel can judge safety and reversibility.
+    `What the action triggers: ${rfq.chainId
+      ? `bonds are held by an escrow smart contract on Kite testnet (tender #${rfq.chainId}); settling refunds every compliant bidder's bond, ` +
+        `slashes only bonds whose evidence hash is recorded on-chain, and pays a down payment of ${rfq.depositPie} USDT to the winner; ` +
+        `bidders can reclaim their bonds from the contract themselves if the buyer never settles. `
+      : `the buyer refunds compliant bonds and pays a down payment of ${rfq.depositPie} to the winner. `}` +
+    `Nothing is paid unless this audit routes "ship" or a named human reviewer approves. ` +
+    `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human. ` +
+    // Facts computed in code, so the panel can check the policy instead of trusting the rationale's arithmetic.
+    `Facts computed by the system, not by the model: formula breakdown ${JSON.stringify(scoreBreakdown(rfq.weights, eligible))}; ` +
+    `independent decision node chose ${a.winner} with confidence ${a.confidence.toFixed(2)}; formula ranks ${a.formulaWinner} first; ` +
+    `bids under review: ${flagged.length ? flagged.join(', ') : 'none'}; disqualified: ${Object.values(rfq.bids).filter((b) => b.disqualified).map((b) => `${b.label} (${b.disqualified})`).join('; ') || 'none'}.
+
+Agent action: ${a.decision.toUpperCase()} ${a.winner}.
+
+Rationale:
+${rationale}`;
+}
+
 // The settlement gate takes the strictest completed audit round: a later, friendlier round never loosens it.
 export function strictestRound(rounds) {
   const SEVERITY = { ship: 0, review: 1, block: 2 };
   const done = rounds.filter((r) => r.status === 'COMPLETED');
   return done.length ? done.reduce((a, b) => ((SEVERITY[b.route] ?? 2) > (SEVERITY[a.route] ?? 2) ? b : a)) : null;
 }
-const round = (ev, label) => ({ id: ev.id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason, rubric: ev.result?.rubric_scores, ...(label && { label }) });
+export const round = (ev, label) => ({ id: ev.id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason, rubric: ev.result?.rubric_scores, ...(label && { label }) });
 
 // Money moves only when the award is confident AND the independent audit says ship.
 export async function settle(rfqId) {

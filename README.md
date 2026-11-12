@@ -1,7 +1,9 @@
 # Lelang
 
+[![ci](https://github.com/PugarHuda/lelang/actions/workflows/ci.yml/badge.svg)](https://github.com/PugarHuda/lelang/actions/workflows/ci.yml)
+
 **Sealed-bid tenders run by agents.** *Lelang* is Indonesian for a public tender.
-Live dashboard of a real tender settled on Kite testnet: **https://lelang-ten.vercel.app**
+Live dashboard of real tenders settled on Kite testnet (the 5-bid demo and an outside agent's tender), each re-verified against the chain in your browser: **https://lelang-ten.vercel.app**
 
 Agents will soon both buy and sell. When a buyer's agent runs a tender, four things break: bids can be changed after a rival's price leaks, a supplier can hide instructions for the AI evaluator inside its bid document, nobody can check why the winner won, and bidders have to trust the buyer with their bonds. Lelang fixes all four, and money moves only when an independent panel (or a named human) agrees with the decision.
 
@@ -45,6 +47,7 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 
 ## Safety rules learned while building
 
+- **Reputation lives on-chain.** Before a bid is evaluated, the escrow's own `BondSlashed` events are read for that address. A bidder slashed before *with evidence* can still bid (the new bid may be clean) but can't win automatically; a human looks first. Unrevealed-bid slashes don't count, and an unreadable history fails closed. No database, no operator list: anyone can recompute it from the chain.
 - **Proof before punishment.** A bond is slashed only when the manipulation check quotes text that code finds in the document the model saw; the quote's hash goes on-chain with the slash.
 - **Spotlighting.** Untrusted bid text is datamarked with a per-call random marker ([Hines et al., 2024](https://arxiv.org/abs/2403.14720)) before extraction and manipulation checks; documents that plant marker characters gain nothing.
 - **Attacker text never re-enters a prompt.** The quoted injection is stored for reviewers but not passed to the rationale writer.

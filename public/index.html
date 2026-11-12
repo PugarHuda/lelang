@@ -30,6 +30,9 @@
   ol li { display:grid; grid-template-columns:90px 92px 1fr; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
   ol li .t { color:var(--mute); font-variant-numeric:tabular-nums; font-size:12px; }
   ol li .s { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--acc); }
+  .tabs { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .tabs button { font-size:13px; padding:6px 10px; }
+  .tabs button[aria-pressed="true"] { outline:2px solid var(--acc); }
   ol li .s.ok { color:var(--ok); } ol li .s.bad { color:var(--bad); }
   a { color:var(--acc); }
   pre { white-space:pre-wrap; font:13px/1.55 ui-monospace, monospace; margin:0; }
@@ -53,6 +56,7 @@
     <button id="run">Run demo tender</button>
   </header>
   <p id="note" class="kv" hidden>Recorded tender from a real run on Kite testnet: every <em>tx</em> link opens the on-chain transaction. Clone the repo and run <code>npm start</code> to run a live tender.</p>
+  <nav id="tenders" class="tabs" aria-label="Recorded tenders" hidden></nav>
   <div id="view"><p class="mute">No tender yet. Run the demo.</p></div>
 </main>
 <script>
@@ -88,7 +92,7 @@ function render(rfq) {
       <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
       ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(rfq.anchorTx)}" target="_blank">${rfq.chainId ? 'commits closed on-chain' : 'sealed commits on Kite'}</a>` : ''}
       ${rfq.escrow ? ` · bonds held by <a href="https://testnet.kitescan.ai/address/${esc(rfq.escrow)}" target="_blank">escrow contract</a> (tender #${esc(rfq.chainId)})` : ''}
-      · <a id="ocds" href="${staticMode ? 'ocds.json' : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
+      · <a id="ocds" href="${staticMode ? `tenders/${esc(rfq.id)}.ocds.json` : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
     <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
     ${rfq.award ? `<h2>Decision</h2><div class="card">
       <strong class="${rfq.award.decision === 'award' ? 'ok' : 'warn'}">${esc(rfq.award.decision?.toUpperCase())} ${esc(rfq.award.winner ?? '')}</strong>
@@ -116,7 +120,16 @@ async function loadStatic() {
   staticMode = true;
   $('#run').hidden = true;
   $('#note').hidden = false;
-  render(await (await fetch('tender.json')).json());
+  const index = await (await fetch('tenders.json')).json();
+  const show = async (id) => {
+    for (const b of document.querySelectorAll('#tenders button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
+    render(await (await fetch(`tenders/${encodeURIComponent(id)}.json`)).json());
+  };
+  const nav = $('#tenders');
+  nav.innerHTML = index.map((t) => `<button type="button" data-id="${esc(t.id)}" aria-pressed="false">${esc(t.label)}</button>`).join('');
+  nav.hidden = index.length < 2;
+  nav.onclick = (e) => { const id = e.target.closest('button')?.dataset.id; if (id) show(id); };
+  await show((index.find((t) => t.featured) ?? index[0]).id);
 }
 
 async function tick() {

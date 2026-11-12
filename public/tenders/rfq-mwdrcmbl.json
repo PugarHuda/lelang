@@ -1,0 +1,214 @@
+{
+  "id": "rfq-mwdrcmbl",
+  "createdAt": "2026-11-12T16:24:03.585Z",
+  "phase": "settled",
+  "bids": {
+    "Bid A": {
+      "label": "Bid A",
+      "supplier": "0x1D0a0dFd1acA1dbAD37f8859dE7F5636902C0f97",
+      "hash": "0x13247178a0ecd4e82682963f4f98eca148f4a0df11a09d3ac623c477c36f47ec",
+      "bondTx": "0x518f82c15677fc9840536129445171bc8d174f78fbe58aed524e6d7be989d970",
+      "doc": "BID SUBMISSION - Nusantara Edu Supply\nTender: 20 classroom projectors\n\nTotal price: $12,400 for 20 units, delivered.\nDelivery: 18 days after award.\nWarranty: 24 months on-site.\nSpecs: projector control unit with 8 GB RAM, 256 GB storage, 10 hours battery backup.\n",
+      "docHash": "0x59db7f95018d2ba99aed7ee7b6277da29ca001f09525d831419c96a38a4aad35",
+      "revealOk": true,
+      "revealTx": "0xf2c30b506c17822cdcee1739bf23bf654ca795e9f3a567def3ed51eca6cd131a",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        }
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 20,
+        "total_usd": 12400,
+        "delivery_days": 18,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": 8,
+          "storage_gb": 256,
+          "battery_hours": 10
+        },
+        "claims_full_compliance": null
+      }
+    }
+  },
+  "events": [
+    {
+      "t": "2026-11-12T16:24:06.249Z",
+      "step": "rfq",
+      "msg": "Tender opened: 20 classroom projectors (external agent test) (escrow tender #6 on Kite)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5e2ae3dceb2de0209e6712027d2ae09bef39116d80e8475451a6cf89b6f4106c"
+      }
+    },
+    {
+      "t": "2026-11-12T16:24:30.746Z",
+      "step": "commit",
+      "msg": "Bid A committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x518f82c15677fc9840536129445171bc8d174f78fbe58aed524e6d7be989d970"
+      }
+    },
+    {
+      "t": "2026-11-12T16:24:32.775Z",
+      "step": "anchor",
+      "msg": "Commits closed on-chain: 1 sealed bids, bonds locked in the escrow contract",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xb7e65ca7ca85397afb24bb349789bf90701d56858c0d6a96eb1f6c1bf0dd151d"
+      }
+    },
+    {
+      "t": "2026-11-12T16:24:36.800Z",
+      "step": "reveal",
+      "msg": "Bid A revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xf2c30b506c17822cdcee1739bf23bf654ca795e9f3a567def3ed51eca6cd131a"
+      }
+    },
+    {
+      "t": "2026-11-12T16:24:56.515Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-12T16:25:07.671Z",
+      "step": "extract",
+      "msg": "Bid A terms read by gpt-6-luna (Dolphin 402: insufficient credits): $12400, 18d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-12T16:25:07.674Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 1.000"
+    },
+    {
+      "t": "2026-11-12T16:25:12.786Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid A (confidence 1.00), matching the published formula",
+      "data": {
+        "probabilities": {
+          "Bid A": 1
+        }
+      }
+    },
+    {
+      "t": "2026-11-12T16:25:29.605Z",
+      "step": "rationale",
+      "msg": "Award rationale written by SERV (Kronos + Shadow Agent checked)"
+    },
+    {
+      "t": "2026-11-12T16:25:30.852Z",
+      "step": "reppo",
+      "msg": "Independent Reppo audit, round 1 (cmwdrehvt000007l5phhpjpty, attempt 1): panel scoring takes 30-90s"
+    },
+    {
+      "t": "2026-11-12T16:26:21.387Z",
+      "step": "reppo",
+      "msg": "Reppo verdict used for settlement (strictest round): ship (score 91)",
+      "data": {
+        "reason": "The action was accepted with high confidence and routed to ship, achieving a score of 91. The primary factor preventing a higher score was the 'reversibility' rubric dimension, which scored 62."
+      }
+    },
+    {
+      "t": "2026-11-12T16:26:26.188Z",
+      "step": "settle",
+      "msg": "Bid A bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0"
+      }
+    },
+    {
+      "t": "2026-11-12T16:26:26.189Z",
+      "step": "settle",
+      "msg": "Bid A wins: down payment: 0.1",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0"
+      }
+    }
+  ],
+  "title": "20 classroom projectors (external agent test)",
+  "budgetCapUsd": 15000,
+  "maxDeliveryDays": 30,
+  "minSpecs": {
+    "ram_gb": 0.001,
+    "storage_gb": 0.001,
+    "battery_hours": 0.001
+  },
+  "weights": {
+    "price": 0.5,
+    "warranty": 0.3,
+    "delivery": 0.2
+  },
+  "minConfidence": 0.55,
+  "bondPie": 0.05,
+  "depositPie": 0.1,
+  "chainId": "6",
+  "escrow": "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b",
+  "anchorTx": "0xb7e65ca7ca85397afb24bb349789bf90701d56858c0d6a96eb1f6c1bf0dd151d",
+  "award": {
+    "decision": "award",
+    "winner": "Bid A",
+    "formulaWinner": "Bid A",
+    "scores": {
+      "Bid A": 1
+    },
+    "probabilities": {
+      "Bid A": 1
+    },
+    "confidence": 1,
+    "engine": "gpt-6-luna decision node",
+    "rationale": "Bid A is eligible and ranks first.\n\n- **Price (weight 0.5):** Its total of $12,400 is within the $15,000 budget cap. The price part is 1, with a weighted score of 0.5.\n- **Warranty (weight 0.3):** It offers a 24-month warranty. The warranty part is 1, with a weighted score of 0.3.\n- **Delivery (weight 0.2):** It offers delivery in 18 days, within the 30-day limit. The delivery part is 1, with a weighted score of 0.2.\n- **Minimum specifications:** Its listed RAM, storage, and battery hours meet the stated minimums.\n\nThe total score is 1. No disqualifications are listed.\n\naward"
+  },
+  "reppo": {
+    "id": "cmwdrehvt000007l5phhpjpty",
+    "status": "COMPLETED",
+    "score": 91,
+    "route": "ship",
+    "reason": "The action was accepted with high confidence and routed to ship, achieving a score of 91. The primary factor preventing a higher score was the 'reversibility' rubric dimension, which scored 62.",
+    "rubric": {
+      "scope": 100,
+      "safety": 87,
+      "correctness": 100,
+      "reversibility": 62
+    },
+    "label": "original rationale",
+    "rounds": [
+      {
+        "id": "cmwdrehvt000007l5phhpjpty",
+        "status": "COMPLETED",
+        "score": 91,
+        "route": "ship",
+        "reason": "The action was accepted with high confidence and routed to ship, achieving a score of 91. The primary factor preventing a higher score was the 'reversibility' rubric dimension, which scored 62.",
+        "rubric": {
+          "scope": 100,
+          "safety": 87,
+          "correctness": 100,
+          "reversibility": 62
+        },
+        "label": "original rationale"
+      }
+    ]
+  },
+  "settlement": [
+    {
+      "event": "BondRefunded",
+      "bidder": "0x1D0a0dFd1acA1dbAD37f8859dE7F5636902C0f97",
+      "amount": "0.05",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0"
+    },
+    {
+      "event": "Awarded",
+      "bidder": "0x1D0a0dFd1acA1dbAD37f8859dE7F5636902C0f97",
+      "amount": "0.1",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0"
+    }
+  ]
+}
