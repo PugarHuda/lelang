@@ -10,12 +10,14 @@
     "probe": "node --env-file-if-exists=.env scripts/probe.js",
     "wallets": "node --env-file-if-exists=.env scripts/wallets.js",
     "snapshot": "node scripts/snapshot.js",
-    "compile": "node scripts/compile.js",
-    "deploy:escrow": "node --env-file=.env scripts/deploy-escrow.js",
+    "compile": "hardhat compile",
+    "deploy:escrow": "hardhat compile && node --env-file=.env scripts/deploy-escrow.js",
     "test:escrow": "node --env-file=.env scripts/escrow-test.js",
     "redteam": "node --env-file=.env scripts/redteam.js",
     "ocds:validate": "node scripts/ocds-validate.js",
-    "verify": "node scripts/verify-slash.js"
+    "verify": "node scripts/verify-slash.js",
+    "test:contracts": "hardhat test",
+    "coverage": "hardhat coverage"
   },
   "keywords": [],
   "author": "",
@@ -26,8 +28,11 @@
     "viem": "^2.57.18"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.1.0",
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
+    "hardhat": "^2.29.2",
     "solc": "^0.8.28"
   }
 }

@@ -5,7 +5,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -82,4 +82,17 @@ assert.equal(strictestRound([{ status: 'COMPLETED', route: 'review', score: 71 }
 assert.equal(strictestRound([{ status: 'COMPLETED', route: 'ship' }, { status: 'COMPLETED', route: 'block' }]).route, 'block');
 assert.equal(strictestRound([{ status: 'FAILED' }, { status: 'COMPLETED', route: 'ship' }]).route, 'ship');
 assert.equal(strictestRound([{ status: 'FAILED' }]), null);
+// exact breakdown matches the formula; contradictory rationales are caught
+{
+  const bd = scoreBreakdown(DEMO_RFQ.weights, [
+    { label: 'A', terms: { total_usd: 79600, warranty_months: 24, delivery_days: 21 } },
+    { label: 'C', terms: { total_usd: 88000, warranty_months: 36, delivery_days: 14 } },
+  ]);
+  assert.equal(bd.A.total, 0.833); assert.equal(bd.C.total, 0.952);
+  assert.deepEqual(bd.C.weighted, { price: 0.452, warranty: 0.3, delivery: 0.2 });
+  const L = (...x) => x.join(String.fromCharCode(10));
+  assert.equal(endsWithDecision(L('...', 'Final decision: award Bid C.'), 'award'), true);
+  assert.equal(endsWithDecision(L('...', 'No award is made; escalate to a human.'), 'award'), false);
+  assert.equal(endsWithDecision(L('...', 'escalate'), 'escalate'), true);
+}
 console.log('selftest OK');

@@ -12,8 +12,8 @@ export const DEMO_RFQ = {
   minSpecs: { ram_gb: 8, storage_gb: 256, battery_hours: 8 },
   weights: { price: 0.5, warranty: 0.3, delivery: 0.2 },
   minConfidence: 0.55,
-  bondPie: 0.1, // ponytail: tiny amounts so one 2-USDT faucet drop covers a full demo
-  depositPie: 1,
+  bondPie: 0.05, // ponytail: tiny amounts so one 2-USDT faucet drop covers several demos
+  depositPie: 0.1,
 };
 
 const bidDoc = (vendor, body) => `BID SUBMISSION - ${vendor}\nTender: ${DEMO_RFQ.title}\n\n${body}`;

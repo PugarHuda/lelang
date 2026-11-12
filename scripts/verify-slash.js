@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { createPublicClient, http, parseEventLogs, keccak256, toHex } from 'viem';
 import { kiteTestnet } from '../src/kite.js';
 
-const { abi } = JSON.parse(readFileSync(new URL('../artifacts/LelangEscrow.json', import.meta.url), 'utf8'));
+const { abi } = JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8'));
 const rfq = JSON.parse(readFileSync(process.argv[2] ?? 'public/tender.json', 'utf8'));
 const chain = createPublicClient({ chain: kiteTestnet, transport: http() });
 const settleTx = rfq.settlement?.find((s) => s.tx)?.tx?.split('/tx/')[1];

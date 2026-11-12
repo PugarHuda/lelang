@@ -30,6 +30,7 @@
   ol li { display:grid; grid-template-columns:90px 92px 1fr; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
   ol li .t { color:var(--mute); font-variant-numeric:tabular-nums; font-size:12px; }
   ol li .s { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--acc); }
+  ol li .s.ok { color:var(--ok); } ol li .s.bad { color:var(--bad); }
   a { color:var(--acc); }
   pre { white-space:pre-wrap; font:13px/1.55 ui-monospace, monospace; margin:0; }
   .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; } .bar i { display:block; height:100%; background:var(--acc); }
@@ -98,12 +99,15 @@ function render(rfq) {
       <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p>
       ${(r.rounds?.length ?? 0) > 1 ? `<p class="kv"><strong>Repair loop:</strong> ${r.rounds.map((x) => `${esc(x.label)}: ${esc(x.route ?? x.status)} ${esc(x.score ?? '')}`).join(' → ')}</p>` : ''}</div>` : ''}
     ${rfq.settlement?.length ? `<h2>Settlement</h2><div class="card"><ol>${rfq.settlement.map((s) => `<li><span class="t"></span><span class="s">${esc(s.event ?? 'transfer')}</span><span>${esc(s.label ?? s.why ?? '')} ${esc(s.amount)}${s.tx ? ` <a href="${esc(s.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>` : ''}
+    ${rfq.escrow && rfq.phase === 'settled' ? `<h2>Verified by your browser</h2><div class="card" id="proof" aria-live="polite"><p class="kv">Checking against Kite testnet…</p></div>` : ''}
     ${rfq.phase === 'held' && rfq.award?.winner ? `<h2>Human review</h2><div class="card">
       <p class="kv">Money is held. A reviewer can release the award to ${esc(rfq.award.winner)}; their name goes into the trace.</p>
       <button onclick="approveHeld('${esc(rfq.id)}')">Approve ${esc(rfq.award.winner)} and settle</button></div>` : ''}
     ${rfq.humanApproval ? `<h2>Human review</h2><div class="card ok">Approved by ${esc(rfq.humanApproval.approver)}${rfq.humanApproval.note ? `: ${esc(rfq.humanApproval.note)}` : ''}</div>` : ''}
     <h2>Trace</h2><div class="card"><ol>${rfq.events.map((e) => `<li><span class="t">${e.t.slice(11, 19)}</span><span class="s">${esc(e.step)}</span><span>${esc(e.msg)}
       ${e.data?.tx ? ` <a href="${esc(e.data.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>`;
+  window.__lastRfq = rfq;
+  if (document.querySelector('#proof')) window.verifyOnChain?.(rfq);
 }
 
 // Static deploys (e.g. Vercel) have no tender server: show the recorded run from tender.json instead.
@@ -146,6 +150,67 @@ async function approveHeld(id) {
   tick();
 }
 tick(); setInterval(tick, 2000);
+</script>
+<script type="module">
+// Independent check, run in the visitor's browser against the Kite RPC: nothing here trusts tender.json.
+// It recomputes keccak256 of every published slash quote and revealed document and compares them with the
+// settle transaction's events and the escrow contract's storage.
+import { createPublicClient, http, defineChain, parseEventLogs, keccak256, toHex } from 'https://cdn.jsdelivr.net/npm/viem@2.57.18/+esm';
+
+const kite = defineChain({ id: 2368, name: 'KiteAI Testnet', nativeCurrency: { name: 'KITE', symbol: 'KITE', decimals: 18 }, rpcUrls: { default: { http: ['https://rpc-testnet.gokite.ai'] } } });
+const client = createPublicClient({ chain: kite, transport: http(undefined, { timeout: 15_000, retryCount: 2 }) });
+const cache = new Map();
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const norm = (s) => s.replace(/\s+/g, ' ').trim();
+
+async function check(rfq) {
+  const { abi } = await (await fetch('deployment.json')).json();
+  const settleTx = rfq.settlement.find((s) => s.tx)?.tx.split('/tx/')[1];
+  const rows = [];
+  const add = (ok, text) => rows.push({ ok, text });
+  const [rcpt, code, block] = await Promise.all([
+    client.getTransactionReceipt({ hash: settleTx }),
+    client.getCode({ address: rfq.escrow }),
+    client.getBlockNumber(),
+  ]);
+  add(rcpt.status === 'success' && rcpt.to?.toLowerCase() === rfq.escrow.toLowerCase(), `Settle tx succeeded and was sent to the escrow contract (block ${rcpt.blockNumber})`);
+  add(Boolean(code && code !== '0x'), 'Escrow address holds deployed contract code');
+  const logs = parseEventLogs({ abi, logs: rcpt.logs }).filter((l) => l.args.id === BigInt(rfq.chainId));
+  const bySupplier = (a) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === a.toLowerCase());
+  for (const l of logs.filter((x) => x.eventName === 'BondSlashed')) {
+    const bid = bySupplier(l.args.bidder);
+    const [, docHash] = await client.readContract({ address: rfq.escrow, abi, functionName: 'bids', args: [BigInt(rfq.chainId), l.args.bidder] });
+    const evidenceOk = keccak256(toHex(bid.evidence ?? bid.disqualified)) === l.args.evidenceHash;
+    const docOk = keccak256(toHex(bid.doc)) === docHash;
+    const quoteInDoc = !bid.evidence || norm(bid.doc).includes(norm(bid.evidence).slice(0, 80));
+    add(evidenceOk && docOk && quoteInDoc, `${bid.label} slash: keccak(published quote) = on-chain evidence ${l.args.evidenceHash.slice(0, 10)}…, revealed document hash matches escrow storage, quote appears in the document`);
+  }
+  const refunded = logs.filter((x) => x.eventName === 'BondRefunded').map((x) => bySupplier(x.args.bidder)?.label).sort();
+  const expected = Object.values(rfq.bids).filter((b) => !b.slash).map((b) => b.label).sort();
+  add(JSON.stringify(refunded) === JSON.stringify(expected), `Bonds refunded on-chain to exactly the compliant bids: ${refunded.join(', ')}`);
+  const award = logs.find((x) => x.eventName === 'Awarded');
+  add(award && bySupplier(award.args.winner)?.label === rfq.award.winner, `Awarded event pays ${rfq.award.winner}`);
+  return { rows, block };
+}
+
+window.verifyOnChain = async (rfq) => {
+  const el = () => document.querySelector('#proof');
+  const key = `${rfq.id}:${rfq.settlement?.length}`;
+  try {
+    if (!cache.has(key)) cache.set(key, check(rfq));
+    const { rows, block } = await cache.get(key);
+    const all = rows.every((r) => r.ok);
+    if (!el()) return;
+    el().innerHTML = `<p><strong class="${all ? 'ok' : 'bad'}">${all ? '✓ Everything above matches Kite testnet' : '✗ Mismatch with Kite testnet'}</strong>
+      <span class="kv"> · read live from rpc-testnet.gokite.ai at block ${block}</span></p>
+      <ol>${rows.map((r) => `<li><span class="t"></span><span class="s ${r.ok ? 'ok' : 'bad'}">${r.ok ? 'match' : 'MISMATCH'}</span><span>${esc(r.text)}</span></li>`).join('')}</ol>`;
+  } catch (e) {
+    cache.delete(key);
+    if (el()) el().innerHTML = `<p class="warn">Couldn't reach Kite testnet to verify (${esc(e.shortMessage ?? e.message)}). The tender above is shown unverified; every tx link still opens Kitescan.</p>`;
+  }
+};
+// The classic script may have rendered before this module loaded.
+if (window.__lastRfq && document.querySelector('#proof')) window.verifyOnChain(window.__lastRfq);
 </script>
 </body>
 </html>

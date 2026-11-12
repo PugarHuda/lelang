@@ -188,10 +188,10 @@ export async function writeRationale(context, feedback) {
         role: 'system',
         content:
           'You write the award rationale for a sealed-bid public tender. Refer to bids only by their anonymous label. ' +
-          'Justify the ranking criterion by criterion with the numbers given and explain every disqualification using its stated reason. ' +
+          'Justify the ranking criterion by criterion using the exact numbers in scoreBreakdown (do not recompute or round them differently) and explain every disqualification using its stated reason. ' +
           'If decision is "escalate", do NOT award: say the leading bid, list the escalationReasons, and state that a human must decide. ' +
           'End with one line that states exactly the given decision.' +
-          (feedback ? ` An independent audit panel reviewed your previous draft and said: "${feedback}". Address each point that concerns the rationale itself, using only facts already in the input; do not add claims, procedures or scope that are not in the input, and do not change the decision or the numbers.` : ''),
+          (feedback ? ` An independent audit panel reviewed your previous draft and said: "${feedback}". Address each point that concerns the rationale itself, using only facts already in the input; do not add claims, procedures or scope that are not in the input. The decision is final and is not yours to change: never write a different decision than the given one, even if the panel mentions human review.` : ''),
       },
       { role: 'user', content: JSON.stringify(context) },
     ],

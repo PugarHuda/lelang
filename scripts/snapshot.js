@@ -7,4 +7,6 @@ const settled = Object.values(rfqs).filter((r) => r.phase === 'settled').sort((a
 if (!settled.length) throw new Error('no settled tender in data/state.json; run `npm run demo` first');
 writeFileSync('public/tender.json', JSON.stringify(settled[0], null, 2));
 writeFileSync('public/ocds.json', JSON.stringify(toOcds(settled[0]), null, 2));
+// The browser verifier reads the escrow ABI from here.
+writeFileSync('public/deployment.json', readFileSync('deployments/kite-testnet.json'));
 console.log(`public/tender.json + public/ocds.json <- ${settled[0].id}`);

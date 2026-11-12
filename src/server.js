@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { listRfqs, getRfq, approve, buyerAddress } from './lelang.js';
 import { toOcds } from './ocds.js';
+import { deployment } from './kite.js';
 import { runDemo } from './demo.js';
 
 const html = readFileSync(new URL('../public/index.html', import.meta.url));
@@ -16,6 +17,7 @@ createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
     if (url.pathname === '/') return res.writeHead(200, { 'content-type': 'text/html' }).end(html);
+    if (url.pathname === '/deployment.json') return json(res, 200, deployment ?? {});
     if (url.pathname === '/api/rfqs') return json(res, 200, { running, rfqs: listRfqs().reverse() });
     const o = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/ocds$/);
     if (o) {

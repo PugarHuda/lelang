@@ -9,7 +9,7 @@ import { kiteTestnet, escrowOpen, escrowCommit, escrowCloseCommits, escrowReveal
 import { commitHash, docHashOf } from '../src/lelang.js';
 import { demoWallets } from '../src/demo.js';
 
-const { abi } = JSON.parse(readFileSync('artifacts/LelangEscrow.json', 'utf8'));
+const { abi } = JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8'));
 const pub = createPublicClient({ chain: kiteTestnet, transport: http() });
 const buyerPk = process.env.BUYER_PRIVATE_KEY;
 const buyer = privateKeyToAccount(buyerPk);
@@ -19,7 +19,7 @@ const BOND = 0.1;
 
 async function reverts(account, functionName, args, errorName) {
   try {
-    await pub.simulateContract({ address: process.env.ESCROW_ADDRESS, abi, functionName, args, account });
+    await pub.simulateContract({ address: (process.env.ESCROW_ADDRESS || JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8')).escrow.address), abi, functionName, args, account });
   } catch (e) {
     const got = e.cause?.data?.errorName ?? e.shortMessage;
     assert.ok(String(got).includes(errorName), `${functionName}: expected ${errorName}, got ${got}`);
@@ -40,7 +40,7 @@ console.log(`escrow tender #${chainId}`);
 const doc = 'escrow test bid';
 const salt = `0x${randomBytes(32).toString('hex')}`;
 const commitment = commitHash(doc, salt, sup.address, chainId);
-const onChainCommitment = await pub.readContract({ address: process.env.ESCROW_ADDRESS, abi, functionName: 'commitmentOf', args: [docHashOf(doc), salt, sup.address, id] });
+const onChainCommitment = await pub.readContract({ address: (process.env.ESCROW_ADDRESS || JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8')).escrow.address), abi, functionName: 'commitmentOf', args: [docHashOf(doc), salt, sup.address, id] });
 assert.equal(onChainCommitment, commitment, 'JS and Solidity commitments must match');
 
 await escrowCommit(supPk, chainId, commitment, BOND);

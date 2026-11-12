@@ -36,8 +36,9 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 | Check | Result | How to reproduce |
 |---|---|---|
 | Red-team suite: HTML comment, zero-width split, Indonesian, base64, Cyrillic homoglyphs, social engineering, planted datamark characters, numeric poisoning | 8/8 caught and disqualified on the latest run, 0/2 false positives, numeric poisoning still extracts the true price ($75,000). On an earlier run the homoglyph quote wasn't byte-verifiable, and that bid went to human review instead of being slashed: the designed fallback | `npm run redteam` |
+| Escrow contract (Hardhat) | 18 unit tests incl. a 200-tender fuzz that checks token conservation and an empty escrow after settle; 100% line / 94.6% branch coverage. OpenZeppelin SafeERC20 + ReentrancyGuard, no owner/admin/pause, max 100 bidders per tender | `npm run test:contracts`, `npm run coverage` |
 | Escrow contract on Kite testnet | 13 forbidden paths revert (double commit, buyer bidding, early reveal, wrong salt or document, early settle, non-buyer settle, slashing the winner, slash without evidence, unknown winner, early withdraw, double settle); happy path refunds the bond | `npm run test:escrow` |
-| Slash accountability | anyone recomputes `keccak(quote)` and `keccak(document)` from the published tender and matches them to the on-chain settle event and escrow state | `npm run verify` |
+| Slash accountability | the dashboard itself re-checks the settled tender in your browser against the Kite RPC (no trust in our JSON); anyone recomputes `keccak(quote)` and `keccak(document)` from the published tender and matches them to the on-chain settle event and escrow state | `npm run verify` |
 | Open Contracting Data Standard | every tender exports a valid OCDS 1.1.5 release package (+ official Bids extension); a deliberately broken release is rejected | `npm run ocds:validate` |
 | Offline logic | sealing, signatures, hard rules, scoring formula, double-approve lock, strictest-audit gate, datamarking | `npm test` |
 
@@ -61,7 +62,7 @@ cp .env.example .env        # SERV_API_KEY, REPPO_API_KEY (+ DOLPHIN_API_KEY whe
 npm test                    # offline checks
 npm run wallets             # creates a TESTNET buyer key; fund it at https://faucet.gokite.ai
                             # faucet gives KITE + USDT: STABLE_TOKEN=0x0ff5393387ad2f9f691fd6fd28e07e3969e27e63
-npm run compile && npm run deploy:escrow   # deploys LelangEscrow, writes ESCROW_ADDRESS to .env
+npm run deploy:escrow       # compiles, deploys LelangEscrow, verifies source on Kitescan, writes deployments/kite-testnet.json
 npm run test:escrow         # contract checks on Kite testnet
 npm run probe               # every integration once
 npm run demo                # full tender in the terminal
@@ -69,8 +70,8 @@ npm start                   # dashboard on http://localhost:3000 (set DEMO_TOKEN
 npm run snapshot            # publish the latest settled tender (+ OCDS) for the static dashboard
 ```
 
-Deployed escrow: [`0x4921030bacde7a1975191aef054c6684d0acb4fb`](https://testnet.kitescan.ai/address/0x4921030bacde7a1975191aef054c6684d0acb4fb) on Kite testnet (chain 2368).
-Without `ESCROW_ADDRESS` bonds go to the buyer wallet and commits are anchored in one tx; without `BUYER_PRIVATE_KEY` nothing goes on-chain and the trace says so.
+Deployed escrow: [`0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b`](https://testnet.kitescan.ai/address/0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b?tab=contract) on Kite testnet (chain 2368), source verified on Kitescan. Address + ABI live in `deployments/kite-testnet.json` (`ESCROW_ADDRESS` in `.env` overrides it).
+Without a deployment bonds go to the buyer wallet and commits are anchored in one tx; without `BUYER_PRIVATE_KEY` nothing goes on-chain and the trace says so.
 
 ## Built during SERV Hackathon 02
 

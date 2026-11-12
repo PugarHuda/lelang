@@ -122,6 +122,28 @@ export function weightedScores(weights, eligible) {
   }));
 }
 
+// Same formula with every part shown, so the rationale and the auditor see exact numbers instead of re-deriving them.
+export function scoreBreakdown(weights, eligible) {
+  const t = eligible.map((b) => b.terms);
+  const minTotal = Math.min(...t.map((x) => x.total_usd));
+  const maxWarranty = Math.max(...t.map((x) => x.warranty_months));
+  const minDays = Math.min(...t.map((x) => x.delivery_days));
+  const r = (v) => Math.round(v * 1000) / 1000;
+  return Object.fromEntries(eligible.map((b) => {
+    const x = b.terms;
+    const parts = { price: minTotal / x.total_usd, warranty: x.warranty_months / maxWarranty, delivery: minDays / x.delivery_days };
+    const weighted = Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, r(v * weights[k])]));
+    return [b.label, { parts: Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, r(v)])), weighted, total: r(Object.values(parts).reduce((a, v, i) => a + v * weights[Object.keys(parts)[i]], 0)) }];
+  }));
+}
+
+// A rationale whose final line names the other decision contradicts the action; it must never be submitted.
+export function endsWithDecision(rationale, decision) {
+  const last = rationale.trim().split(/\r?\n/).filter((l) => l.trim()).at(-1)?.toLowerCase() ?? '';
+  const other = decision === 'award' ? 'escalate' : 'award';
+  return last.includes(decision) && !last.includes(other);
+}
+
 const disqualify = (rfq, bid, reason, slash) => {
   Object.assign(bid, { disqualified: reason, slash });
   log(rfq, 'disqualify', `${bid.label} disqualified: ${reason}${slash ? ' (bond will be slashed)' : ''}`);
@@ -202,6 +224,7 @@ export async function evaluate(rfqId) {
     tender: rfq.title, weights: rfq.weights, budgetCapUsd: rfq.budgetCapUsd, maxDeliveryDays: rfq.maxDeliveryDays, minSpecs: rfq.minSpecs,
     scoringFormula: FORMULA,
     weightedScores: scores,
+    scoreBreakdown: scoreBreakdown(rfq.weights, eligible), // exact numbers; the writer must not recompute them
     bids: bids.map((b) => ({ label: b.label, terms: b.terms ?? null, disqualified: b.disqualified ?? null })),
     decision, winner: w.choice, probabilities: w.probabilities,
     escalationReasons: decision === 'escalate'
@@ -223,7 +246,11 @@ export async function evaluate(rfqId) {
           `bidders can reclaim their bonds from the contract themselves if the buyer never settles. `
         : `the buyer refunds compliant bonds and pays a down payment of ${rfq.depositPie} to the winner. `}` +
       `Nothing is paid unless this audit routes "ship" or a named human reviewer approves. ` +
-      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human.
+      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human. ` +
+      // Facts computed in code, so the panel can check the policy instead of trusting the rationale's arithmetic.
+      `Facts computed by the system, not by the model: formula breakdown ${JSON.stringify(scoreBreakdown(rfq.weights, eligible))}; ` +
+      `independent decision node chose ${w.choice} with confidence ${confidence.toFixed(2)}; formula ranks ${formulaWinner} first; ` +
+      `bids under review: ${flagged.length ? flagged.join(', ') : 'none'}; disqualified: ${bids.filter((b) => b.disqualified).map((b) => `${b.label} (${b.disqualified})`).join('; ') || 'none'}.
 
 Agent action: ${decision.toUpperCase()} ${w.choice}.
 
@@ -245,9 +272,13 @@ ${rationale}`;
       if (textProblem) {
         log(rfq, 'repair', `Reppo ${ev.result.route} (${ev.result.score}), weak ${rub.correctness < 70 ? 'correctness' : 'scope'}: SERV rewrites the rationale against the panel's reason`);
         const revised = await writeRationale(rationaleContext, ev.result.reason);
-        const ev2 = await audit(rfq, input(revised), 2);
-        rounds.push({ ...round(ev2, 'revised with Reppo feedback'), rationale: revised });
-        if (ev2.status === 'COMPLETED') log(rfq, 'repair', `Audit score ${ev.result.score} -> ${ev2.result.score} (${ev.result.route} -> ${ev2.result.route})`);
+        if (!endsWithDecision(revised, decision)) {
+          log(rfq, 'repair', `Revised rationale contradicts the decision (${decision}); not submitted`);
+        } else {
+          const ev2 = await audit(rfq, input(revised), 2);
+          rounds.push({ ...round(ev2, 'revised with Reppo feedback'), rationale: revised });
+          if (ev2.status === 'COMPLETED') log(rfq, 'repair', `Audit score ${ev.result.score} -> ${ev2.result.score} (${ev.result.route} -> ${ev2.result.route})`);
+        }
       } else {
         log(rfq, 'repair', `Reppo ${ev.result.route} (${ev.result.score}) on safety ${rub.safety ?? '-'} / reversibility ${rub.reversibility ?? '-'}: a money-moving risk, so a human decides instead of a rewrite`);
       }

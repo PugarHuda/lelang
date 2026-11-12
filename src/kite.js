@@ -1,6 +1,6 @@
 // Kite testnet: commit anchoring, bonds and settlement in a stablecoin.
 import { createPublicClient, createWalletClient, defineChain, http, parseUnits, formatUnits, erc20Abi, toHex, concat, parseEventLogs } from 'viem';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { privateKeyToAccount } from 'viem/accounts';
 
 export const kiteTestnet = defineChain({
@@ -66,9 +66,12 @@ export async function balances(address) {
 
 // --- LelangEscrow contract (bonds held on-chain, see contracts/LelangEscrow.sol) ---------------
 
-const ESCROW_ABI = JSON.parse(readFileSync(new URL('../artifacts/LelangEscrow.json', import.meta.url), 'utf8')).abi;
-export const escrowEnabled = () => kiteEnabled() && Boolean(process.env.ESCROW_ADDRESS);
-const ESCROW = () => process.env.ESCROW_ADDRESS;
+// deployments/kite-testnet.json (written by scripts/deploy-escrow.js) is the single source of address + ABI.
+const DEPLOYMENT_URL = new URL('../deployments/kite-testnet.json', import.meta.url);
+export const deployment = existsSync(DEPLOYMENT_URL) ? JSON.parse(readFileSync(DEPLOYMENT_URL, 'utf8')) : null;
+const ESCROW_ABI = deployment?.abi ?? [];
+const ESCROW = () => process.env.ESCROW_ADDRESS || deployment?.escrow.address;
+export const escrowEnabled = () => kiteEnabled() && Boolean(ESCROW()) && ESCROW_ABI.length > 0;
 
 async function send(pk, functionName, args) {
   const w = wallet(pk);
@@ -113,5 +116,5 @@ export async function escrowSettle(chainId, winner, slash, evidence, downPayment
   return { hash, events };
 }
 
-export const escrowAddress = () => process.env.ESCROW_ADDRESS;
+export const escrowAddress = () => ESCROW();
 export const explorerAddress = (a) => `${kiteTestnet.blockExplorers.default.url}/address/${a}`;
