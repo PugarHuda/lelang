@@ -30,6 +30,10 @@ export const commitHash = (doc, salt, bidder, chainId = 0) =>
   keccak256(encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256'), [docHashOf(doc), salt, bidder, BigInt(chainId)]));
 export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
 
+// Caller mistakes (wrong phase, bad proof) carry status 400 so the API doesn't report them as server faults.
+const fail = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
+export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
+
 export async function createRfq(spec) {
   const id = `rfq-${Date.now().toString(36)}`;
   const rfq = { id, createdAt: new Date().toISOString(), phase: 'commit', bids: {}, events: [], ...spec };
@@ -48,12 +52,13 @@ export async function createRfq(spec) {
 // Off-chain mode: an EIP-191 signature over the commitment stands in for it.
 export async function submitCommit(rfqId, { supplier, hash, signature, bondTx }) {
   const rfq = getRfq(rfqId);
-  if (rfq.phase !== 'commit') throw new Error('commit phase closed');
+  if (rfq.phase !== 'commit') fail('commit phase closed');
+  if (bidOf(rfq, supplier)) fail('supplier already committed');
   if (rfq.chainId) {
     const onChain = await escrowBid(rfq.chainId, supplier);
-    if (onChain.commitment !== hash) throw new Error('commitment not found in escrow');
-  } else if (!(await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature }))) {
-    throw new Error('bad commit signature');
+    if (onChain.commitment !== hash) fail('commitment not found in escrow');
+  } else if (!signature || !(await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature }))) {
+    fail('bad commit signature');
   }
   const label = `Bid ${String.fromCharCode(65 + Object.keys(rfq.bids).length)}`;
   rfq.bids[label] = { label, supplier, hash, signature, bondTx };
@@ -63,6 +68,7 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
 
 export async function closeCommits(rfqId) {
   const rfq = getRfq(rfqId);
+  if (rfq.phase !== 'commit') fail(`tender is in ${rfq.phase}, not commit`);
   rfq.phase = 'reveal';
   const n = Object.keys(rfq.bids).length;
   if (rfq.chainId) {
@@ -80,6 +86,9 @@ export async function closeCommits(rfqId) {
 export async function reveal(rfqId, label, { doc, salt, revealTx }) {
   const rfq = getRfq(rfqId);
   const bid = rfq.bids[label];
+  if (rfq.phase !== 'reveal') fail(`tender is in ${rfq.phase}, not reveal`);
+  if (!bid) fail('unknown bid');
+  if (bid.revealOk) fail('already revealed'); // a stranger can't overwrite a valid reveal with junk
   bid.doc = doc;
   bid.docHash = docHashOf(doc);
   if (rfq.chainId) {
@@ -90,6 +99,7 @@ export async function reveal(rfqId, label, { doc, salt, revealTx }) {
     bid.revealOk = commitHash(doc, salt, bid.supplier) === bid.hash;
   }
   log(rfq, 'reveal', `${label} revealed: ${bid.revealOk ? 'matches its sealed commitment' : 'DOES NOT match its sealed commitment'}`, revealTx && { tx: explorerTx(revealTx) });
+  return bid.revealOk;
 }
 
 // Hard rules come first and are plain code, not model output.
@@ -151,6 +161,7 @@ const disqualify = (rfq, bid, reason, slash) => {
 
 export async function evaluate(rfqId) {
   const rfq = getRfq(rfqId);
+  if (rfq.phase !== 'reveal') fail(`tender is in ${rfq.phase}, not reveal`);
   rfq.phase = 'evaluating';
   const bids = Object.values(rfq.bids);
 

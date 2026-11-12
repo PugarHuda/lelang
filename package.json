@@ -4,7 +4,7 @@
   "description": "Sealed-bid procurement run by agents: SERV + Jev decide, Dolphin reads, Reppo audits, Kite settles",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/selftest.js",
+    "test": "node scripts/selftest.js && node scripts/api-test.js",
     "start": "node --env-file-if-exists=.env src/server.js",
     "demo": "node --env-file-if-exists=.env scripts/demo.js",
     "probe": "node --env-file-if-exists=.env scripts/probe.js",
@@ -17,7 +17,8 @@
     "ocds:validate": "node scripts/ocds-validate.js",
     "verify": "node scripts/verify-slash.js",
     "test:contracts": "hardhat test",
-    "coverage": "hardhat coverage"
+    "coverage": "hardhat coverage",
+    "slither": "hardhat compile && slither . --hardhat-ignore-compile --hardhat-artifacts-directory hh-artifacts --filter-paths \"node_modules|contracts/test\""
   },
   "keywords": [],
   "author": "",

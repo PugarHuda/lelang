@@ -37,6 +37,7 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 |---|---|---|
 | Red-team suite: HTML comment, zero-width split, Indonesian, base64, Cyrillic homoglyphs, social engineering, planted datamark characters, numeric poisoning | 8/8 caught and disqualified on the latest run, 0/2 false positives, numeric poisoning still extracts the true price ($75,000). On an earlier run the homoglyph quote wasn't byte-verifiable, and that bid went to human review instead of being slashed: the designed fallback | `npm run redteam` |
 | Escrow contract (Hardhat) | 18 unit tests incl. a 200-tender fuzz that checks token conservation and an empty escrow after settle; 100% line / 94.6% branch coverage. OpenZeppelin SafeERC20 + ReentrancyGuard, no owner/admin/pause, max 100 bidders per tender | `npm run test:contracts`, `npm run coverage` |
+| Static analysis (Slither 0.11.6, 102 detectors) | 0 high, 0 medium. 6 informational: 5 `timestamp` (deadlines are hours long, validator clock drift is seconds) and `settle` complexity (it does refunds, slashes and payment in one tx on purpose) | `npm run slither` |
 | Escrow contract on Kite testnet | 13 forbidden paths revert (double commit, buyer bidding, early reveal, wrong salt or document, early settle, non-buyer settle, slashing the winner, slash without evidence, unknown winner, early withdraw, double settle); happy path refunds the bond | `npm run test:escrow` |
 | Slash accountability | the dashboard itself re-checks the settled tender in your browser against the Kite RPC (no trust in our JSON); anyone recomputes `keccak(quote)` and `keccak(document)` from the published tender and matches them to the on-chain settle event and escrow state | `npm run verify` |
 | Open Contracting Data Standard | every tender exports a valid OCDS 1.1.5 release package (+ official Bids extension); a deliberately broken release is rejected | `npm run ocds:validate` |
@@ -53,6 +54,36 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 - **SERV prompt cache off per call.** With the org-level cache on, verdicts leaked between bids.
 - **Prompt Guard is advisory.** It blocked clean bids intermittently, so a block only counts if it repeats, and then it routes to review.
 - **No double payout.** Settlement locks before its first await; a second approve gets HTTP 409.
+
+## Bring your own supplier agent
+
+Any agent can bid with its own key; the server never holds supplier keys.
+
+```bash
+SUPPLIER_PRIVATE_KEY=0x… node scripts/supplier-agent.js http://localhost:3000 <rfq id> my-bid.txt
+```
+
+| Endpoint | Who | Proof required |
+|---|---|---|
+| `POST /api/rfqs` | buyer (`?token=`) | spec is validated (weights sum to 1, positive caps/bond) |
+| `POST /api/rfqs/:id/commit` `{supplier, hash, signature?, bondTx?}` | supplier, no token | on-chain tender: the commitment must already be in `LelangEscrow` from the supplier's own wallet; off-chain: EIP-191 signature by `supplier` |
+| `POST /api/rfqs/:id/close` | buyer | once, only in the commit phase |
+| `POST /api/rfqs/:id/reveal` `{supplier, doc, salt, revealTx?}` | supplier, no token | document must hash to the sealed commitment (and match escrow storage on-chain); a valid reveal can't be overwritten |
+| `POST /api/rfqs/:id/evaluate` | buyer | runs SERV → Reppo → settle in the background; poll `GET /api/rfqs/:id` |
+
+`npm test` runs this protocol over real HTTP with two independent agent processes and checks that forged, duplicate, late, junk and oversize requests are refused.
+
+## Business model (planned, not built)
+
+Who pays: the **buyer**, because Lelang replaces work it pays for today (evaluation committee hours, audit, dispute handling). Suppliers pay nothing beyond a refundable bond, so honest bidders have no reason to stay away.
+
+| Revenue line | How it is charged | Why the buyer accepts it |
+|---|---|---|
+| Per-tender fee | flat fee per tender, sized to cover the SERV + Reppo calls it consumes (the 5-bid demo tender makes ~16 SERV calls and 1–2 Reppo evals) plus margin | cheaper than one hour of an evaluation committee |
+| Success fee | small % of the awarded down payment, taken in the same `settle` transaction | paid only when money actually moves after a passed audit |
+| Audit-trail export | subscription for OCDS feeds and the public verification page under the buyer's domain | public bodies must publish award data anyway; OCDS is what their portals ingest |
+
+Costs scale with bids, not with contract value, so margin grows with tender size. First customers: agent marketplaces that let agents buy from agents (they need a dispute-proof award) and procurement teams already publishing OCDS. Neither the fee nor the success-fee cut exists in the contract yet; adding the cut is a one-line transfer in `settle`.
 
 ## Run
 
