@@ -6,7 +6,7 @@ import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms, decideAppeal, appealDecisionMessage, overturnedSlashes } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -170,6 +170,17 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   const a = await appeal(r.id, { supplier: k.address, reason: 'it was a quote from the tender', signature: await sign(k, 'it was a quote from the tender') });
   assert.equal(a.outcome, 'human');
   await assert.rejects(appeal(r.id, { supplier: k.address, reason: 'again', signature: await sign(k, 'again') }), /already appealed/);
+  // only a signed approver on APPROVERS overturns; then the slash stops counting in reputation
+  const boss = privateKeyToAccount(generatePrivateKey());
+  const decide = async (acct, overturn) => ({ approver: acct.address, overturn, signature: await acct.signMessage({ message: appealDecisionMessage(r.id, l, overturn) }) });
+  process.env.APPROVERS = boss.address;
+  await assert.rejects(decideAppeal(r.id, l, { approver: boss.address, overturn: true }), /signed/);
+  await assert.rejects(decideAppeal(r.id, l, await decide(k, true)), /APPROVERS/);
+  await assert.rejects(decideAppeal(r.id, l, { ...(await decide(boss, false)), overturn: true }), /signed/); // signed "uphold", claims overturn
+  assert.equal((await decideAppeal(r.id, l, await decide(boss, true))).outcome, 'overturned');
+  await assert.rejects(decideAppeal(r.id, l, await decide(boss, false)), /waiting for a human/);
+  assert.ok(overturnedSlashes().has(`42:${k.address.toLowerCase()}`));
+  delete process.env.APPROVERS;
   // an overturned slash never counts against the supplier
   const us = '0x1111111111111111111111111111111111111111';
   const h = [{ tender: '42', bidder: k.address, proven: true, buyer: us }];

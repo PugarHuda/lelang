@@ -106,6 +106,6 @@ test('proof page shows the appeal outcome and who paid for the audits', async ({
   test.skip(!appealed, 'no appealed slash published');
   const a = JSON.parse(readFileSync(`public/tenders/${appealed.id}.json`, 'utf8')).bids[appealed.label].appeal;
   await page.goto(`/slash.html?t=${appealed.id}&b=${encodeURIComponent(appealed.label)}`);
-  await expect(page.locator('#view')).toContainText({ upheld: 'Slash upheld', overturned: 'Slash overturned', human: 'a human decides' }[a.outcome]);
+  await expect(page.locator('#view')).toContainText({ upheld: 'Slash upheld', overturned: 'Slash overturned', human: 'a named approver decides' }[a.outcome]);
   await expect(page.locator('#fund')).toContainText('% paid by attackers');
 });

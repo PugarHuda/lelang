@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
 import { serveStatic } from './static.js';
@@ -81,6 +81,15 @@ createServer(async (req, res) => {
       const { supplier, reason, signature } = await body(req);
       if (!ADDR.test(supplier ?? '') || !/^0x[0-9a-fA-F]{130}$/.test(signature ?? '')) bad('supplier (address) and signature (65-byte hex) required');
       return json(res, 200, await appeal(ap[1], { supplier, reason, signature }));
+    }
+    // A named approver decides an appeal the panel did not confirm (signed, APPROVERS only).
+    const dc = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal-decision$/);
+    if (dc && req.method === 'POST') {
+      if (!authorized) return json(res, 403, { error: 'demo token required' });
+      if (!getRfq(dc[1])) return json(res, 404, { error: 'not found' });
+      const { label, approver, signature, overturn } = await body(req);
+      if (!ADDR.test(approver ?? '') || !/^0x[0-9a-fA-F]{130}$/.test(signature ?? '') || typeof overturn !== 'boolean') bad('label, approver, signature and overturn (boolean) required');
+      return json(res, 200, await decideAppeal(dc[1], String(label), { approver, signature, overturn }));
     }
     const act = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/(commit|close|reveal|evaluate)$/);
     if (act && req.method === 'POST') {

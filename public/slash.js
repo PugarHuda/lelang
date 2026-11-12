@@ -15,7 +15,7 @@ function highlight(doc, quote) {
 // A slashed supplier can appeal once, signed with its own key; an independent Reppo panel re-checks the evidence.
 function appealHtml(a) {
   if (!a) return `<h2>Appeal</h2><div class="card kv">No appeal. The supplier can appeal once, signed with its own key; an independent panel then re-checks this slash.</div>`;
-  const label = { upheld: '<strong class="ok">Slash upheld</strong>', overturned: '<strong class="warn">Slash overturned: bond refunded, it no longer counts against the supplier</strong>', human: '<strong class="warn">Undecided: a human decides</strong>', pending: 'Pending' }[a.outcome] ?? esc(a.outcome);
+  const label = { upheld: '<strong class="ok">Slash upheld</strong>', overturned: '<strong class="warn">Slash overturned by a signed human decision: bond refunded, it no longer counts against the supplier</strong>', human: '<strong class="warn">The panel did not confirm the slash: a named approver decides, signed</strong>', pending: 'Pending' }[a.outcome] ?? esc(a.outcome);
   return `<h2>Appeal</h2><div class="card">
     <p class="kv">The supplier appealed (signed with its key):</p><pre>${esc(a.reason)}</pre>
     <p style="margin-top:12px">${label}${a.audit?.score != null ? ` <span class="kv">· independent Reppo panel: ${esc(a.audit.route)} ${esc(a.audit.score)}</span>` : ''}</p>
