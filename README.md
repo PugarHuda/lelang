@@ -42,6 +42,7 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 | Static analysis (Slither 0.11.6, 102 detectors) | 0 high, 0 medium. 6 informational: 5 `timestamp` (deadlines are hours long, validator clock drift is seconds) and `settle` complexity (it does refunds, slashes and payment in one tx on purpose) | `npm run slither` |
 | Escrow contract on Kite testnet | 13 forbidden paths revert (double commit, buyer bidding, early reveal, wrong salt or document, early settle, non-buyer settle, slashing the winner, slash without evidence, unknown winner, early withdraw, double settle); happy path refunds the bond | `npm run test:escrow` |
 | Slash accountability | the dashboard itself re-checks the settled tender in your browser against the Kite RPC (no trust in our JSON); anyone recomputes `keccak(quote)` and `keccak(document)` from the published tender and matches them to the on-chain settle event and escrow state | `npm run verify` |
+| Public pages (Playwright, desktop + mobile, in CI) | every recorded tender renders and its in-browser chain check never mismatches; rapid tab switching never shows one tender's proof under another; each slash proof page matches Kite, and **a doctored quote or document is caught** (✗) | `npm run test:e2e` |
 | Open Contracting Data Standard | every tender exports a valid OCDS 1.1.5 release package (+ official Bids extension); a deliberately broken release is rejected | `npm run ocds:validate` |
 | Offline logic | sealing, signatures, hard rules, scoring formula, double-approve lock, strictest-audit gate, datamarking | `npm test` |
 
@@ -66,6 +67,7 @@ What this shows, including the parts that don't flatter us:
 
 ## Safety rules learned while building
 
+- **Every slash has a public proof page** (`slash.html?t=<tender>&b=<bid>`, linked from the dashboard): the hidden text highlighted in the revealed document, and a button that hashes both in your browser and compares them with the slash event and escrow storage on Kite.
 - **Two independent readers.** Dolphin reads every bid's terms and SERV reads them again with its own spotlight marker; if price, delivery, warranty or specs differ, the bid can't win automatically. One fooled model is not enough to win a tender. On the 9 real bids so far (incl. numeric poisoning) both read identical terms, so it costs no false alarms.
 - **Reputation lives on-chain.** Before a bid is evaluated, the escrow's own `BondSlashed` events are read for that address. A bidder slashed before *with evidence* can still bid (the new bid may be clean) but can't win automatically; a human looks first. Unrevealed-bid slashes don't count, an unreadable history fails closed, and only tenders opened by a trusted buyer count: the escrow is permissionless, so anyone could open a tender and slash its bidders with a made-up hash to frame them. No database, no operator list: anyone can recompute it from the chain.
 - **Proof before punishment.** A bond is slashed only when the manipulation check quotes text that code finds in the document the model saw; the quote's hash goes on-chain with the slash.

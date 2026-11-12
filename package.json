@@ -19,6 +19,7 @@
     "tender:agents": "node --env-file=.env scripts/multi-agent-tender.js",
     "bench:reppo": "node --env-file=.env scripts/reppo-bench.js",
     "test:contracts": "hardhat test",
+    "test:e2e": "playwright test",
     "coverage": "hardhat coverage",
     "slither": "hardhat compile && slither . --hardhat-ignore-compile --hardhat-artifacts-directory hh-artifacts --filter-paths \"node_modules|contracts/test\""
   },
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@openzeppelin/contracts": "^5.1.0",
+    "@playwright/test": "^1.56.1",
     "ajv-draft-04": "^1.0.0",
     "ajv-formats": "^3.0.1",
     "hardhat": "^2.29.2",

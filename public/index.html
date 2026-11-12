@@ -49,13 +49,13 @@
         <span class="pill">Kite: sealed commits, bonds, settlement</span>
         <span class="pill">SERV: Prompt Guard, Kronos, Shadow Agent</span>
         <span class="pill">Decision nodes: manipulation check, award choice</span>
-        <span class="pill">Dolphin: bid reading (key active, waiting on credits; SERV reads bids meanwhile)</span>
+        <span class="pill">Dolphin: reads every bid; SERV re-reads to cross-check</span>
         <span class="pill">Reppo: independent audit</span>
       </div>
     </div>
     <button id="run">Run demo tender</button>
   </header>
-  <p id="note" class="kv" hidden>Recorded tender from a real run on Kite testnet: every <em>tx</em> link opens the on-chain transaction. Clone the repo and run <code>npm start</code> to run a live tender.</p>
+  <p id="note" class="kv" hidden>Recorded tenders from real runs on Kite testnet: every <em>tx</em> link opens the on-chain transaction. Clone the repo and run <code>npm start</code> to run a live tender.</p>
   <nav id="tenders" class="tabs" aria-label="Recorded tenders" hidden></nav>
   <div id="view"><p class="mute">No tender yet. Run the demo.</p></div>
 </main>
@@ -75,6 +75,7 @@ function bidCard(b, rfq) {
     <h3>${esc(b.label)}</h3>${status}
     ${t ? `<div class="kv">$${esc(t.total_usd)} · ${esc(t.delivery_days)}d · ${esc(t.warranty_months)}mo<br>${esc(t.specs?.ram_gb)}GB RAM · ${esc(t.specs?.storage_gb)}GB · ${esc(t.specs?.battery_hours)}h</div>` : ''}
     ${b.disqualified ? `<div class="kv bad">${esc(b.disqualified)}</div>` : ''}
+    ${b.slash && staticMode && rfq.phase === 'settled' ? `<div class="kv"><a href="slash.html?t=${encodeURIComponent(rfq.id)}&b=${encodeURIComponent(b.label)}">proof page: verify this slash yourself →</a></div>` : ''}
     ${b.evidence ? `<details class="kv"><summary>evidence</summary><pre>${esc(b.evidence)}</pre>${b.evidenceHash ? `keccak256 on-chain: <code>${esc(b.evidenceHash.slice(0, 18))}…</code>` : ''}</details>` : ''}
     ${b.review ? `<div class="kv warn">review: ${esc(b.review)}</div>` : ''}
     ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
@@ -168,52 +169,13 @@ async function approveHeld(id) {
 tick(); setInterval(tick, 2000);
 </script>
 <script type="module">
-// Independent check, run in the visitor's browser against the Kite RPC: nothing here trusts tender.json.
-// It recomputes keccak256 of every published slash quote and revealed document and compares them with the
-// settle transaction's events and the escrow contract's storage.
-import { createPublicClient, http, defineChain, parseEventLogs, keccak256, toHex } from 'https://cdn.jsdelivr.net/npm/viem@2.57.18/+esm';
-
-const kite = defineChain({ id: 2368, name: 'KiteAI Testnet', nativeCurrency: { name: 'KITE', symbol: 'KITE', decimals: 18 }, rpcUrls: { default: { http: ['https://rpc-testnet.gokite.ai'] } } });
-const client = createPublicClient({ chain: kite, transport: http(undefined, { timeout: 15_000, retryCount: 2 }) });
+import { checkTender, esc } from './verify.js';
 const cache = new Map();
-const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const norm = (s) => s.replace(/\s+/g, ' ').trim();
-
-async function check(rfq) {
-  const { abi } = await (await fetch('deployment.json')).json();
-  const settleTx = rfq.settlement.find((s) => s.tx)?.tx.split('/tx/')[1];
-  const rows = [];
-  const add = (ok, text) => rows.push({ ok, text });
-  const [rcpt, code, block] = await Promise.all([
-    client.getTransactionReceipt({ hash: settleTx }),
-    client.getCode({ address: rfq.escrow }),
-    client.getBlockNumber(),
-  ]);
-  add(rcpt.status === 'success' && rcpt.to?.toLowerCase() === rfq.escrow.toLowerCase(), `Settle tx succeeded and was sent to the escrow contract (block ${rcpt.blockNumber})`);
-  add(Boolean(code && code !== '0x'), 'Escrow address holds deployed contract code');
-  const logs = parseEventLogs({ abi, logs: rcpt.logs }).filter((l) => l.args.id === BigInt(rfq.chainId));
-  const bySupplier = (a) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === a.toLowerCase());
-  for (const l of logs.filter((x) => x.eventName === 'BondSlashed')) {
-    const bid = bySupplier(l.args.bidder);
-    const [, docHash] = await client.readContract({ address: rfq.escrow, abi, functionName: 'bids', args: [BigInt(rfq.chainId), l.args.bidder] });
-    const evidenceOk = keccak256(toHex(bid.evidence ?? bid.disqualified)) === l.args.evidenceHash;
-    const docOk = keccak256(toHex(bid.doc)) === docHash;
-    const quoteInDoc = !bid.evidence || norm(bid.doc).includes(norm(bid.evidence).slice(0, 80));
-    add(evidenceOk && docOk && quoteInDoc, `${bid.label} slash: keccak(published quote) = on-chain evidence ${l.args.evidenceHash.slice(0, 10)}…, revealed document hash matches escrow storage, quote appears in the document`);
-  }
-  const refunded = logs.filter((x) => x.eventName === 'BondRefunded').map((x) => bySupplier(x.args.bidder)?.label).sort();
-  const expected = Object.values(rfq.bids).filter((b) => !b.slash).map((b) => b.label).sort();
-  add(JSON.stringify(refunded) === JSON.stringify(expected), `Bonds refunded on-chain to exactly the compliant bids: ${refunded.join(', ')}`);
-  const award = logs.find((x) => x.eventName === 'Awarded');
-  add(award && bySupplier(award.args.winner)?.label === rfq.award.winner, `Awarded event pays ${rfq.award.winner}`);
-  return { rows, block };
-}
-
 window.verifyOnChain = async (rfq) => {
   const el = () => document.querySelector('#proof');
   const key = `${rfq.id}:${rfq.settlement?.length}`;
   try {
-    if (!cache.has(key)) cache.set(key, check(rfq));
+    if (!cache.has(key)) cache.set(key, checkTender(rfq));
     const { rows, block } = await cache.get(key);
     const all = rows.every((r) => r.ok);
     // the visitor may have switched tenders while the RPC answered: never show one tender's proof under another

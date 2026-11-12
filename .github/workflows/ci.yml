@@ -11,3 +11,12 @@ jobs:
       - run: npm test                 # offline logic + external-agent protocol over HTTP
       - run: npx hardhat test         # escrow unit + fuzz tests
       - run: npm run ocds:validate    # published tenders against the official OCDS schema
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test   # dashboard + slash proof pages, desktop and mobile, against the live Kite RPC

@@ -7,3 +7,5 @@ hh-artifacts/
 hh-cache/
 coverage/
 coverage.json
+test-results/
+playwright-report/
