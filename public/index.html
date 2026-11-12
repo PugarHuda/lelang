@@ -70,8 +70,11 @@ function bidCard(b, rfq) {
     <h3>${esc(b.label)}</h3>${status}
     ${t ? `<div class="kv">$${esc(t.total_usd)} · ${esc(t.delivery_days)}d · ${esc(t.warranty_months)}mo<br>${esc(t.specs?.ram_gb)}GB RAM · ${esc(t.specs?.storage_gb)}GB · ${esc(t.specs?.battery_hours)}h</div>` : ''}
     ${b.disqualified ? `<div class="kv bad">${esc(b.disqualified)}</div>` : ''}
+    ${b.evidence ? `<details class="kv"><summary>evidence</summary><pre>${esc(b.evidence)}</pre>${b.evidenceHash ? `keccak256 on-chain: <code>${esc(b.evidenceHash.slice(0, 18))}…</code>` : ''}</details>` : ''}
+    ${b.review ? `<div class="kv warn">review: ${esc(b.review)}</div>` : ''}
     ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
-    ${b.bondTx ? `<div class="kv"><a href="https://testnet.kitescan.ai/tx/${b.bondTx}" target="_blank">bond tx</a></div>` : ''}
+    <div class="kv">${b.bondTx ? `<a href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
+      ${b.revealTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(b.revealTx)}" target="_blank">reveal tx</a>` : ''}</div>
   </div>`;
 }
 
@@ -82,7 +85,9 @@ function render(rfq) {
     <h2>Tender · ${esc(rfq.phase)}</h2>
     <div class="card"><strong>${esc(rfq.title)}</strong>
       <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
-      ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${rfq.anchorTx}" target="_blank">sealed commits on Kite</a>` : ''}</div></div>
+      ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(rfq.anchorTx)}" target="_blank">${rfq.chainId ? 'commits closed on-chain' : 'sealed commits on Kite'}</a>` : ''}
+      ${rfq.escrow ? ` · bonds held by <a href="https://testnet.kitescan.ai/address/${esc(rfq.escrow)}" target="_blank">escrow contract</a> (tender #${esc(rfq.chainId)})` : ''}
+      · <a id="ocds" href="${staticMode ? 'ocds.json' : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
     <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
     ${rfq.award ? `<h2>Decision</h2><div class="card">
       <strong class="${rfq.award.decision === 'award' ? 'ok' : 'warn'}">${esc(rfq.award.decision?.toUpperCase())} ${esc(rfq.award.winner ?? '')}</strong>
@@ -90,7 +95,9 @@ function render(rfq) {
       ${rfq.award.rationale ? `<pre style="margin-top:10px">${esc(rfq.award.rationale)}</pre>` : ''}</div>` : ''}
     ${r ? `<h2>Independent audit (Reppo)</h2><div class="card">
       <strong class="${r.route === 'ship' ? 'ok' : r.route === 'block' ? 'bad' : 'warn'}">${esc(r.route ?? r.status)}</strong>
-      <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p></div>` : ''}
+      <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p>
+      ${(r.rounds?.length ?? 0) > 1 ? `<p class="kv"><strong>Repair loop:</strong> ${r.rounds.map((x) => `${esc(x.label)}: ${esc(x.route ?? x.status)} ${esc(x.score ?? '')}`).join(' → ')}</p>` : ''}</div>` : ''}
+    ${rfq.settlement?.length ? `<h2>Settlement</h2><div class="card"><ol>${rfq.settlement.map((s) => `<li><span class="t"></span><span class="s">${esc(s.event ?? 'transfer')}</span><span>${esc(s.label ?? s.why ?? '')} ${esc(s.amount)}${s.tx ? ` <a href="${esc(s.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>` : ''}
     ${rfq.phase === 'held' && rfq.award?.winner ? `<h2>Human review</h2><div class="card">
       <p class="kv">Money is held. A reviewer can release the award to ${esc(rfq.award.winner)}; their name goes into the trace.</p>
       <button onclick="approveHeld('${esc(rfq.id)}')">Approve ${esc(rfq.award.winner)} and settle</button></div>` : ''}

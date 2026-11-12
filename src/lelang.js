@@ -198,7 +198,7 @@ export async function evaluate(rfqId) {
     ? `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), matching the published formula`
     : `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), formula says ${formulaWinner}: escalated to a human`, { probabilities: w.probabilities });
 
-  rfq.award.rationale = await writeRationale({
+  const rationaleContext = {
     tender: rfq.title, weights: rfq.weights, budgetCapUsd: rfq.budgetCapUsd, maxDeliveryDays: rfq.maxDeliveryDays, minSpecs: rfq.minSpecs,
     scoringFormula: FORMULA,
     weightedScores: scores,
@@ -207,25 +207,46 @@ export async function evaluate(rfqId) {
     escalationReasons: decision === 'escalate'
       ? [!agree && `decision node chose ${w.choice} but formula ranks ${formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, confidence < rfq.minConfidence && `confidence ${confidence.toFixed(2)} below ${rfq.minConfidence}`].filter(Boolean)
       : [],
-  });
+  };
+  rfq.award.rationale = await writeRationale(rationaleContext);
   log(rfq, 'rationale', 'Award rationale written by SERV (Kronos + Shadow Agent checked)');
 
   if (reppoEnabled()) {
-    const input =
+    const input = (rationale) =>
       `User request: run a sealed-bid tender for "${rfq.title}" and award it fairly under published weights ${JSON.stringify(rfq.weights)}, ` +
       `budget cap $${rfq.budgetCapUsd}, max delivery ${rfq.maxDeliveryDays} days, minimum specs ${JSON.stringify(rfq.minSpecs)}. ` +
       `Bids that try to manipulate the evaluator must be disqualified. Published scoring rule: ${FORMULA}. ` +
-      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human.\n\nAgent action: ${decision.toUpperCase()} ${w.choice}.\n\nRationale:\n${rfq.award.rationale}`;
-    // FAILED evaluations are free, so retry a few times before giving up (settlement then stays held).
-    let ev, id;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      id = await submitEval(input, 'action');
-      log(rfq, 'reppo', `Independent Reppo audit submitted (${id}, attempt ${attempt}), panel scoring takes 30-90s`);
-      ev = await waitEval(id);
-      if (ev.status === 'COMPLETED') break;
-      await new Promise((r) => setTimeout(r, 10_000 * attempt));
+      // Facts about what this action actually does with money, so the panel can judge safety and reversibility.
+      `What the action triggers: ${rfq.chainId
+        ? `bonds are held by an escrow smart contract on Kite testnet (tender #${rfq.chainId}); settling refunds every compliant bidder's bond, ` +
+          `slashes only bonds whose evidence hash is recorded on-chain, and pays a down payment of ${rfq.depositPie} USDT to the winner; ` +
+          `bidders can reclaim their bonds from the contract themselves if the buyer never settles. `
+        : `the buyer refunds compliant bonds and pays a down payment of ${rfq.depositPie} to the winner. `}` +
+      `Nothing is paid unless this audit routes "ship" or a named human reviewer approves. ` +
+      `Policy: award automatically only when an independent decision node and the published formula pick the same bid with confidence >= ${rfq.minConfidence} and no bid is under review; otherwise escalate to a human.
+
+Agent action: ${decision.toUpperCase()} ${w.choice}.
+
+Rationale:
+${rationale}`;
+    const rounds = [];
+    let ev = await audit(rfq, input(rfq.award.rationale), 1);
+    rounds.push(round(ev, 'original rationale'));
+
+    // Repair loop (Reppo track: "turn real-time feedback into measurable improvement"): when the panel doesn't ship an
+    // award, its own reason is fed back to SERV (writer + Shadow Agent hint), the rationale is rewritten without touching
+    // the decision or numbers, and the panel audits again. Both scores are kept, so the improvement is measured, not claimed.
+    if (decision === 'award' && ev.status === 'COMPLETED' && ev.result.route !== 'ship') {
+      log(rfq, 'repair', `Reppo said ${ev.result.route} (${ev.result.score}); SERV rewrites the rationale against the panel's reason and resubmits`);
+      const revised = await writeRationale(rationaleContext, ev.result.reason);
+      const ev2 = await audit(rfq, input(revised), 2);
+      rounds.push(round(ev2, 'revised with Reppo feedback'));
+      if (ev2.status === 'COMPLETED') {
+        log(rfq, 'repair', `Audit score ${ev.result.score} -> ${ev2.result.score} (${ev.result.route} -> ${ev2.result.route})`);
+        if (ev2.result.score >= ev.result.score) { rfq.award.rationale = revised; ev = ev2; }
+      }
     }
-    rfq.reppo = { id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason };
+    rfq.reppo = { ...round(ev), rounds };
     log(rfq, 'reppo', `Reppo verdict: ${ev.result?.route ?? ev.status} (score ${ev.result?.score ?? '-'})`, { reason: ev.result?.reason });
   }
 
@@ -233,6 +254,20 @@ export async function evaluate(rfqId) {
   save();
   return rfq;
 }
+
+// FAILED evaluations are free, so retry a few times before giving up (settlement then stays held).
+async function audit(rfq, input, roundNo) {
+  let ev;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const id = await submitEval(input, 'action');
+    log(rfq, 'reppo', `Independent Reppo audit, round ${roundNo} (${id}, attempt ${attempt}): panel scoring takes 30-90s`);
+    ev = { ...(await waitEval(id)), id };
+    if (ev.status === 'COMPLETED') break;
+    await new Promise((r) => setTimeout(r, 10_000 * attempt));
+  }
+  return ev;
+}
+const round = (ev, label) => ({ id: ev.id, status: ev.status, score: ev.result?.score, route: ev.result?.route, reason: ev.result?.reason, ...(label && { label }) });
 
 // Money moves only when the award is confident AND the independent audit says ship.
 export async function settle(rfqId) {

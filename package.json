@@ -13,7 +13,9 @@
     "compile": "node scripts/compile.js",
     "deploy:escrow": "node --env-file=.env scripts/deploy-escrow.js",
     "test:escrow": "node --env-file=.env scripts/escrow-test.js",
-    "redteam": "node --env-file=.env scripts/redteam.js"
+    "redteam": "node --env-file=.env scripts/redteam.js",
+    "ocds:validate": "node scripts/ocds-validate.js",
+    "verify": "node scripts/verify-slash.js"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +26,8 @@
     "viem": "^2.57.18"
   },
   "devDependencies": {
+    "ajv-draft-04": "^1.0.0",
+    "ajv-formats": "^3.0.1",
     "solc": "^0.8.28"
   }
 }

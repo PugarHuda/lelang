@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
-import { listRfqs, getRfq, approve } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress } from './lelang.js';
+import { toOcds } from './ocds.js';
 import { runDemo } from './demo.js';
 
 const html = readFileSync(new URL('../public/index.html', import.meta.url));
@@ -16,6 +17,11 @@ createServer(async (req, res) => {
   try {
     if (url.pathname === '/') return res.writeHead(200, { 'content-type': 'text/html' }).end(html);
     if (url.pathname === '/api/rfqs') return json(res, 200, { running, rfqs: listRfqs().reverse() });
+    const o = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/ocds$/);
+    if (o) {
+      const rfq = getRfq(o[1]);
+      return rfq ? json(res, 200, toOcds(rfq, { buyer: buyerAddress() })) : json(res, 404, { error: 'not found' });
+    }
     const m = url.pathname.match(/^\/api\/rfqs\/([\w-]+)$/);
     if (m) {
       const rfq = getRfq(m[1]);

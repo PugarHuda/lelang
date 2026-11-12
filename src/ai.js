@@ -96,7 +96,9 @@ export async function findManipulation(doc) {
   );
   const evidence = unmark(out.evidence, s.marker);
   const norm = (x) => x.normalize('NFKC').replace(/[\p{Cf}\p{Mn}]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
-  const verified = evidence.trim().length >= 12 && norm(doc).includes(norm(evidence));
+  // Verify against exactly what the model saw (markers back to spaces), so a document that plants marker
+  // characters can't make a real quote fail verification and dodge the slash.
+  const verified = evidence.trim().length >= 12 && norm(unmark(s.text, s.marker)).includes(norm(evidence));
   return { engine: ENGINE, p: Math.min(1, Math.max(0, out.probability)), evidence, verified };
 }
 
@@ -155,7 +157,11 @@ export async function extractBid(doc) {
 }
 
 // --- 4. Award rationale, checked by SERV Shadow Agent -----------------------------
-export async function writeRationale(context) {
+// `feedback` is an independent auditor's (Reppo) critique of a previous draft; it steers both the writer and SERV's
+// Shadow Agent, so the revision is checked against exactly what the auditor objected to.
+export async function writeRationale(context, feedback) {
+  const BASE_HINT =
+    'Must cite each weighted criterion with numbers, must never name a supplier, must explain each disqualification with its given reason, and the final line must match the given decision (award or escalate) exactly.';
   const r = await serv.chat.completions.create({
     ...NO_CACHE,
     model: `${SERV_MODEL}-serv-kronos`,
@@ -166,7 +172,8 @@ export async function writeRationale(context) {
           'You write the award rationale for a sealed-bid public tender. Refer to bids only by their anonymous label. ' +
           'Justify the ranking criterion by criterion with the numbers given and explain every disqualification using its stated reason. ' +
           'If decision is "escalate", do NOT award: say the leading bid, list the escalationReasons, and state that a human must decide. ' +
-          'End with one line that states exactly the given decision.',
+          'End with one line that states exactly the given decision.' +
+          (feedback ? ` An independent audit panel reviewed your previous draft and said: "${feedback}". Address each point that concerns the rationale itself, using only facts already in the input; do not add claims, procedures or scope that are not in the input, and do not change the decision or the numbers.` : ''),
       },
       { role: 'user', content: JSON.stringify(context) },
     ],
@@ -176,8 +183,7 @@ export async function writeRationale(context) {
         properties: {
           hint: {
             type: 'string',
-            default:
-              'Must cite each weighted criterion with numbers, must never name a supplier, must explain each disqualification with its given reason, and the final line must match the given decision (award or escalate) exactly.',
+            default: feedback ? `${BASE_HINT} It must also resolve this independent audit feedback: ${feedback}` : BASE_HINT,
           },
           max_iterations: { type: 'integer', default: 3 },
         },
