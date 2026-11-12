@@ -126,7 +126,14 @@ export async function slashHistory(bidder) {
   const logs = await pub.getContractEvents({
     address: ESCROW(), abi: ESCROW_ABI, eventName: 'BondSlashed', args: { bidder }, fromBlock: BigInt(deployment?.escrow.block ?? 0),
   });
-  return logs.map((l) => ({ tender: l.args.id.toString(), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
+  // The escrow is permissionless and doesn't check what an evidence hash proves, so the caller must decide whose
+  // slashes to trust: each entry carries the buyer that opened (and therefore settled) that tender.
+  const buyers = new Map();
+  for (const id of new Set(logs.map((l) => l.args.id))) {
+    const [buyer] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [id] });
+    buyers.set(id, buyer);
+  }
+  return logs.map((l) => ({ tender: l.args.id.toString(), buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
 }
 
 export const escrowAddress = () => ESCROW();

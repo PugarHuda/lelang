@@ -34,8 +34,12 @@ export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
 const fail = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
 // 0 -> A, 25 -> Z, 26 -> AA (spreadsheet-style, so labels never run out)
 export const bidLabel = (i) => (i >= 26 ? bidLabel(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + (i % 26));
-// Only evidence-backed slashes in other tenders count against a bidder.
-export const provenPriors = (history, chainId) => history.filter((h) => h.proven && String(h.tender) !== String(chainId));
+// Only evidence-backed slashes in other tenders run by a trusted buyer count against a bidder: anyone can open a
+// tender on the permissionless escrow and slash its bidders with a made-up hash, so foreign slashes are ignored.
+export const provenPriors = (history, chainId, trustedBuyers) => {
+  const trusted = new Set(trustedBuyers.filter(Boolean).map((a) => a.toLowerCase()));
+  return history.filter((h) => h.proven && String(h.tender) !== String(chainId) && trusted.has(String(h.buyer).toLowerCase()));
+};
 export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
 
 export async function createRfq(spec) {
@@ -195,7 +199,7 @@ export async function evaluate(rfqId) {
     if (rfq.chainId) {
       let priors;
       try {
-        priors = provenPriors(await slashHistory(bid.supplier), rfq.chainId);
+        priors = provenPriors(await slashHistory(bid.supplier), rfq.chainId, [buyerAddress()]);
       } catch (e) {
         // fail closed: an unreadable history must not let a repeat offender win automatically
         bid.review = `reputation check failed (${e.shortMessage ?? e.message}): a human should look`;

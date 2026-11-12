@@ -98,9 +98,11 @@ assert.equal(strictestRound([{ status: 'FAILED' }]), null);
 assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB', 'AZ', 'BA', 'CV']);
 // reputation: only proven slashes from other tenders count
 {
-  const h = [{ tender: '4', proven: true }, { tender: '5', proven: false }, { tender: '7', proven: true }];
-  assert.deepEqual(provenPriors(h, '7').map((x) => x.tender), ['4']);
-  assert.deepEqual(provenPriors(h, 7).map((x) => x.tender), ['4']);
-  assert.deepEqual(provenPriors([{ tender: '5', proven: false }], '9'), []);
+  const us = '0x1111111111111111111111111111111111111111', stranger = '0x2222222222222222222222222222222222222222';
+  const h = [{ tender: '4', proven: true, buyer: us }, { tender: '5', proven: false, buyer: us }, { tender: '7', proven: true, buyer: us },
+    { tender: '8', proven: true, buyer: stranger }]; // a stranger's tender can't frame a bidder
+  assert.deepEqual(provenPriors(h, '7', [us.toUpperCase().replace('0X', '0x')]).map((x) => x.tender), ['4']);
+  assert.deepEqual(provenPriors(h, 7, [us]).map((x) => x.tender), ['4']);
+  assert.deepEqual(provenPriors(h, '9', [undefined]), []);
 }
 console.log('selftest OK');
