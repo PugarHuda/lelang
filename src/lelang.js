@@ -203,10 +203,10 @@ export async function settle(rfqId) {
   const pay = async (to, amount, why) => {
     const tx = kiteEnabled() ? await transferPie(process.env.BUYER_PRIVATE_KEY, to, amount) : null;
     rfq.settlement.push({ to, amount, why, tx: tx && explorerTx(tx) });
-    log(rfq, 'settle', `${why}: ${amount} pieUSD${tx ? '' : ' (Kite not configured, so no transfer was made)'}`, tx && { tx: explorerTx(tx) });
+    log(rfq, 'settle', `${why}: ${amount}${tx ? '' : ' (Kite not configured, so no transfer was made)'}`, tx && { tx: explorerTx(tx) });
   };
   for (const b of Object.values(rfq.bids)) {
-    if (b.slash) { log(rfq, 'settle', `${b.label} bond (${rfq.bondPie} pieUSD) slashed and kept by the buyer`); continue; }
+    if (b.slash) { log(rfq, 'settle', `${b.label} bond (${rfq.bondPie}) slashed and kept by the buyer`); continue; }
     await pay(b.supplier, rfq.bondPie, `${b.label} bond refunded`);
   }
   const win = rfq.bids[rfq.award.winner];

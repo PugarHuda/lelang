@@ -13,7 +13,7 @@ if (!pk) {
 }
 const buyer = privateKeyToAccount(pk).address;
 console.log(`buyer   ${buyer}`, await balances(buyer));
-console.log('Fund the buyer at https://faucet.gokite.ai (KITE for gas + pieUSD).\n');
+console.log('Fund the buyer at https://faucet.gokite.ai (KITE for gas + USDT or pieUSD; set STABLE_TOKEN for USDT).\n');
 for (const [i, s] of demoWallets().suppliers.entries()) {
   const a = privateKeyToAccount(s).address;
   console.log(`supplier ${i + 1} ${a}`, await balances(a));

@@ -1,4 +1,4 @@
-// Kite testnet: commit anchoring, bonds and settlement in pieUSD.
+// Kite testnet: commit anchoring, bonds and settlement in a stablecoin.
 import { createPublicClient, createWalletClient, defineChain, http, parseUnits, formatUnits, erc20Abi, toHex, concat } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
@@ -10,8 +10,16 @@ export const kiteTestnet = defineChain({
   blockExplorers: { default: { name: 'KiteScan', url: 'https://testnet.kitescan.ai' } },
 });
 
-export const PIEUSD = '0x38129cf4CE5E183eFF248F42A7D345Bb1B47621A';
-const DECIMALS = 18;
+// Stablecoin used for bonds and payments. Defaults to pieUSD; set STABLE_TOKEN to e.g. the faucet's USDT.
+export const TOKEN = process.env.STABLE_TOKEN || '0x38129cf4CE5E183eFF248F42A7D345Bb1B47621A';
+let tokenMeta;
+export async function tokenInfo() {
+  tokenMeta ??= await Promise.all([
+    pub.readContract({ address: TOKEN, abi: erc20Abi, functionName: 'decimals' }),
+    pub.readContract({ address: TOKEN, abi: erc20Abi, functionName: 'symbol' }),
+  ]).then(([decimals, symbol]) => ({ decimals, symbol }));
+  return tokenMeta;
+}
 export const explorerTx = (hash) => `${kiteTestnet.blockExplorers.default.url}/tx/${hash}`;
 
 const pub = createPublicClient({ chain: kiteTestnet, transport: http() });
@@ -36,7 +44,8 @@ export async function anchorCommits(rfqId, hashes) {
 
 export async function transferPie(fromPk, to, amount) {
   const w = wallet(fromPk);
-  const hash = await w.writeContract({ address: PIEUSD, abi: erc20Abi, functionName: 'transfer', args: [to, parseUnits(String(amount), DECIMALS)] });
+  const { decimals } = await tokenInfo();
+  const hash = await w.writeContract({ address: TOKEN, abi: erc20Abi, functionName: 'transfer', args: [to, parseUnits(String(amount), decimals)] });
   return confirm(hash);
 }
 
@@ -46,9 +55,10 @@ export async function sendGas(fromPk, to, amountKite) {
 }
 
 export async function balances(address) {
-  const [kite, pie] = await Promise.all([
+  const [kite, bal, { decimals, symbol }] = await Promise.all([
     pub.getBalance({ address }),
-    pub.readContract({ address: PIEUSD, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
+    pub.readContract({ address: TOKEN, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
+    tokenInfo(),
   ]);
-  return { kite: formatUnits(kite, 18), pieUSD: formatUnits(pie, DECIMALS) };
+  return { kite: formatUnits(kite, 18), [symbol]: formatUnits(bal, decimals) };
 }
