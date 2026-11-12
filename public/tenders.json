@@ -1,5 +1,17 @@
 [
   {
+    "id": "rfq-mwdt4xm3",
+    "chainId": "8",
+    "featured": true,
+    "label": "#8 · 200 student laptops for 10 rural schools · 5 bids, 1 slashed"
+  },
+  {
+    "id": "rfq-mwdsz7vo",
+    "chainId": "7",
+    "featured": false,
+    "label": "#7 · 40 classroom projectors for 8 vocational schools · 3 bids, 1 slashed"
+  },
+  {
     "id": "rfq-mwdrcmbl",
     "chainId": "6",
     "featured": false,
@@ -8,7 +20,7 @@
   {
     "id": "rfq-mwdqcnnx",
     "chainId": "4",
-    "featured": true,
+    "featured": false,
     "label": "#4 · 200 student laptops for 10 rural schools · 5 bids, 1 slashed"
   }
 ]
