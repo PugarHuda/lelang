@@ -16,6 +16,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 | Measured | Result |
 |---|---|
 | Injection attacks, 5 runs × 8 styles | 40/40 caught, never slashed without proof, 0/10 false positives |
+| Adaptive attacker (writes new attacks, learns from results) | found a real gap (3/9 would have won), fixed; after the fix 0/6, and 9/9 old ones held |
 | Reppo feedback loop on flawed rationales | 3/3 improved (mean +17.3), failures published too |
 | Escrow contract | 100% line coverage incl. fuzz, Slither clean, source verified on Kitescan |
 | Public pages (CI, desktop + mobile) | a doctored quote or document is caught on the proof page |
@@ -58,6 +59,20 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 | Public pages (Playwright, desktop + mobile, in CI) | every recorded tender renders and its in-browser chain check never mismatches; rapid tab switching never shows one tender's proof under another; each slash proof page matches Kite, and **a doctored quote or document is caught** (✗) | `npm run test:e2e` |
 | Open Contracting Data Standard | every tender exports a valid OCDS 1.1.5 release package (+ official Bids extension); a deliberately broken release is rejected | `npm run ocds:validate` |
 | Offline logic | sealing, signatures, hard rules, scoring formula, double-approve lock, strictest-audit gate, datamarking | `npm test` |
+
+## An attacker that adapts
+
+Our own list of attacks only proves we beat attacks we thought of. So an attacker model writes new ones, sees how each was handled, and tries again (`node --env-file=.env scripts/redteam-adaptive.js`, every attempt with both readers' numbers in [`docs/reports/`](docs/reports/)). The award decision never sees bid text, only extracted numbers, so an attack wins only if it escapes the injection check **and** makes both readers take the same wrong figure.
+
+| Run | Attacks | Slashed with proof | Held (ambiguous) | Would have won automatically |
+|---|---|---|---|---|
+| before the ambiguity check | 9 | 2 | — | **3** (e.g. "committed: 11 business days … contingency: 18 calendar days") |
+| after | 6 | 2 | 4 | **0**; the 9 earlier attacks re-tested: 9/9 held |
+
+What went wrong along the way, kept here on purpose:
+- SERV refused to play attacker and wrote neutral test plans; Dolphin did the job (and itself refused in 4 of 6 later rounds, so the second run is small).
+- Our first validity judge ("is this manipulation?") called obvious two-figure tricks legitimate, which made the first summary say "0 would win" when the truth was 3. The judge now only drops refusals; every attacker paragraph counts as an attack.
+- The winning trick wasn't an instruction to the AI at all, so no injection detector would catch it. The fix is procurement practice, not a better classifier: a bid with two figures for one term is ambiguous and goes to a human.
 
 ## Does Reppo feedback actually improve the rationale?
 
