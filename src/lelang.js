@@ -1,10 +1,13 @@
 // Lelang: sealed-bid tender between agents.
 // commit (signed hash + bond) -> anchor on Kite -> reveal -> guard -> extract -> rules -> award -> Reppo audit -> settle
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { keccak256, toHex, verifyMessage } from 'viem';
+import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { promptGuard, findManipulation, choice, extractBid, writeRationale } from './ai.js';
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
-import { anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx } from './kite.js';
+import {
+  anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
+  escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress,
+} from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
 mkdirSync('data', { recursive: true });
@@ -20,46 +23,73 @@ function log(rfq, step, msg, data) {
   console.log(`[${rfq.id}] ${step}: ${msg}`);
 }
 
-export const commitHash = (doc, salt) => keccak256(toHex(`${doc}\n--salt:${salt}`));
+// The commitment binds document, salt, bidder and tender, exactly as LelangEscrow.commitmentOf does,
+// so a bidder can neither change its document nor copy someone else's commitment.
+export const docHashOf = (doc) => keccak256(toHex(doc));
+export const commitHash = (doc, salt, bidder, chainId = 0) =>
+  keccak256(encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256'), [docHashOf(doc), salt, bidder, BigInt(chainId)]));
 export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
 
-export function createRfq(spec) {
+export async function createRfq(spec) {
   const id = `rfq-${Date.now().toString(36)}`;
   const rfq = { id, createdAt: new Date().toISOString(), phase: 'commit', bids: {}, events: [], ...spec };
   db.rfqs[id] = rfq;
-  log(rfq, 'rfq', `Tender opened: ${spec.title}`);
+  if (escrowEnabled()) {
+    const { chainId, tx } = await escrowOpen(spec.bondPie);
+    Object.assign(rfq, { chainId, escrow: escrowAddress() });
+    log(rfq, 'rfq', `Tender opened: ${spec.title} (escrow tender #${chainId} on Kite)`, { tx: explorerTx(tx) });
+  } else {
+    log(rfq, 'rfq', `Tender opened: ${spec.title}`);
+  }
   return rfq;
 }
 
+// On-chain mode: the bidder's own commit transaction is its authentication, so we read it back from the escrow.
+// Off-chain mode: an EIP-191 signature over the commitment stands in for it.
 export async function submitCommit(rfqId, { supplier, hash, signature, bondTx }) {
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'commit') throw new Error('commit phase closed');
-  const ok = await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature });
-  if (!ok) throw new Error('bad commit signature');
+  if (rfq.chainId) {
+    const onChain = await escrowBid(rfq.chainId, supplier);
+    if (onChain.commitment !== hash) throw new Error('commitment not found in escrow');
+  } else if (!(await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature }))) {
+    throw new Error('bad commit signature');
+  }
   const label = `Bid ${String.fromCharCode(65 + Object.keys(rfq.bids).length)}`;
   rfq.bids[label] = { label, supplier, hash, signature, bondTx };
-  log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ' and posted its bond' : ''}`, { hash, bondTx });
+  log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ` and locked its bond${rfq.chainId ? ' in escrow' : ''}` : ''}`, bondTx && { tx: explorerTx(bondTx) });
   return label;
 }
 
 export async function closeCommits(rfqId) {
   const rfq = getRfq(rfqId);
   rfq.phase = 'reveal';
-  const hashes = Object.values(rfq.bids).map((b) => b.hash);
-  if (kiteEnabled()) {
-    rfq.anchorTx = await anchorCommits(rfqId, hashes);
-    log(rfq, 'anchor', `Deadline passed. ${hashes.length} sealed hashes anchored on Kite`, { tx: explorerTx(rfq.anchorTx) });
+  const n = Object.keys(rfq.bids).length;
+  if (rfq.chainId) {
+    rfq.anchorTx = await escrowCloseCommits(rfq.chainId);
+    log(rfq, 'anchor', `Commits closed on-chain: ${n} sealed bids, bonds locked in the escrow contract`, { tx: explorerTx(rfq.anchorTx) });
+  } else if (kiteEnabled()) {
+    rfq.anchorTx = await anchorCommits(rfqId, Object.values(rfq.bids).map((b) => b.hash));
+    log(rfq, 'anchor', `Deadline passed. ${n} sealed hashes anchored on Kite`, { tx: explorerTx(rfq.anchorTx) });
   } else {
-    log(rfq, 'anchor', `Deadline passed. ${hashes.length} sealed hashes frozen (Kite not configured, so nothing went on-chain)`);
+    log(rfq, 'anchor', `Deadline passed. ${n} sealed hashes frozen (Kite not configured, so nothing went on-chain)`);
   }
 }
 
-export function reveal(rfqId, label, { doc, salt }) {
+// The document is revealed to the buyer off-chain; on-chain the bidder has already proven which document hash it committed to.
+export async function reveal(rfqId, label, { doc, salt, revealTx }) {
   const rfq = getRfq(rfqId);
   const bid = rfq.bids[label];
   bid.doc = doc;
-  bid.revealOk = commitHash(doc, salt) === bid.hash;
-  log(rfq, 'reveal', `${label} revealed: ${bid.revealOk ? 'matches its sealed hash' : 'DOES NOT match its sealed hash'}`);
+  bid.docHash = docHashOf(doc);
+  if (rfq.chainId) {
+    const onChain = await escrowBid(rfq.chainId, bid.supplier);
+    bid.revealOk = onChain.revealed && onChain.docHash === bid.docHash;
+    bid.revealTx = revealTx;
+  } else {
+    bid.revealOk = commitHash(doc, salt, bid.supplier) === bid.hash;
+  }
+  log(rfq, 'reveal', `${label} revealed: ${bid.revealOk ? 'matches its sealed commitment' : 'DOES NOT match its sealed commitment'}`, revealTx && { tx: explorerTx(revealTx) });
 }
 
 // Hard rules come first and are plain code, not model output.
@@ -225,12 +255,34 @@ export async function settle(rfqId) {
     rfq.settlement.push({ to, amount, why, tx: tx && explorerTx(tx) });
     log(rfq, 'settle', `${why}: ${amount}${tx ? '' : ' (Kite not configured, so no transfer was made)'}`, tx && { tx: explorerTx(tx) });
   };
-  for (const b of Object.values(rfq.bids)) {
-    if (b.slash) { log(rfq, 'settle', `${b.label} bond (${rfq.bondPie}) slashed and kept by the buyer`); continue; }
-    await pay(b.supplier, rfq.bondPie, `${b.label} bond refunded`);
-  }
   const win = rfq.bids[rfq.award.winner];
-  await pay(win.supplier, rfq.depositPie, `${win.label} wins: down payment`);
+  try {
+    if (rfq.chainId) {
+      // One escrow transaction: refunds, slashes and the down payment. Each slash carries keccak256 of its evidence,
+      // which anyone can recompute from the published quote and check against the revealed document.
+      const slashed = Object.values(rfq.bids).filter((b) => b.slash);
+      const evidence = slashed.map((b) => keccak256(toHex(b.evidence ?? b.disqualified)));
+      slashed.forEach((b, i) => { b.evidenceHash = evidence[i]; });
+      const { hash, events } = await escrowSettle(rfq.chainId, win.supplier, slashed.map((b) => b.supplier), evidence, rfq.depositPie);
+      const labelOf = (addr) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === addr?.toLowerCase())?.label ?? addr;
+      rfq.settlement = events.map((e) => ({ ...e, label: labelOf(e.bidder), tx: explorerTx(hash) }));
+      for (const e of rfq.settlement) {
+        const what = { BondRefunded: 'bond refunded', BondSlashed: `bond slashed${e.evidenceHash && e.evidenceHash !== `0x${'0'.repeat(64)}` ? ` (evidence ${e.evidenceHash.slice(0, 10)}…)` : ' (never revealed)'}`, Awarded: 'wins: down payment' }[e.event];
+        log(rfq, 'settle', `${e.label} ${what}: ${e.amount}`, { tx: explorerTx(hash) });
+      }
+    } else {
+      for (const b of Object.values(rfq.bids)) {
+        if (b.slash) { log(rfq, 'settle', `${b.label} bond (${rfq.bondPie}) slashed and kept by the buyer`); continue; }
+        await pay(b.supplier, rfq.bondPie, `${b.label} bond refunded`);
+      }
+      await pay(win.supplier, rfq.depositPie, `${win.label} wins: down payment`);
+    }
+  } catch (e) {
+    // Never leave a tender stuck in 'settling': go back to held so a human can retry (payouts are idempotent).
+    rfq.phase = 'held';
+    log(rfq, 'error', `Settlement failed, tender back on hold: ${e.shortMessage ?? e.message}`);
+    throw e;
+  }
   rfq.phase = 'settled';
   save();
   return rfq;

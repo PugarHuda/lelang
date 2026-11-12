@@ -2,8 +2,8 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { randomBytes } from 'node:crypto';
-import { createRfq, submitCommit, closeCommits, reveal, evaluate, settle, commitHash, commitMessage } from './lelang.js';
-import { kiteEnabled, transferPie, sendGas, balances } from './kite.js';
+import { createRfq, submitCommit, closeCommits, reveal, evaluate, settle, commitHash, commitMessage, docHashOf } from './lelang.js';
+import { kiteEnabled, transferPie, sendGas, balances, escrowCommit, escrowReveal } from './kite.js';
 
 export const DEMO_RFQ = {
   title: '200 student laptops for 10 rural schools',
@@ -48,35 +48,39 @@ export function demoWallets() {
 }
 
 export async function runDemo(onCreated = () => {}) {
-  const rfq = createRfq(DEMO_RFQ);
+  const rfq = await createRfq(DEMO_RFQ);
   onCreated(rfq.id);
   const { suppliers } = demoWallets();
+  const buyerPk = process.env.BUYER_PRIVATE_KEY;
   const sealed = [];
 
   for (const [i, doc] of DEMO_BIDS.entries()) {
     const pk = suppliers[i];
     const acct = privateKeyToAccount(pk);
-    const salt = randomBytes(16).toString('hex');
-    const hash = commitHash(doc, salt);
+    const salt = `0x${randomBytes(32).toString('hex')}`;
+    const hash = commitHash(doc, salt, acct.address, rfq.chainId ?? 0);
     const signature = await acct.signMessage({ message: commitMessage(rfq.id, hash) });
     let bondTx = null;
     if (kiteEnabled()) {
       // ponytail: the buyer tops up each demo supplier so it can post its own bond, and sweeps back what earlier
       // demo runs paid out (faucet gives 2 USDT/day). Real suppliers bring their own funds.
-      const buyer = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY).address;
+      const buyer = privateKeyToAccount(buyerPk).address;
       const bal = await balances(acct.address);
       const stable = Number(Object.entries(bal).find(([k]) => k !== 'kite')[1]);
-      if (Number(bal.kite) < 0.01) await sendGas(process.env.BUYER_PRIVATE_KEY, acct.address, '0.01');
-      if (stable < rfq.bondPie) await transferPie(process.env.BUYER_PRIVATE_KEY, acct.address, rfq.bondPie);
+      if (Number(bal.kite) < 0.01) await sendGas(buyerPk, acct.address, '0.01');
+      if (stable < rfq.bondPie) await transferPie(buyerPk, acct.address, rfq.bondPie);
       if (stable > rfq.bondPie + 0.001) await transferPie(pk, buyer, +(stable - rfq.bondPie).toFixed(6));
-      bondTx = await transferPie(pk, buyer, rfq.bondPie);
+      bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash, rfq.bondPie) : await transferPie(pk, buyer, rfq.bondPie);
     }
     const label = await submitCommit(rfq.id, { supplier: acct.address, hash, signature, bondTx });
-    sealed.push({ label, doc, salt });
+    sealed.push({ label, doc, salt, pk });
   }
 
   await closeCommits(rfq.id);
-  for (const s of sealed) reveal(rfq.id, s.label, s);
+  for (const s of sealed) {
+    const revealTx = rfq.chainId ? await escrowReveal(s.pk, rfq.chainId, docHashOf(s.doc), s.salt) : undefined;
+    await reveal(rfq.id, s.label, { doc: s.doc, salt: s.salt, revealTx });
+  }
   await evaluate(rfq.id);
   return settle(rfq.id);
 }

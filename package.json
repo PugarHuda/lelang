@@ -9,7 +9,10 @@
     "demo": "node --env-file-if-exists=.env scripts/demo.js",
     "probe": "node --env-file-if-exists=.env scripts/probe.js",
     "wallets": "node --env-file-if-exists=.env scripts/wallets.js",
-    "snapshot": "node scripts/snapshot.js"
+    "snapshot": "node scripts/snapshot.js",
+    "compile": "node scripts/compile.js",
+    "deploy:escrow": "node --env-file=.env scripts/deploy-escrow.js",
+    "test:escrow": "node --env-file=.env scripts/escrow-test.js"
   },
   "keywords": [],
   "author": "",
@@ -18,5 +21,8 @@
   "dependencies": {
     "openai": "^7.55.0",
     "viem": "^2.57.18"
+  },
+  "devDependencies": {
+    "solc": "^0.8.28"
   }
 }
