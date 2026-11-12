@@ -19,7 +19,8 @@ const index = settled.map((r) => {
   writeFileSync(`public/tenders/${r.id}.ocds.json`, JSON.stringify(toOcds(r), null, 2));
   const n = Object.keys(r.bids).length;
   const slashed = Object.values(r.bids).filter((b) => b.slash).length;
-  return { id: r.id, chainId: r.chainId, featured: r === featured, label: `#${r.chainId} · ${r.title} · ${n} bid${n > 1 ? 's' : ''}${slashed ? `, ${slashed} slashed` : ''}` };
+  const overturned = Object.values(r.bids).filter((b) => b.appeal?.outcome === 'overturned').length;
+  return { id: r.id, chainId: r.chainId, featured: r === featured, label: `#${r.chainId} · ${r.title} · ${n} bid${n > 1 ? 's' : ''}${slashed ? `, ${slashed} slashed` : ''}${overturned ? ` (${overturned} overturned on appeal)` : ''}` };
 });
 writeFileSync('public/tenders.json', JSON.stringify(index, null, 2));
 writeFileSync('public/tender.json', JSON.stringify(featured, null, 2));
@@ -28,10 +29,10 @@ writeFileSync('public/ocds.json', JSON.stringify(toOcds(featured), null, 2));
 // audits run on these tenders, appeals included. Reppo price: 440 credits per evaluation, $1 = 2,000 credits.
 const AUDIT_USD = 0.22;
 const fund = settled.reduce((f, r) => {
-  const slashed = Object.values(r.bids).filter((b) => b.slash);
+  const slashed = Object.values(r.bids).filter((b) => b.slash && b.appeal?.outcome !== 'overturned'); // overturned = refunded
   f.slashes += slashed.length;
   f.slashedUsd = +(f.slashedUsd + slashed.length * r.bondPie).toFixed(6);
-  f.audits += (r.reppo?.rounds?.length ?? 0) + slashed.filter((b) => b.appeal?.audit).length;
+  f.audits += (r.reppo?.rounds?.length ?? 0) + Object.values(r.bids).filter((b) => b.appeal?.audit).length;
   return f;
 }, { slashes: 0, slashedUsd: 0, audits: 0 });
 fund.auditCostUsd = +(fund.audits * AUDIT_USD).toFixed(2);

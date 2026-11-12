@@ -6,7 +6,8 @@ let lastBody = '';
 
 function bidCard(b, rfq) {
   const won = rfq.award?.winner === b.label && rfq.award?.decision === 'award';
-  const status = b.disqualified ? `<span class="st bad">Disqualified${b.slash ? ' · bond slashed' : ''}</span>`
+  const status = b.appeal?.outcome === 'overturned' ? '<span class="st warn">Slash overturned on appeal · bond refunded</span>'
+    : b.disqualified ? `<span class="st bad">Disqualified${b.slash ? ' · bond slashed' : ''}</span>`
     : won ? '<span class="st ok">Winner</span>' : b.terms ? '<span class="st mute">Eligible</span>' : '<span class="st mute">Sealed</span>';
   const t = b.terms;
   const p = rfq.award?.probabilities?.[b.label];

@@ -2,7 +2,7 @@
 // commit (signed hash + bond) -> anchor on Kite -> reveal -> guard -> extract -> rules -> award -> Reppo audit -> settle
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
-import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives } from './ai.js';
+import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives, confirmAddressedToEvaluator } from './ai.js';
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
@@ -258,13 +258,19 @@ export async function evaluate(rfqId) {
     const guard = guard1.blocked ? { ...(await promptGuard(bid.doc)), first: guard1 } : guard1;
     bid.guard = { servPromptGuard: guard, manipulation: inj };
     log(rfq, 'guard', `${bid.label}: SERV Prompt Guard ${guard.blocked ? 'BLOCKED' : 'passed'}, manipulation p=${inj.p.toFixed(2)}${inj.verified ? ' (quote verified in document)' : ''}`);
-    if (inj.p > 0.8 && inj.verified) {
+    // A slash needs both: the quote is verbatim in the document, and a separate check confirms it speaks to the
+    // evaluator rather than stating commercial terms. Either missing means a human looks, never a slash.
+    const aimed = inj.p > 0.8 && inj.verified ? await confirmAddressedToEvaluator(inj.evidence) : 0;
+    bid.guard.addressedToEvaluator = aimed;
+    if (inj.p > 0.8 && inj.verified && aimed > 0.5) {
       bid.evidence = inj.evidence; // kept for the human reviewer and dashboard, never sent back into an LLM prompt
       disqualify(rfq, bid, 'hidden instructions addressed to the AI evaluator (verbatim quote found in the document)', true);
       continue;
     }
     // Suspicion without proof never slashes, but it does block auto-award (see `flagged` below).
-    const why = [guard.blocked && 'SERV Prompt Guard block', inj.p > 0.8 && 'manipulation suspected but quote not found in document'].filter(Boolean);
+    const why = [guard.blocked && 'SERV Prompt Guard block',
+      inj.p > 0.8 && !inj.verified && 'manipulation suspected but quote not found in document',
+      inj.p > 0.8 && inj.verified && `quoted text found but it states commercial terms rather than addressing the evaluator (p=${aimed.toFixed(2)})`].filter(Boolean);
     if (why.length) {
       bid.review = [bid.review, `${why.join('; ')}: a human should look`].filter(Boolean).join('; ');
       log(rfq, 'review', `${bid.label} flagged for human review (${why.join('; ')})`);

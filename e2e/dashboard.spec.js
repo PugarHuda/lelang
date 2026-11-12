@@ -74,7 +74,8 @@ for (const s of slashes) {
 
 // The page must catch a doctored publication, not just display a tick.
 for (const [what, mutate] of [
-  ['quote', (b) => { b.evidence = b.evidence.replace('AI', 'Al'); b.doc = b.doc.replace('AI', 'Al'); }],
+  // change one letter of the quote, in the quote and in the document, so the quote is still "in the document"
+  ['quote', (b) => { const e2 = b.evidence.replace(/[A-Za-z]/, (c) => (c === 'x' ? 'y' : 'x')); b.doc = b.doc.replace(b.evidence, e2); b.evidence = e2; }],
   ['document', (b) => { b.doc = b.doc.replace(/\d/, (d) => String((Number(d) + 1) % 10)); }],
 ]) {
   test(`proof page detects a tampered ${what}`, async ({ page }) => {
