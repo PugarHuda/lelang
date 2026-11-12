@@ -8,7 +8,6 @@
       "supplier": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
       "hash": "0xcc74b64f08c3d7916b61455d39d2bce887cec3257e9220b776f56f96d303a578",
       "bondTx": "0xdead347accb21df2aa9fadcc9809916948660ddd7862c5713d7707d6c404ed67",
-      "doc": "BID SUBMISSION - Nusantara Edu Supply\nTender: 40 classroom projectors for 8 vocational schools\n\nTotal price: USD 24,800 for 40 units, delivered and installed.\nDelivery: 21 days after award.\nWarranty: 24 months on-site.\nSpecs per unit: 4 GB RAM, 32 GB storage, 2 hours battery backup.",
       "docHash": "0x5f4852610f70aaeec05c9c5529ce8e18c7feda87a9a11cbb9b324abe872f2fb7",
       "revealOk": true,
       "revealTx": "0xab391b466b85cd927537b7cb90eaed171c651cf79943ba43f3e0479083abba1b",
@@ -36,7 +35,8 @@
           "battery_hours": 2
         },
         "claims_full_compliance": null
-      }
+      },
+      "docRedacted": "losing bid: document withheld, hash and terms published"
     },
     "Bid B": {
       "label": "Bid B",

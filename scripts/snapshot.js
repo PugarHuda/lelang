@@ -3,9 +3,10 @@
 // featured one (the richest run), which `npm run verify` checks by default.
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { toOcds } from '../src/ocds.js';
+import { publicView } from '../src/lelang.js';
 
 const deployment = JSON.parse(readFileSync('deployments/kite-testnet.json', 'utf8'));
-const { rfqs } = JSON.parse(readFileSync('data/state.json', 'utf8'));
+const rfqs = Object.fromEntries(Object.entries(JSON.parse(readFileSync('data/state.json', 'utf8')).rfqs).map(([k, r]) => [k, publicView(r)]));
 const settled = Object.values(rfqs)
   .filter((r) => r.phase === 'settled' && r.escrow?.toLowerCase() === deployment.escrow.address.toLowerCase())
   .sort((a, b) => b.createdAt.localeCompare(a.createdAt));

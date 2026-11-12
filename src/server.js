@@ -1,11 +1,10 @@
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
+import { serveStatic } from './static.js';
 import { runDemo, DEMO_RFQ } from './demo.js';
 
-const html = readFileSync(new URL('../public/index.html', import.meta.url));
 let running = null;
 
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
@@ -29,7 +28,6 @@ const json = (res, code, body) => {
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try {
-    if (url.pathname === '/') return res.writeHead(200, { 'content-type': 'text/html' }).end(html);
     if (url.pathname === '/deployment.json') return json(res, 200, deployment ?? {});
     if (url.pathname === '/api/rfqs' && req.method === 'GET') return json(res, 200, { running, rfqs: listRfqs().reverse() });
     const o = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/ocds$/);
@@ -40,7 +38,7 @@ createServer(async (req, res) => {
     const m = url.pathname.match(/^\/api\/rfqs\/([\w-]+)$/);
     if (m) {
       const rfq = getRfq(m[1]);
-      return rfq ? json(res, 200, rfq) : json(res, 404, { error: 'not found' });
+      return rfq ? json(res, 200, publicView(rfq)) : json(res, 404, { error: 'not found' });
     }
     // Actions spend credits or move testnet money, so a public deploy gates them with DEMO_TOKEN.
     const authorized = !process.env.DEMO_TOKEN || url.searchParams.get('token') === process.env.DEMO_TOKEN;
@@ -121,6 +119,7 @@ createServer(async (req, res) => {
       running = id;
       return json(res, 202, { id });
     }
+    if (req.method === 'GET' && !url.pathname.startsWith('/api/') && (await serveStatic(req, res))) return;
     json(res, 404, { error: 'not found' });
   } catch (e) {
     json(res, e.status ?? 500, { error: e.message });

@@ -33,64 +33,6 @@
   <a href="./" class="kv">← all tenders</a>
   <div id="view"><p class="kv">Loading…</p></div>
 </main>
-<script type="module">
-import { checkSlash, esc } from './verify.js';
-
-const q = new URLSearchParams(location.search);
-const view = document.querySelector('#view');
-const fail = (msg) => { view.innerHTML = `<p class="warn">${esc(msg)}</p>`; };
-
-// Highlight the quote inside the document (whitespace-insensitive), without trusting either as HTML.
-function highlight(doc, quote) {
-  const words = quote.trim().split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  const m = words.length ? doc.match(new RegExp(words.join('\\s+'))) : null;
-  return m ? `${esc(doc.slice(0, m.index))}<mark>${esc(m[0])}</mark>${esc(doc.slice(m.index + m[0].length))}` : esc(doc);
-}
-
-try {
-  const id = q.get('t') ?? '';
-  if (!/^rfq-[\w-]+$/.test(id)) throw new Error('No tender given.');
-  const res = await fetch(`tenders/${encodeURIComponent(id)}.json`);
-  if (!res.ok) throw new Error('Tender not found.');
-  const rfq = await res.json();
-  const bid = rfq.bids[q.get('b') ?? ''];
-  if (!bid?.slash) throw new Error('That bid was not slashed.');
-  const settle = rfq.settlement.find((s) => s.tx)?.tx;
-  view.innerHTML = `
-    <h1>${esc(bid.label)}'s bond was slashed</h1>
-    <p class="kv">Escrow tender #${esc(rfq.chainId)} · ${esc(rfq.title)} · <a href="${esc(settle)}" target="_blank" rel="noopener">settle transaction on Kitescan</a></p>
-    <div class="card"><strong>Why:</strong> ${esc(bid.disqualified)}</div>
-    ${bid.evidence ? `<h2>The text the supplier hid for the AI evaluator</h2><div class="card"><pre>${esc(bid.evidence)}</pre></div>` : ''}
-    <h2>Its revealed bid document</h2><div class="card"><pre>${bid.evidence ? highlight(bid.doc, bid.evidence) : esc(bid.doc)}</pre>
-      <p class="kv">This is the exact document the supplier committed to before the deadline (sealed hash) and revealed after it.</p></div>
-    <h2>Verify it yourself</h2>
-    <div class="card">
-      <p class="kv">Your browser hashes the quote and the document above and reads the slash event and the escrow's storage straight from Kite testnet. Nothing on our server is trusted.</p>
-      <button id="go">Verify against Kite testnet</button>
-      <div id="result" aria-live="polite"></div>
-    </div>`;
-  const go = document.querySelector('#go');
-  const run = async () => {
-    go.disabled = true;
-    const out = document.querySelector('#result');
-    out.innerHTML = '<p class="kv">Reading Kite testnet…</p>';
-    try {
-      const r = await checkSlash(rfq, bid);
-      const row = (what, a, b) => `<tr><th>${what}</th><td>computed here<br><code>${esc(a)}</code></td><td>on Kite<br><code>${esc(b)}</code></td><td class="${a === b ? 'ok' : 'bad'}">${a === b ? '✓ match' : '✗ MISMATCH'}</td></tr>`;
-      out.innerHTML = `<p><strong class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ The slash and its evidence match Kite testnet' : '✗ Something does not match Kite testnet'}</strong> <span class="kv">· block ${esc(r.block)}</span></p>
-        <table>${row('keccak256(quote)', r.evidenceComputed, r.evidenceOnChain)}${row('keccak256(document)', r.docComputed, r.docOnChain)}
-        <tr><th>quote is in the document</th><td colspan="2">${r.quoteInDoc ? 'yes, character for character (whitespace-insensitive)' : 'no'}</td><td class="${r.quoteInDoc ? 'ok' : 'bad'}">${r.quoteInDoc ? '✓' : '✗'}</td></tr></table>`;
-    } catch (e) {
-      out.innerHTML = `<p class="warn">Couldn't reach Kite testnet (${esc(e.shortMessage ?? e.message)}). Try again; the settle link above still opens Kitescan.</p>`;
-    } finally {
-      go.disabled = false;
-    }
-  };
-  go.onclick = run;
-  run();
-} catch (e) {
-  fail(e.message);
-}
-</script>
+<script type="module" src="slash.js"></script>
 </body>
 </html>

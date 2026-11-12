@@ -6,7 +6,7 @@ import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -127,5 +127,31 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   assert.deepEqual(readersDisagree(t, { ...t, unit_price_usd: 1 }), []); // not decision-relevant
   assert.deepEqual(readersDisagree(t, { ...t, total_usd: 1 }).map((d) => d.field), ['total_usd']);
   assert.deepEqual(readersDisagree(t, { ...t, specs: { ...t.specs, ram_gb: null } }), [{ field: 'specs.ram_gb', a: 8, b: null }]);
+}
+// a process that died mid-evaluation: on restart 'evaluating' goes back to 'reveal'; 'settling' is never touched
+{
+  const { writeFileSync, readFileSync, rmSync } = await import('node:fs');
+  const { execFileSync } = await import('node:child_process');
+  const f = 'data/selftest-recover.json';
+  writeFileSync(f, JSON.stringify({ rfqs: { e: { id: 'e', phase: 'evaluating', events: [] }, s: { id: 's', phase: 'settling', events: [] } } }));
+  execFileSync(process.execPath, ['--input-type=module', '-e', "await import('./src/lelang.js')"], { env: { ...process.env, LELANG_STATE: f } });
+  const after = JSON.parse(readFileSync(f, 'utf8')).rfqs;
+  rmSync(f);
+  assert.equal(after.e.phase, 'reveal');
+  assert.equal(after.e.events.at(-1).step, 'recover');
+  assert.equal(after.s.phase, 'settling');
+}
+// public view: losing documents withheld (hash kept), evidence and the settled winner's contract stay public
+{
+  const r = { phase: 'settled', award: { winner: 'Bid A' }, bids: {
+    'Bid A': { label: 'Bid A', doc: 'win', docHash: '0x1' }, 'Bid B': { label: 'Bid B', doc: 'lose', docHash: '0x2' },
+    'Bid C': { label: 'Bid C', doc: 'attack', docHash: '0x3', slash: true } } };
+  const v = publicView(r);
+  assert.equal(v.bids['Bid A'].doc, 'win');
+  assert.equal(v.bids['Bid B'].doc, undefined);
+  assert.equal(v.bids['Bid B'].docHash, '0x2');
+  assert.equal(v.bids['Bid C'].doc, 'attack');
+  assert.equal(r.bids['Bid B'].doc, 'lose', 'the stored tender is untouched');
+  assert.equal(publicView({ ...r, phase: 'held' }).bids['Bid A'].doc, undefined, 'no winner document before settlement');
 }
 console.log('selftest OK');

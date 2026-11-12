@@ -47,7 +47,7 @@ export async function promptGuard(doc) {
 // rejected by chat/responses/messages). Swap the model here once it is, the call sites stay the same.
 const ENGINE = `${SERV_MODEL} decision node`;
 
-async function structured(name, system, user, schema) {
+export async function structured(name, system, user, schema) {
   const r = await serv.chat.completions.create({
     ...NO_CACHE,
     model: SERV_MODEL,
@@ -172,6 +172,13 @@ export async function extractBid(doc) {
   }
   const why = dolphin ? dolphinDown : 'no DOLPHIN_API_KEY';
   return { engine: `${SERV_MODEL} (${why})`, terms: await servRead(doc) };
+}
+
+// Plain Dolphin completion parsed as JSON (no strict schema there); used by the adaptive red team as the attacker.
+export async function dolphinJson(system, user) {
+  if (!dolphin) throw new Error('no DOLPHIN_API_KEY');
+  const r = await dolphin.chat.completions.create({ model: DOLPHIN_MODEL, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] });
+  return parseJson(r.choices[0].message.content);
 }
 
 // The second, independent reader: SERV with its own spotlight marker, used to cross-check Dolphin.

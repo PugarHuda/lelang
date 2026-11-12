@@ -14,6 +14,15 @@ mkdirSync('data', { recursive: true });
 const db = existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : { rfqs: {} };
 const save = () => writeFileSync(FILE, JSON.stringify(db, null, 2));
 
+// A process that died mid-evaluation leaves the tender in 'evaluating' forever. Evaluation touches no chain state, so
+// it is safe to run again: hand it back to 'reveal'. 'settling' is left alone on purpose; money may already be moving.
+for (const r of Object.values(db.rfqs)) {
+  if (r.phase !== 'evaluating') continue;
+  r.phase = 'reveal';
+  r.events.push({ t: new Date().toISOString(), step: 'recover', msg: 'Evaluation was interrupted (process stopped); the tender is back in reveal and can be evaluated again' });
+  save();
+}
+
 export const getRfq = (id) => db.rfqs[id];
 export const listRfqs = () => Object.values(db.rfqs).map(({ id, title, phase, createdAt }) => ({ id, title, phase, createdAt }));
 
@@ -40,6 +49,21 @@ export const provenPriors = (history, chainId, trustedBuyers) => {
   const trusted = new Set(trustedBuyers.filter(Boolean).map((a) => a.toLowerCase()));
   return history.filter((h) => h.proven && String(h.tender) !== String(chainId) && trusted.has(String(h.buyer).toLowerCase()));
 };
+// What the public may see. Full documents only where they are evidence (slashed bids) or the contract (the settled
+// winner); every other bid keeps its document hash and extracted terms (enough to re-run the formula), and its owner
+// can still prove the text with its own salt. Before an award no document is public.
+export function publicView(rfq) {
+  const v = structuredClone(rfq);
+  for (const b of Object.values(v.bids)) {
+    const winner = v.phase === 'settled' && v.award?.winner === b.label;
+    if (b.doc && !b.slash && !winner) {
+      delete b.doc;
+      b.docRedacted = 'losing bid: document withheld, hash and terms published';
+    }
+  }
+  return v;
+}
+
 // Decision-relevant fields only; a number vs null counts as a disagreement.
 const READ_FIELDS = ['total_usd', 'delivery_days', 'warranty_months', 'specs.ram_gb', 'specs.storage_gb', 'specs.battery_hours'];
 export function readersDisagree(a, b) {
@@ -293,7 +317,7 @@ export async function evaluate(rfqId) {
   rfq.award = { decision, winner: w.choice, formulaWinner, scores, probabilities: w.probabilities, confidence, engine: w.engine };
   log(rfq, 'award', decision === 'award'
     ? `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), matching the published formula`
-    : `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), formula says ${formulaWinner}: escalated to a human`, { probabilities: w.probabilities });
+    : `${w.engine} chose ${w.choice} (confidence ${confidence.toFixed(2)}), formula says ${formulaWinner}: escalated to a human because ${rationaleContextOf(rfq).escalationReasons.join('; ')}`, { probabilities: w.probabilities });
 
   const rationaleContext = rationaleContextOf(rfq);
   rfq.award.rationale = await writeRationale(rationaleContext);

@@ -13,14 +13,15 @@ const settleTx = rfq.settlement?.find((s) => s.tx)?.tx?.split('/tx/')[1];
 assert.ok(rfq.escrow && settleTx, 'tender has no on-chain escrow settlement');
 
 const logs = parseEventLogs({ abi, logs: (await chain.getTransactionReceipt({ hash: settleTx })).logs });
-const norm = (s) => s.replace(/\s+/g, ' ').trim();
+// same normalization the server used to verify the quote (src/ai.js findManipulation)
+const norm = (x) => x.normalize('NFKC').replace(/[\p{Cf}\p{Mn}]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
 let n = 0;
 for (const log of logs.filter((l) => l.eventName === 'BondSlashed')) {
   const bid = Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === log.args.bidder.toLowerCase());
   const [, docHash] = await chain.readContract({ address: rfq.escrow, abi, functionName: 'bids', args: [BigInt(rfq.chainId), log.args.bidder] });
   assert.equal(keccak256(toHex(bid.doc)), docHash, `${bid.label}: published document is the one revealed on-chain`);
   assert.equal(keccak256(toHex(bid.evidence ?? bid.disqualified)), log.args.evidenceHash, `${bid.label}: evidence hash matches the published quote`);
-  if (bid.evidence) assert.ok(norm(bid.doc).includes(norm(bid.evidence).slice(0, 80)), `${bid.label}: quote appears in the revealed document`);
+  if (bid.evidence) assert.ok(norm(bid.doc).includes(norm(bid.evidence)), `${bid.label}: quote appears in the revealed document`);
   console.log(`${bid.label}: slash verified (doc ${docHash.slice(0, 10)}…, evidence ${log.args.evidenceHash.slice(0, 10)}…)`);
   n++;
 }
