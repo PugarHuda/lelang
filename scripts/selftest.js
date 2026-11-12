@@ -1,8 +1,9 @@
 // Offline checks of the parts that must never be wrong: sealing, signatures, hard rules.
 import assert from 'node:assert/strict';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores } from '../src/lelang.js';
-import { DEMO_RFQ } from '../src/demo.js';
+process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores } = await import('../src/lelang.js');
+const { DEMO_RFQ } = await import('../src/demo.js');
 
 const rfq = createRfq({ ...DEMO_RFQ, title: 'selftest' });
 const acct = privateKeyToAccount(generatePrivateKey());
@@ -34,3 +35,19 @@ const s = weightedScores(DEMO_RFQ.weights, [
 ]);
 assert.deepEqual(s, { A: 0.833, C: 0.952 });
 console.log('selftest OK');
+
+// Double approve must not double pay: the second call is rejected while the first is settling.
+{
+  const { approve } = await import('../src/lelang.js');
+  const r = createRfq({ ...DEMO_RFQ, title: 'double-approve' });
+  const a = privateKeyToAccount(generatePrivateKey());
+  const h = commitHash('x', 's');
+  const l = await submitCommit(r.id, { supplier: a.address, hash: h, signature: await a.signMessage({ message: commitMessage(r.id, h) }) });
+  Object.assign(getRfq(r.id), { phase: 'held', award: { decision: 'escalate', winner: l } });
+  const first = approve(r.id, { approver: 't' });
+  await assert.rejects(approve(r.id, { approver: 't2' }), /only held tenders/);
+  await first;
+  assert.equal(getRfq(r.id).phase, 'settled');
+  assert.equal(getRfq(r.id).settlement.length, 2, 'one bond refund + one deposit');
+  console.log('double-approve OK');
+}

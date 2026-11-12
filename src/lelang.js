@@ -6,7 +6,7 @@ import { promptGuard, findManipulation, choice, extractBid, writeRationale } fro
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import { anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx } from './kite.js';
 
-const FILE = 'data/state.json';
+const FILE = process.env.LELANG_STATE || 'data/state.json';
 mkdirSync('data', { recursive: true });
 const db = existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : { rfqs: {} };
 const save = () => writeFileSync(FILE, JSON.stringify(db, null, 2));
@@ -213,8 +213,14 @@ export async function settle(rfqId) {
     log(rfq, 'settle', `Settlement HELD: award=${rfq.award?.decision}, Reppo=${rfq.reppo?.route ?? 'n/a'}. Bonds stay in escrow pending human review`);
     return rfq;
   }
-  rfq.settlement = [];
+  // Lock before the first await so a second approve/settle can't start a parallel payout (double spend).
+  if (rfq.phase === 'settling' || rfq.phase === 'settled') throw new Error(`tender is already ${rfq.phase}`);
+  rfq.phase = 'settling';
+  rfq.settlement ??= [];
+  save();
   const pay = async (to, amount, why) => {
+    // Idempotent per payout: a resumed settlement skips anything already paid.
+    if (rfq.settlement.some((p) => p.why === why)) return;
     const tx = kiteEnabled() ? await transferPie(process.env.BUYER_PRIVATE_KEY, to, amount) : null;
     rfq.settlement.push({ to, amount, why, tx: tx && explorerTx(tx) });
     log(rfq, 'settle', `${why}: ${amount}${tx ? '' : ' (Kite not configured, so no transfer was made)'}`, tx && { tx: explorerTx(tx) });
