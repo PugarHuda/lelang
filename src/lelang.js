@@ -60,6 +60,10 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
   } else if (!signature || !(await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature }))) {
     fail('bad commit signature');
   }
+  // Re-check after the awaits: on-chain, escrowBid waits on the RPC, so two concurrent commits from one supplier
+  // could both pass the first check. (Off-chain verifyMessage never yields, so no offline test can hit this.)
+  if (bidOf(rfq, supplier)) fail('supplier already committed');
+  if (Object.keys(rfq.bids).length >= 26) fail('tender is full (26 bids)'); // labels run Bid A..Z
   const label = `Bid ${String.fromCharCode(65 + Object.keys(rfq.bids).length)}`;
   rfq.bids[label] = { label, supplier, hash, signature, bondTx };
   log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ` and locked its bond${rfq.chainId ? ' in escrow' : ''}` : ''}`, bondTx && { tx: explorerTx(bondTx) });

@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment } from './kite.js';
+import { deployment, kiteEnabled } from './kite.js';
 import { runDemo, DEMO_RFQ } from './demo.js';
 
 const html = readFileSync(new URL('../public/index.html', import.meta.url));
@@ -82,6 +82,9 @@ createServer(async (req, res) => {
         const { supplier, hash, signature, bondTx } = await body(req);
         if (!ADDR.test(supplier ?? '') || !HEX32.test(hash ?? '')) bad('supplier (address) and hash (bytes32) required');
         if (bondTx != null && !HEX32.test(bondTx)) bad('bondTx must be a tx hash');
+        // Without the escrow, bonds are plain transfers we can't verify here, yet settle refunds every compliant bid
+        // from the buyer's wallet. So money-moving tenders take public bids only through the escrow contract.
+        if (!rfq.chainId && kiteEnabled()) bad('public bidding requires an escrow tender');
         return json(res, 201, { label: await submitCommit(id, { supplier, hash, signature, bondTx }) });
       }
       if (action === 'reveal') {
