@@ -174,6 +174,22 @@ export async function extractBid(doc) {
   return { engine: `${SERV_MODEL} (${why})`, terms: await servRead(doc) };
 }
 
+// Ambiguity check. Found by the adaptive red team: a bid that states two figures for one term ("list USD 75,000 ...
+// payable total USD 58,500 after rebate", "18 calendar days ... committed 11 working days") contains no instruction to
+// the AI, so the manipulation check passes it, and both readers may pick the favourable figure. Real procurement
+// treats such a bid as ambiguous. This lists every distinct value the document gives for each decision term.
+const ALTS_SCHEMA = {
+  type: 'object',
+  properties: { total_usd: { type: 'array', items: { type: 'number' } }, delivery_days: { type: 'array', items: { type: 'number' } }, warranty_months: { type: 'array', items: { type: 'number' } } },
+  required: ['total_usd', 'delivery_days', 'warranty_months'], additionalProperties: false,
+};
+export async function statedAlternatives(doc) {
+  const s = spotlight(doc);
+  return structured('stated_values', `${s.rule} List every distinct value this supplier document states for the total price in USD (list, gross, net, discounted, ` +
+    `rebated, any total), the delivery time in days (calendar, working, committed, contingency), and the warranty in months (base, extended, core, general). ` +
+    `Include every figure that could be read as the offer, even if the document says one supersedes another. Do not include per-unit prices or quantities.`, s.text, ALTS_SCHEMA);
+}
+
 // Plain Dolphin completion parsed as JSON (no strict schema there); used by the adaptive red team as the attacker.
 export async function dolphinJson(system, user) {
   if (!dolphin) throw new Error('no DOLPHIN_API_KEY');

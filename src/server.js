@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
 import { serveStatic } from './static.js';
@@ -73,6 +73,14 @@ createServer(async (req, res) => {
       if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery must sum to 1');
       const rfq = await createRfq(spec);
       return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase });
+    }
+    // A slashed supplier appeals with its own signature: no token, one appeal per slashed bid.
+    const ap = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal$/);
+    if (ap && req.method === 'POST') {
+      if (!getRfq(ap[1])) return json(res, 404, { error: 'not found' });
+      const { supplier, reason, signature } = await body(req);
+      if (!ADDR.test(supplier ?? '') || !/^0x[0-9a-fA-F]{130}$/.test(signature ?? '')) bad('supplier (address) and signature (65-byte hex) required');
+      return json(res, 200, await appeal(ap[1], { supplier, reason, signature }));
     }
     const act = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/(commit|close|reveal|evaluate)$/);
     if (act && req.method === 'POST') {

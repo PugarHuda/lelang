@@ -100,3 +100,12 @@ test('proof page refuses a bid that was not slashed', async ({ page }) => {
   await page.goto(`/slash.html?t=${t.id}&b=${encodeURIComponent(clean.label)}`);
   await expect(page.locator('#view')).toContainText('That bid was not slashed.');
 });
+
+test('proof page shows the appeal outcome and who paid for the audits', async ({ page }) => {
+  const appealed = slashes.find((s) => JSON.parse(readFileSync(`public/tenders/${s.id}.json`, 'utf8')).bids[s.label].appeal);
+  test.skip(!appealed, 'no appealed slash published');
+  const a = JSON.parse(readFileSync(`public/tenders/${appealed.id}.json`, 'utf8')).bids[appealed.label].appeal;
+  await page.goto(`/slash.html?t=${appealed.id}&b=${encodeURIComponent(appealed.label)}`);
+  await expect(page.locator('#view')).toContainText({ upheld: 'Slash upheld', overturned: 'Slash overturned', human: 'a human decides' }[a.outcome]);
+  await expect(page.locator('#fund')).toContainText('% paid by attackers');
+});

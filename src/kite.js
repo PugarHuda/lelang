@@ -104,6 +104,8 @@ export async function escrowCommit(pk, chainId, commitment) {
 
 export const escrowCloseCommits = async (chainId) => (await send(process.env.BUYER_PRIVATE_KEY, 'closeCommits', [BigInt(chainId)])).hash;
 export const escrowReveal = async (pk, chainId, docHash, salt) => (await send(pk, 'reveal', [BigInt(chainId), docHash, salt])).hash;
+// Safety valve: after an unsettled tender's settle deadline, a bidder takes its own bond back.
+export const escrowWithdraw = async (pk, chainId) => (await send(pk, 'withdraw', [BigInt(chainId)])).hash;
 
 export async function escrowBid(chainId, bidder) {
   const [commitment, docHash, revealed, closed] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'bids', args: [BigInt(chainId), bidder] });
@@ -133,7 +135,7 @@ export async function slashHistory(bidder) {
     const [buyer] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [id] });
     buyers.set(id, buyer);
   }
-  return logs.map((l) => ({ tender: l.args.id.toString(), buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
+  return logs.map((l) => ({ tender: l.args.id.toString(), bidder: l.args.bidder, buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
 }
 
 export const escrowAddress = () => ESCROW();

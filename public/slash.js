@@ -12,6 +12,17 @@ function highlight(doc, quote) {
   return m ? `${esc(doc.slice(0, m.index))}<mark>${esc(m[0])}</mark>${esc(doc.slice(m.index + m[0].length))}` : esc(doc);
 }
 
+// A slashed supplier can appeal once, signed with its own key; an independent Reppo panel re-checks the evidence.
+function appealHtml(a) {
+  if (!a) return `<h2>Appeal</h2><div class="card kv">No appeal. The supplier can appeal once, signed with its own key; an independent panel then re-checks this slash.</div>`;
+  const label = { upheld: '<strong class="ok">Slash upheld</strong>', overturned: '<strong class="warn">Slash overturned: bond refunded, it no longer counts against the supplier</strong>', human: '<strong class="warn">Undecided: a human decides</strong>', pending: 'Pending' }[a.outcome] ?? esc(a.outcome);
+  return `<h2>Appeal</h2><div class="card">
+    <p class="kv">The supplier appealed (signed with its key):</p><pre>${esc(a.reason)}</pre>
+    <p style="margin-top:12px">${label}${a.audit?.score != null ? ` <span class="kv">· independent Reppo panel: ${esc(a.audit.route)} ${esc(a.audit.score)}</span>` : ''}</p>
+    ${a.audit?.reason ? `<p class="kv">${esc(a.audit.reason)}</p>` : ''}
+    ${a.refundTx ? `<p class="kv"><a href="${esc(a.refundTx)}" target="_blank" rel="noopener">refund transaction</a></p>` : ''}</div>`;
+}
+
 try {
   const id = q.get('t') ?? '';
   if (!/^rfq-[\w-]+$/.test(id)) throw new Error('No tender given.');
@@ -28,12 +39,22 @@ try {
     ${bid.evidence ? `<h2>The text the supplier hid for the AI evaluator</h2><div class="card"><pre>${esc(bid.evidence)}</pre></div>` : ''}
     <h2>Its revealed bid document</h2><div class="card"><pre>${bid.evidence ? highlight(bid.doc, bid.evidence) : esc(bid.doc)}</pre>
       <p class="kv">This is the exact document the supplier committed to before the deadline (sealed hash) and revealed after it.</p></div>
+    <div id="fund"></div>
+    ${appealHtml(bid.appeal)}
     <h2>Verify it yourself</h2>
     <div class="card">
       <p class="kv">Your browser hashes the quote and the document above and reads the slash event and the escrow's storage straight from Kite testnet. Nothing on our server is trusted.</p>
       <button id="go">Verify against Kite testnet</button>
       <div id="result" aria-live="polite"></div>
     </div>`;
+  // Attackers pay for audits: the slashed bond goes to the buyer and is set against the independent audits run.
+  fetch('audit-fund.json').then((r) => (r.ok ? r.json() : null)).then((f) => {
+    if (!f) return;
+    document.querySelector('#fund').innerHTML = `<h2>Who pays for the audits</h2><div class="card">
+      <p>This bond (${esc(rfq.bondPie)} USDT) went to the buyer on-chain. Slashed bonds so far: <strong>${esc(f.slashedUsd)} USDT</strong> from ${esc(f.slashes)} manipulators,
+      against ${esc(f.audits)} independent Reppo audits (${esc(f.auditCostUsd)} USD at ${esc(f.auditUsd)} USD each): <strong>${esc(f.coveredPct)}% paid by attackers</strong>.</p>
+      <p class="kv">Testnet bonds are faucet-sized. With a 10 USD bond, one slash pays for ${esc(f.auditsPerSlashAt10UsdBond)} audits.</p></div>`;
+  }).catch(() => {});
   const go = document.querySelector('#go');
   const run = async () => {
     go.disabled = true;

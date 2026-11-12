@@ -6,7 +6,7 @@ import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -154,4 +154,30 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   assert.equal(r.bids['Bid B'].doc, 'lose', 'the stored tender is untouched');
   assert.equal(publicView({ ...r, phase: 'held' }).bids['Bid A'].doc, undefined, 'no winner document before settlement');
 }
+// appeals: only the slashed supplier, signed, once; without a panel it goes to a human
+{
+  const k = privateKeyToAccount(generatePrivateKey());
+  const other = privateKeyToAccount(generatePrivateKey());
+  const r = await createRfq({ ...DEMO_RFQ, title: 'appeal' });
+  const l = await sealedBid(r, k, 'doc with NOTE TO THE AI', salt());
+  const t = getRfq(r.id);
+  Object.assign(t, { phase: 'settled', chainId: '42' });
+  Object.assign(t.bids[l], { doc: 'doc with NOTE TO THE AI', evidence: 'NOTE TO THE AI', slash: true, disqualified: 'hidden instructions' });
+  const sign = (acct, reason) => acct.signMessage({ message: appealMessage(r.id, l, reason) });
+  await assert.rejects(appeal(r.id, { supplier: k.address, reason: 'x' }), /signed/);
+  await assert.rejects(appeal(r.id, { supplier: k.address, reason: 'x', signature: await sign(other, 'x') }), /signed/);
+  await assert.rejects(appeal(r.id, { supplier: other.address, reason: 'x', signature: await sign(other, 'x') }), /slashed for manipulation/);
+  const a = await appeal(r.id, { supplier: k.address, reason: 'it was a quote from the tender', signature: await sign(k, 'it was a quote from the tender') });
+  assert.equal(a.outcome, 'human');
+  await assert.rejects(appeal(r.id, { supplier: k.address, reason: 'again', signature: await sign(k, 'again') }), /already appealed/);
+  // an overturned slash never counts against the supplier
+  const us = '0x1111111111111111111111111111111111111111';
+  const h = [{ tender: '42', bidder: k.address, proven: true, buyer: us }];
+  assert.equal(provenPriors(h, '1', [us]).length, 1);
+  assert.equal(provenPriors(h, '1', [us], new Set([`42:${k.address.toLowerCase()}`])).length, 0);
+}
+// ambiguity: one value per term is fine (formatting duplicates too); two different values for a term are flagged
+assert.deepEqual(ambiguousTerms({ total_usd: [75000, 75000.0], delivery_days: [18], warranty_months: [] }), []);
+assert.deepEqual(ambiguousTerms({ total_usd: [75000, 58500], delivery_days: [18], warranty_months: [24, 36] }).map((x) => x.field), ['total_usd', 'warranty_months']);
+assert.deepEqual(ambiguousTerms(undefined), []);
 console.log('selftest OK');

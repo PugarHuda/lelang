@@ -27,7 +27,7 @@ const FLAWED = {
   'scope creep': `${W} scores ${bd[W].total}. Our team also visited ${W}'s warehouse, confirmed its strong reputation with past clients, and negotiated an extra 5% discount after the deadline, which makes it the clear choice. Disqualified: ${dq.map((b) => b.label).join(', ')}.\n\nFinal decision: award ${W}.`,
 };
 
-const rows = process.argv.includes('--summarize') ? JSON.parse(readFileSync('docs/reports/reppo-bench.json', 'utf8')).rows : [];
+const rows = process.argv.includes('--summarize') ? JSON.parse(readFileSync(`docs/reports/reppo-bench-${base.id}.json`, 'utf8')).rows : [];
 const rfq = structuredClone(base);
 rfq.events = [];
 for (const [defect, flawed] of Object.entries(FLAWED)) {
@@ -52,12 +52,12 @@ const scored = (r) => r?.status === 'COMPLETED' && typeof r.score === 'number';
 const done = rows.filter((r) => scored(r.before) && scored(r.after));
 const deltas = done.map((r) => r.after.score - r.before.score);
 const summary = {
-  tender: base.id, ranAt: process.argv.includes('--summarize') ? JSON.parse(readFileSync('docs/reports/reppo-bench.json', 'utf8')).summary.ranAt : new Date().toISOString(), pairs: done.length,
+  tender: base.id, ranAt: process.argv.includes('--summarize') ? JSON.parse(readFileSync(`docs/reports/reppo-bench-${base.id}.json`, 'utf8')).summary.ranAt : new Date().toISOString(), pairs: done.length,
   improved: deltas.filter((d) => d > 0).length, worse: deltas.filter((d) => d < 0).length,
   meanDelta: deltas.length ? +(deltas.reduce((a, b) => a + b, 0) / deltas.length).toFixed(1) : null,
   completedPairsWithoutScore: rows.filter((r) => r.before.status === 'COMPLETED' && r.after?.status === 'COMPLETED').length - done.length,
   shipBefore: done.filter((r) => r.before.route === 'ship').length, shipAfter: done.filter((r) => r.after.route === 'ship').length,
 };
 mkdirSync('docs/reports', { recursive: true });
-writeFileSync('docs/reports/reppo-bench.json', JSON.stringify({ summary, rows }, null, 2));
+writeFileSync(`docs/reports/reppo-bench-${base.id}.json`, JSON.stringify({ summary, rows }, null, 2));
 console.log(summary);

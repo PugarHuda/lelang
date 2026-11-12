@@ -61,7 +61,7 @@ Jev (`jev-latest`) is listed in SERV's changelog but not enabled for our key (ab
 
 ## Does Reppo feedback actually improve the rationale?
 
-Five deliberately flawed rationales for the settled 5-bid tender were audited by Reppo, rewritten by SERV against the panel's stated reason (decision and numbers frozen), and audited again (`node --env-file=.env scripts/reppo-bench.js`, raw verdicts in [`docs/reports/reppo-bench.json`](docs/reports/reppo-bench.json)).
+Five deliberately flawed rationales for the settled 5-bid tender were audited by Reppo, rewritten by SERV against the panel's stated reason (decision and numbers frozen), and audited again (`node --env-file=.env scripts/reppo-bench.js`, raw verdicts in [`docs/reports/reppo-bench-rfq-mwdqcnnx.json`](docs/reports/reppo-bench-rfq-mwdqcnnx.json)).
 
 | Planted defect | Reppo before | After one rewrite | Weakest rubric before → after |
 |---|---|---|---|
