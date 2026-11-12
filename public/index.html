@@ -106,9 +106,11 @@ function render(rfq) {
     ${rfq.settlement?.length ? `<h2>Settlement</h2><div class="card"><ol>${rfq.settlement.map((s) => `<li><span class="t"></span><span class="s">${esc(s.event ?? 'transfer')}</span><span>${esc(s.label ?? s.why ?? '')} ${esc(s.amount)}${s.tx ? ` <a href="${esc(s.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>` : ''}
     ${rfq.escrow && rfq.phase === 'settled' ? `<h2>Verified by your browser</h2><div class="card" id="proof" aria-live="polite"><p class="kv">Checking against Kite testnet…</p></div>` : ''}
     ${rfq.phase === 'held' && rfq.award?.winner ? `<h2>Human review</h2><div class="card">
-      <p class="kv">Money is held. A reviewer can release the award to ${esc(rfq.award.winner)}; their name goes into the trace.</p>
-      <button onclick="approveHeld('${esc(rfq.id)}')">Approve ${esc(rfq.award.winner)} and settle</button></div>` : ''}
-    ${rfq.humanApproval ? `<h2>Human review</h2><div class="card ok">Approved by ${esc(rfq.humanApproval.approver)}${rfq.humanApproval.note ? `: ${esc(rfq.humanApproval.note)}` : ''}</div>` : ''}
+      <p class="kv">Money is held. A reviewer can release the award to ${esc(rfq.award.winner)} by signing with their own wallet; the signature goes into the trace.</p>
+      <button onclick="approveHeld('${esc(rfq.id)}', '${esc(rfq.award.winner)}')">Sign and release to ${esc(rfq.award.winner)}</button></div>` : ''}
+    ${rfq.humanApproval ? `<h2>Human review</h2><div class="card ok">Released by <code>${esc(rfq.humanApproval.approver)}</code>${rfq.humanApproval.note ? `: ${esc(rfq.humanApproval.note)}` : ''}
+      ${rfq.humanApproval.signature ? `<details class="kv"><summary>signed message (EIP-191)</summary><pre>${esc(rfq.humanApproval.message)}
+${esc(rfq.humanApproval.signature)}</pre></details>` : ''}</div>` : ''}
     <h2>Trace</h2><div class="card"><ol>${rfq.events.map((e) => `<li><span class="t">${e.t.slice(11, 19)}</span><span class="s">${esc(e.step)}</span><span>${esc(e.msg)}
       ${e.data?.tx ? ` <a href="${esc(e.data.tx)}" target="_blank">tx</a>` : ''}</span></li>`).join('')}</ol></div>`;
   window.__lastRfq = rfq;
@@ -156,14 +158,22 @@ $('#run').onclick = async () => {
   if (body.id) current = body.id; else alert(body.error);
   tick();
 };
-async function approveHeld(id) {
-  const approver = prompt('Your name (recorded in the trace)');
-  if (!approver) return;
-  const note = prompt('Why are you releasing it? (optional)') || '';
-  const token = new URLSearchParams(location.search).get('token') || '';
-  const q = new URLSearchParams({ token, approver, note });
-  const res = await fetch(`/api/rfqs/${id}/approve?${q}`, { method: 'POST' });
-  if (!res.ok) alert((await res.json()).error);
+// The approver signs the release with their own wallet (EIP-191); the server verifies it and keeps the signature in
+// the trace. Same message as approvalMessage() in src/lelang.js.
+async function approveHeld(id, winner) {
+  if (!window.ethereum) return alert('Approving needs a browser wallet to sign the release (or use scripts/approve.js with a key).');
+  const note = (prompt('Why are you releasing it? (optional)') || '').slice(0, 200);
+  try {
+    const [approver] = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const message = `LELANG approve ${id} award ${winner}${note ? ` note: ${note}` : ''}`;
+    const signature = await window.ethereum.request({ method: 'personal_sign', params: [message, approver] });
+    const token = new URLSearchParams(location.search).get('token') || '';
+    const q = new URLSearchParams({ token, approver, note, winner, signature });
+    const res = await fetch(`/api/rfqs/${id}/approve?${q}`, { method: 'POST' });
+    if (!res.ok) alert((await res.json()).error);
+  } catch (e) {
+    alert(`Not approved: ${e.message}`);
+  }
   tick();
 }
 tick(); setInterval(tick, 2000);

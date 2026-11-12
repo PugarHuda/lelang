@@ -460,14 +460,23 @@ export async function settle(rfqId) {
 }
 
 // A human reviewer releases a held tender. Their name and note go into the trace next to the machine verdicts.
-export async function approve(rfqId, { approver, winner, note }) {
+// A human release of held money is signed (EIP-191) by the approver's own key, so anyone can later check who released it.
+export const approvalMessage = (rfqId, winner, note) => `LELANG approve ${rfqId} award ${winner}${note ? ` note: ${note}` : ''}`;
+const approvers = () => (process.env.APPROVERS ?? '').split(',').map((a) => a.trim().toLowerCase()).filter(Boolean);
+
+export async function approve(rfqId, { approver, winner, note, signature }) {
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'held') throw new Error(`tender is ${rfq.phase}, only held tenders can be approved`);
   const bid = rfq.bids[winner ?? rfq.award?.winner];
   if (!bid || bid.disqualified) throw new Error('winner must be an eligible bid');
+  const message = approvalMessage(rfqId, bid.label, note);
+  if (!signature || !(await verifyMessage({ address: approver, message, signature }).catch(() => false))) fail('approval must be signed by the approver: bad or missing signature');
+  if (approvers().length && !approvers().includes(approver.toLowerCase())) fail('approver is not on the APPROVERS list');
+  // re-check after the await: a second approval racing this one must not overwrite whose signature released the money
+  if (rfq.phase !== 'held') throw new Error(`tender is ${rfq.phase}, only held tenders can be approved`);
   rfq.award = { ...rfq.award, winner: bid.label, decision: 'award' };
-  rfq.humanApproval = { approver, note, at: new Date().toISOString() };
-  log(rfq, 'human', `${approver} approved ${bid.label}${note ? `: ${note}` : ''}`);
+  rfq.humanApproval = { approver, note, message, signature, at: new Date().toISOString() };
+  log(rfq, 'human', `${approver} signed the release of ${bid.label}${note ? `: ${note}` : ''} (EIP-191 signature verified)`);
   return settle(rfqId);
 }
 

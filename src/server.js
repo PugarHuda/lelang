@@ -47,11 +47,14 @@ createServer(async (req, res) => {
     const a = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/approve$/);
     if (a && req.method === 'POST') {
       if (!authorized) return json(res, 403, { error: 'demo token required' });
-      const approver = (url.searchParams.get('approver') || 'human reviewer').slice(0, 60);
+      const approver = url.searchParams.get('approver') ?? '';
+      const signature = url.searchParams.get('signature') ?? '';
       const note = (url.searchParams.get('note') || '').slice(0, 200);
+      const winner = url.searchParams.get('winner') || undefined;
+      if (!ADDR.test(approver) || !/^0x[0-9a-fA-F]{130}$/.test(signature)) bad('approver (address) and signature (65-byte hex) required');
       if (!getRfq(a[1])) return json(res, 404, { error: 'not found' });
       try {
-        return json(res, 200, await approve(a[1], { approver, note }));
+        return json(res, 200, await approve(a[1], { approver, note, winner, signature }));
       } catch (e) {
         // Wrong state (already settled / settling) is the caller's conflict, not a server fault.
         if (/only held tenders|already|eligible bid/.test(e.message)) return json(res, 409, { error: e.message });

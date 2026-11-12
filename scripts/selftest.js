@@ -2,10 +2,11 @@
 import assert from 'node:assert/strict';
 import { randomBytes } from 'node:crypto';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -59,11 +60,25 @@ assert.deepEqual(
   const r = await createRfq({ ...DEMO_RFQ, title: 'double-approve' });
   const l = await sealedBid(r, privateKeyToAccount(generatePrivateKey()), 'x', salt());
   Object.assign(getRfq(r.id), { phase: 'held', award: { decision: 'escalate', winner: l } });
-  const first = approve(r.id, { approver: 't' });
-  await assert.rejects(approve(r.id, { approver: 't2' }), /only held tenders/);
+  const [k1, k2] = [privateKeyToAccount(generatePrivateKey()), privateKeyToAccount(generatePrivateKey())];
+  const signed = async (k, note = '') => ({ approver: k.address, note, signature: await k.signMessage({ message: approvalMessage(r.id, l, note) }) });
+  // unsigned, signed by someone else, or by a key outside APPROVERS: refused, tender stays held
+  await assert.rejects(approve(r.id, { approver: k1.address }), /signature/);
+  await assert.rejects(approve(r.id, { ...(await signed(k2)), approver: k1.address }), /signature/);
+  await assert.rejects(approve(r.id, { ...(await signed(k1, 'ok')), note: 'tampered note' }), /signature/);
+  process.env.APPROVERS = k2.address;
+  await assert.rejects(approve(r.id, await signed(k1)), /APPROVERS/);
+  delete process.env.APPROVERS;
+  assert.equal(getRfq(r.id).phase, 'held');
+  // two valid approvals at once: one payout, and the record names the signer whose approval released it
+  const first = approve(r.id, await signed(k1, 'checked'));
+  await assert.rejects(approve(r.id, await signed(k2)), /only held tenders|already/);
   await first;
   assert.equal(getRfq(r.id).phase, 'settled');
   assert.equal(getRfq(r.id).settlement.length, 2, 'one bond refund + one deposit');
+  const h = getRfq(r.id).humanApproval;
+  assert.equal(h.approver, k1.address);
+  assert.ok(await verifyMessage({ address: h.approver, message: h.message, signature: h.signature }), 'stored approval re-verifies');
 }
 // spotlighting: marked text round-trips, and an attacker who guesses the marker gains nothing
 {

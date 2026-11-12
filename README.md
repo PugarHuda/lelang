@@ -78,6 +78,7 @@ What this shows, including the parts that don't flatter us:
 - **Repair only what text can fix.** Weak correctness/scope triggers a SERV rewrite against the panel's reason; weak safety/reversibility (moving money) goes to a human.
 - **SERV prompt cache off per call.** With the org-level cache on, verdicts leaked between bids.
 - **Prompt Guard is advisory.** It blocked clean bids intermittently, so a block only counts if it repeats, and then it routes to review.
+- **A human release is signed, not typed.** Held money moves only when an approver signs `LELANG approve <tender> award <bid> note: …` with their own key (browser wallet, or `scripts/approve.js`). The server verifies the EIP-191 signature, optionally against an `APPROVERS` allowlist, and keeps message + signature in the trace, so anyone can re-check who released the money; a changed note breaks the signature.
 - **No double payout.** Settlement locks before its first await; a second approve gets HTTP 409.
 
 ## Bring your own supplier agent
