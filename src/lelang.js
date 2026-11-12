@@ -2,7 +2,7 @@
 // commit (signed hash + bond) -> anchor on Kite -> reveal -> guard -> extract -> rules -> award -> Reppo audit -> settle
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
-import { promptGuard, findManipulation, choice, extractBid, writeRationale } from './ai.js';
+import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER } from './ai.js';
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
@@ -40,6 +40,12 @@ export const provenPriors = (history, chainId, trustedBuyers) => {
   const trusted = new Set(trustedBuyers.filter(Boolean).map((a) => a.toLowerCase()));
   return history.filter((h) => h.proven && String(h.tender) !== String(chainId) && trusted.has(String(h.buyer).toLowerCase()));
 };
+// Decision-relevant fields only; a number vs null counts as a disagreement.
+const READ_FIELDS = ['total_usd', 'delivery_days', 'warranty_months', 'specs.ram_gb', 'specs.storage_gb', 'specs.battery_hours'];
+export function readersDisagree(a, b) {
+  const get = (t, f) => f.split('.').reduce((o, k) => o?.[k], t) ?? null;
+  return READ_FIELDS.filter((f) => get(a, f) !== get(b, f)).map((f) => ({ field: f, a: get(a, f), b: get(b, f) }));
+}
 export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
 
 export async function createRfq(spec) {
@@ -234,6 +240,20 @@ export async function evaluate(rfqId) {
     const ex = await extractBid(bid.doc);
     bid.terms = ex.terms;
     log(rfq, 'extract', `${bid.label} terms read by ${ex.engine}: $${ex.terms.total_usd}, ${ex.terms.delivery_days}d, ${ex.terms.warranty_months}mo warranty`);
+    // Two independent readers: numbers that decide the award must survive a second model. A disagreement doesn't
+    // pick a side; it keeps the bid out of an automatic award. Skipped when SERV already was the only reader.
+    if (ex.engine.startsWith('Dolphin')) {
+      const second = await servRead(bid.doc);
+      const diff = readersDisagree(ex.terms, second);
+      bid.secondRead = { engine: SERV_READER, terms: second, disagree: diff };
+      if (diff.length) {
+        const what = diff.map((d) => `${d.field} ${d.a} vs ${d.b}`).join(', ');
+        bid.review = [bid.review, `Dolphin and SERV read different terms (${what}): a human should look`].filter(Boolean).join('; ');
+        log(rfq, 'cross-check', `${bid.label}: Dolphin and ${SERV_READER} disagree (${what}); no automatic award for this bid`);
+      } else {
+        log(rfq, 'cross-check', `${bid.label}: ${SERV_READER} independently read the same price, delivery, warranty and specs`);
+      }
+    }
 
     const fails = ruleCheck(rfq, ex.terms);
     if (fails.length) disqualify(rfq, bid, fails.join('; '), false);

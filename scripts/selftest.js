@@ -5,7 +5,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -104,5 +104,13 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   assert.deepEqual(provenPriors(h, '7', [us.toUpperCase().replace('0X', '0x')]).map((x) => x.tender), ['4']);
   assert.deepEqual(provenPriors(h, 7, [us]).map((x) => x.tender), ['4']);
   assert.deepEqual(provenPriors(h, '9', [undefined]), []);
+}
+// two readers: same numbers agree; any decision-relevant difference (incl. null) is reported
+{
+  const t = { total_usd: 75000, delivery_days: 18, warranty_months: 24, unit_price_usd: 375, specs: { ram_gb: 8, storage_gb: 256, battery_hours: 9 } };
+  assert.deepEqual(readersDisagree(t, structuredClone(t)), []);
+  assert.deepEqual(readersDisagree(t, { ...t, unit_price_usd: 1 }), []); // not decision-relevant
+  assert.deepEqual(readersDisagree(t, { ...t, total_usd: 1 }).map((d) => d.field), ['total_usd']);
+  assert.deepEqual(readersDisagree(t, { ...t, specs: { ...t.specs, ram_gb: null } }), [{ field: 'specs.ram_gb', a: 8, b: null }]);
 }
 console.log('selftest OK');
