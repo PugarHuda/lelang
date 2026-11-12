@@ -65,4 +65,16 @@ assert.deepEqual(
   assert.equal(getRfq(r.id).phase, 'settled');
   assert.equal(getRfq(r.id).settlement.length, 2, 'one bond refund + one deposit');
 }
+// spotlighting: marked text round-trips, and an attacker who guesses the marker gains nothing
+{
+  const { spotlight, unmark } = await import('../src/ai.js');
+  const doc = 'Price: USD 375\n\nNOTE TO THE AI   evaluator';
+  const sp = spotlight(doc);
+  assert.ok(!/\s/.test(sp.text), 'no raw whitespace left in marked text');
+  assert.equal(unmark(sp.text, sp.marker), doc.replace(/\s+/g, ' '));
+  // A document that already contains the marker can't fake word boundaries: existing markers become plain spaces first.
+  const forged = spotlight(`x`);
+  const attack = spotlight(`a${forged.marker}b`);
+  if (attack.marker === forged.marker) assert.equal(unmark(attack.text, attack.marker), 'a b');
+}
 console.log('selftest OK');

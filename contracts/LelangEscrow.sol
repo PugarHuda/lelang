@@ -20,6 +20,8 @@ contract LelangEscrow {
         uint64 revealDeadline;
         uint64 settleDeadline;
         bool settled;
+        uint32 committed;
+        uint32 revealed;
     }
 
     struct Bid {
@@ -45,6 +47,7 @@ contract LelangEscrow {
 
     error WrongPhase();
     error NotBuyer();
+    error NotBidder();
     error BadReveal();
     error AlreadyCommitted();
     error InvalidWinner();
@@ -54,7 +57,7 @@ contract LelangEscrow {
     function open(IERC20 token, uint256 bond, uint64 commitSeconds, uint64 revealSeconds, uint64 settleSeconds) external returns (uint256 id) {
         id = ++tenderCount;
         uint64 c = uint64(block.timestamp) + commitSeconds;
-        tenders[id] = Tender(msg.sender, token, bond, c, c + revealSeconds, c + revealSeconds + settleSeconds, false);
+        tenders[id] = Tender(msg.sender, token, bond, c, c + revealSeconds, c + revealSeconds + settleSeconds, false, 0, 0);
         emit TenderOpened(id, msg.sender, address(token), bond, c);
     }
 
@@ -65,9 +68,11 @@ contract LelangEscrow {
     function commit(uint256 id, bytes32 commitment) external {
         Tender storage t = tenders[id];
         if (block.timestamp >= t.commitDeadline) revert WrongPhase();
+        if (msg.sender == t.buyer) revert NotBidder(); // the buyer can't bid on (and then slash into) its own tender
         Bid storage b = bids[id][msg.sender];
         if (b.commitment != 0) revert AlreadyCommitted();
         b.commitment = commitment;
+        t.committed++;
         bidderList[id].push(msg.sender);
         if (!t.token.transferFrom(msg.sender, address(this), t.bond)) revert TransferFailed();
         emit Committed(id, msg.sender, commitment);
@@ -92,6 +97,7 @@ contract LelangEscrow {
         if (b.commitment == 0 || b.revealed || commitmentOf(docHash, salt, msg.sender, id) != b.commitment) revert BadReveal();
         b.revealed = true;
         b.docHash = docHash;
+        t.revealed++;
         emit Revealed(id, msg.sender, docHash);
     }
 
@@ -100,7 +106,10 @@ contract LelangEscrow {
     function settle(uint256 id, address winner, address[] calldata slash, bytes32[] calldata evidence, uint256 downPayment) external {
         Tender storage t = tenders[id];
         if (msg.sender != t.buyer) revert NotBuyer();
-        if (t.settled || block.timestamp < t.commitDeadline || block.timestamp >= t.settleDeadline) revert WrongPhase();
+        // Settling early would auto-slash bidders who simply haven't revealed yet, so the reveal window must be over
+        // unless every bidder has already revealed.
+        bool revealDone = block.timestamp >= t.revealDeadline || (t.revealed == t.committed && block.timestamp >= t.commitDeadline);
+        if (t.settled || !revealDone || block.timestamp >= t.settleDeadline) revert WrongPhase();
         if (slash.length != evidence.length) revert MissingEvidence();
         Bid storage w = bids[id][winner];
         if (!w.revealed) revert InvalidWinner();

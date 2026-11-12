@@ -12,7 +12,8 @@
     "snapshot": "node scripts/snapshot.js",
     "compile": "node scripts/compile.js",
     "deploy:escrow": "node --env-file=.env scripts/deploy-escrow.js",
-    "test:escrow": "node --env-file=.env scripts/escrow-test.js"
+    "test:escrow": "node --env-file=.env scripts/escrow-test.js",
+    "redteam": "node --env-file=.env scripts/redteam.js"
   },
   "keywords": [],
   "author": "",

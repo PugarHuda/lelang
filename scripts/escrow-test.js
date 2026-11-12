@@ -45,9 +45,11 @@ assert.equal(onChainCommitment, commitment, 'JS and Solidity commitments must ma
 
 await escrowCommit(supPk, chainId, commitment, BOND);
 await reverts(sup, 'commit', [id, commitment], 'AlreadyCommitted');
+await reverts(buyer, 'commit', [id, commitment], 'NotBidder'); // buyer can't bid into its own tender
 await reverts(sup, 'reveal', [id, docHashOf(doc), salt], 'WrongPhase'); // commits still open
 await reverts(sup, 'closeCommits', [id], 'NotBuyer');
 await escrowCloseCommits(chainId);
+await reverts(buyer, 'settle', [id, sup.address, [], [], 0n], 'WrongPhase'); // can't settle (and auto-slash) before bidders reveal
 await reverts(sup, 'reveal', [id, docHashOf('a different document'), salt], 'BadReveal');
 await reverts(sup, 'reveal', [id, docHashOf(doc), `0x${'11'.repeat(32)}`], 'BadReveal');
 await escrowReveal(supPk, chainId, docHashOf(doc), salt);
