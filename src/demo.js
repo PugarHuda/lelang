@@ -70,7 +70,7 @@ export async function runDemo(onCreated = () => {}) {
       if (Number(bal.kite) < 0.01) await sendGas(buyerPk, acct.address, '0.01');
       if (stable < rfq.bondPie) await transferPie(buyerPk, acct.address, rfq.bondPie);
       if (stable > rfq.bondPie + 0.001) await transferPie(pk, buyer, +(stable - rfq.bondPie).toFixed(6));
-      bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash, rfq.bondPie) : await transferPie(pk, buyer, rfq.bondPie);
+      bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash) : await transferPie(pk, buyer, rfq.bondPie);
     }
     const label = await submitCommit(rfq.id, { supplier: acct.address, hash, signature, bondTx });
     sealed.push({ label, doc, salt, pk });

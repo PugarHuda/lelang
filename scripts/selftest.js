@@ -5,7 +5,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -95,4 +95,5 @@ assert.equal(strictestRound([{ status: 'FAILED' }]), null);
   assert.equal(endsWithDecision(L('...', 'No award is made; escalate to a human.'), 'award'), false);
   assert.equal(endsWithDecision(L('...', 'escalate'), 'escalate'), true);
 }
+assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB', 'AZ', 'BA', 'CV']);
 console.log('selftest OK');

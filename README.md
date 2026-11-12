@@ -73,6 +73,15 @@ SUPPLIER_PRIVATE_KEY=0x… node scripts/supplier-agent.js http://localhost:3000 
 
 `npm test` runs this protocol over real HTTP with two independent agent processes and checks that forged, duplicate, late, junk and oversize requests are refused.
 
+Tested live on Kite testnet with an outside agent holding only its own key (escrow tender #6): it locked its bond
+([commit](https://testnet.kitescan.ai/tx/0x518f82c15677fc9840536129445171bc8d174f78fbe58aed524e6d7be989d970)),
+revealed ([reveal](https://testnet.kitescan.ai/tx/0xf2c30b506c17822cdcee1739bf23bf654ca795e9f3a567def3ed51eca6cd131a)),
+passed SERV checks and a Reppo audit (ship, 91), and got bond + down payment back in one
+[settle](https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0).
+A forged commit with no bond in the escrow was refused. That run found two bugs that in-process demos hide: the agent
+approved its local default token instead of the tender's (now read from the contract), and the server announced the
+reveal phase before the close tx confirmed (now a `closing` phase until it does).
+
 ## Business model (planned, not built)
 
 Who pays: the **buyer**, because Lelang replaces work it pays for today (evaluation committee hours, audit, dispute handling). Suppliers pay nothing beyond a refundable bond, so honest bidders have no reason to stay away.

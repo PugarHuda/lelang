@@ -43,7 +43,7 @@ const commitment = commitHash(doc, salt, sup.address, chainId);
 const onChainCommitment = await pub.readContract({ address: (process.env.ESCROW_ADDRESS || JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8')).escrow.address), abi, functionName: 'commitmentOf', args: [docHashOf(doc), salt, sup.address, id] });
 assert.equal(onChainCommitment, commitment, 'JS and Solidity commitments must match');
 
-await escrowCommit(supPk, chainId, commitment, BOND);
+await escrowCommit(supPk, chainId, commitment);
 await reverts(sup, 'commit', [id, commitment], 'AlreadyCommitted');
 await reverts(buyer, 'commit', [id, commitment], 'NotBidder'); // buyer can't bid into its own tender
 await reverts(sup, 'reveal', [id, docHashOf(doc), salt], 'WrongPhase'); // commits still open

@@ -32,12 +32,12 @@ writeFileSync(SALT_FILE, JSON.stringify({ salt }));
 let rfq = await api(`/api/rfqs/${rfqId}`);
 if (rfq.phase === 'commit') {
   const hash = commitHash(doc, salt, me.address, rfq.chainId ?? 0);
-  const bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash, rfq.bondPie) : undefined;
+  const bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash) : undefined;
   const signature = rfq.chainId ? undefined : await me.signMessage({ message: commitMessage(rfqId, hash) });
   const { label } = await api(`/api/rfqs/${rfqId}/commit`, { method: 'POST', body: { supplier: me.address, hash, signature, bondTx } });
   console.log(`committed as ${label}; waiting for the buyer to close commits`);
 }
-while ((rfq = await api(`/api/rfqs/${rfqId}`)).phase === 'commit') await new Promise((r) => setTimeout(r, 5000));
+while (['commit', 'closing'].includes((rfq = await api(`/api/rfqs/${rfqId}`)).phase)) await new Promise((r) => setTimeout(r, 5000));
 if (rfq.phase !== 'reveal') throw new Error(`tender moved to ${rfq.phase} before we revealed`);
 const revealTx = rfq.chainId ? await escrowReveal(pk, rfq.chainId, docHashOf(doc), salt) : undefined;
 console.log(await api(`/api/rfqs/${rfqId}/reveal`, { method: 'POST', body: { supplier: me.address, doc, salt, revealTx } }));

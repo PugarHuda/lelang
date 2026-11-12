@@ -21,6 +21,7 @@ const call = async (path, method = 'GET', body) => {
   return { status: res.status, body: await res.json() };
 };
 
+let testRfq = null;
 try {
   // buyer side is token-gated and validated
   assert.equal((await call('/api/rfqs', 'POST', { title: 'x' })).status, 403);
@@ -28,6 +29,7 @@ try {
   const open = await call('/api/rfqs?token=t', 'POST', { title: 'API test tender' });
   assert.equal(open.status, 201);
   const id = open.body.id;
+  testRfq = id;
 
   // two independent supplier agents commit through the public API, then wait for the close
   const keys = [generatePrivateKey(), generatePrivateKey()];
@@ -72,5 +74,6 @@ try {
   server.kill();
   rmSync('data/apitest', { recursive: true, force: true });
   rmSync('data/apitest.json', { force: true });
-  for (const f of readdirSync('data')) if (f.startsWith('supplier-')) rmSync(`data/${f}`); // agents' salt files
+  // only this test's salt files: a real agent's salt is the only way it can reveal, deleting it strands its bond
+  if (testRfq) for (const f of readdirSync('data')) if (f.startsWith(`supplier-${testRfq}-`)) rmSync(`data/${f}`);
 }

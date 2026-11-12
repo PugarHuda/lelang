@@ -32,6 +32,8 @@ export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
 
 // Caller mistakes (wrong phase, bad proof) carry status 400 so the API doesn't report them as server faults.
 const fail = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
+// 0 -> A, 25 -> Z, 26 -> AA (spreadsheet-style, so labels never run out)
+export const bidLabel = (i) => (i >= 26 ? bidLabel(Math.floor(i / 26) - 1) : '') + String.fromCharCode(65 + (i % 26));
 export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
 
 export async function createRfq(spec) {
@@ -63,8 +65,9 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
   // Re-check after the awaits: on-chain, escrowBid waits on the RPC, so two concurrent commits from one supplier
   // could both pass the first check. (Off-chain verifyMessage never yields, so no offline test can hit this.)
   if (bidOf(rfq, supplier)) fail('supplier already committed');
-  if (Object.keys(rfq.bids).length >= 26) fail('tender is full (26 bids)'); // labels run Bid A..Z
-  const label = `Bid ${String.fromCharCode(65 + Object.keys(rfq.bids).length)}`;
+  // Same cap as LelangEscrow.MAX_BIDDERS. On-chain every slot costs a bond locked in the escrow.
+  if (Object.keys(rfq.bids).length >= 100) fail('tender is full (100 bids)');
+  const label = `Bid ${bidLabel(Object.keys(rfq.bids).length)}`;
   rfq.bids[label] = { label, supplier, hash, signature, bondTx };
   log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ` and locked its bond${rfq.chainId ? ' in escrow' : ''}` : ''}`, bondTx && { tx: explorerTx(bondTx) });
   return label;
@@ -73,13 +76,26 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
 export async function closeCommits(rfqId) {
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'commit') fail(`tender is in ${rfq.phase}, not commit`);
-  rfq.phase = 'reveal';
+  // 'closing' (set before any await) blocks a second close and late commits; 'reveal' is only announced once the
+  // close is confirmed on-chain, or bidders polling for it would send reveal txs the escrow still rejects.
+  rfq.phase = 'closing';
   const n = Object.keys(rfq.bids).length;
+  try {
+    await closeOnChain(rfq, n);
+  } catch (e) {
+    rfq.phase = 'commit';
+    throw e;
+  }
+  rfq.phase = 'reveal';
+  save();
+}
+
+async function closeOnChain(rfq, n) {
   if (rfq.chainId) {
     rfq.anchorTx = await escrowCloseCommits(rfq.chainId);
     log(rfq, 'anchor', `Commits closed on-chain: ${n} sealed bids, bonds locked in the escrow contract`, { tx: explorerTx(rfq.anchorTx) });
   } else if (kiteEnabled()) {
-    rfq.anchorTx = await anchorCommits(rfqId, Object.values(rfq.bids).map((b) => b.hash));
+    rfq.anchorTx = await anchorCommits(rfq.id, Object.values(rfq.bids).map((b) => b.hash));
     log(rfq, 'anchor', `Deadline passed. ${n} sealed hashes anchored on Kite`, { tx: explorerTx(rfq.anchorTx) });
   } else {
     log(rfq, 'anchor', `Deadline passed. ${n} sealed hashes frozen (Kite not configured, so nothing went on-chain)`);

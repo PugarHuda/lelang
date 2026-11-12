@@ -94,8 +94,11 @@ export async function escrowOpen(bond, { commitSeconds = 3600, revealSeconds = 3
   return { chainId: logs.find((l) => l.eventName === 'TenderOpened').args.id.toString(), tx: hash };
 }
 
-export async function escrowCommit(pk, chainId, commitment, bond) {
-  await approveEscrow(pk, bond);
+// Token and bond amount come from the tender on-chain, not from local config: an outside bidder may not share
+// our STABLE_TOKEN, and approving the wrong token makes commit revert with ERC20InsufficientAllowance.
+export async function escrowCommit(pk, chainId, commitment) {
+  const [, token, bond] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] });
+  await confirm(await wallet(pk).writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), bond] }));
   return (await send(pk, 'commit', [BigInt(chainId), commitment])).hash;
 }
 
