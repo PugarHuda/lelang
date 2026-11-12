@@ -17,7 +17,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 |---|---|
 | Injection attacks, 5 runs × 8 styles | 40/40 caught, never slashed without proof, 0/10 false positives |
 | Adaptive attacker (writes new attacks, learns from results) | found a real gap (3/9 would have won), fixed; after the fix 0/6, and 9/9 old ones held |
-| Reppo feedback loop on flawed rationales | 3/3 improved (mean +17.3), failures published too |
+| Reppo feedback loop on 10 flawed rationales, 2 tenders | audit route improved in 6/7 scored pairs, never worse (score mean +9.7); failures published too |
 | Escrow contract | 100% line coverage incl. fuzz, Slither clean, source verified on Kitescan |
 | Public pages (CI, desktop + mobile) | a doctored quote or document is caught on the proof page |
 
@@ -76,7 +76,11 @@ What went wrong along the way, kept here on purpose:
 
 ## Does Reppo feedback actually improve the rationale?
 
-Five deliberately flawed rationales for the settled 5-bid tender were audited by Reppo, rewritten by SERV against the panel's stated reason (decision and numbers frozen), and audited again (`node --env-file=.env scripts/reppo-bench.js`, raw verdicts in [`docs/reports/reppo-bench-rfq-mwdqcnnx.json`](docs/reports/reppo-bench-rfq-mwdqcnnx.json)).
+Five deliberately flawed rationales per tender were audited by Reppo, rewritten by SERV against the panel's stated reason (decision and numbers frozen), and audited again (`npm run bench:reppo -- <tender id>`; raw verdicts: [5-bid tender](docs/reports/reppo-bench-rfq-mwdqcnnx.json), [3-agent tender](docs/reports/reppo-bench-rfq-mwdsz7vo.json)).
+
+**Across both tenders (10 flawed rationales):** of 7 pairs with a score before and after, the audit route improved in 6 and never got worse (review→ship 5×, block→review 1×); score mean +9.7 (5 up, 1 same, 1 down by 3 while its route went review→ship). Two rewrites were never submitted because they changed the decision line; the panel shipped two flawed rationales outright.
+
+5-bid tender:
 
 | Planted defect | Reppo before | After one rewrite | Weakest rubric before → after |
 |---|---|---|---|
@@ -87,11 +91,11 @@ Five deliberately flawed rationales for the settled 5-bid tender were audited by
 | "other bids were not considered" | **ship 96** | rewrite not submitted | — |
 
 What this shows, including the parts that don't flatter us:
-- Every scored pair improved (3/3, mean **+17.3**); 0 got worse. Earlier runs, before the writer got code-computed `scoreBreakdown`, went the other way (69→14, 71→29, 52→42); that regression is what led to the fix.
+- 5-bid tender: every scored pair improved (3/3, mean +17.3). 3-agent tender: wrong numbers review 80 → ship 98, hedged review 92 → ship 93, "other bids not considered" review 98 → ship 95, missing criteria ship 96 → ship 96, scope creep block 56 → rewrite not submitted. Earlier runs, before the writer got code-computed `scoreBreakdown`, went the other way (69→14, 71→29, 52→42); that regression is what led to the fix.
 - Feedback fixes text, not facts: invented claims (scope creep) improved but still don't pass (correctness 43). The gate stays strict, so that award would still go to a human.
 - The panel is not infallible: it shipped a rationale that admits ignoring the other bids. That is why Lelang never relies on the audit alone (formula + independent decision node must agree first).
 - The guard against contradictory rewrites fired once: SERV's revision changed the decision line, so it was never submitted.
-- n = 5 on one tender; treat it as a measured signal, not a statistic.
+- n = 10 on two tenders; a measured signal, not a statistic.
 
 ## Safety rules learned while building
 
