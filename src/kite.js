@@ -133,18 +133,55 @@ export async function escrowBid(chainId, bidder) {
   return { commitment, docHash, revealed, closed, bond: bond === undefined ? undefined : Number(formatUnits(bond, decimals)) };
 }
 
-// Refunds, slashes (with evidence hashes) and the down payment happen in one transaction.
-export async function escrowSettle(chainId, winner, slash, evidence, downPayment) {
+// V4 escrow: slashes wait out a challenge window and forfeits go to a bounty pool, never to the buyer.
+export const escrowV4 = (abi = ESCROW_ABI) => abi.some((f) => f.name === 'finalizeSlash');
+
+// Refunds, slashes (with evidence hashes) and the down payment happen in one transaction. On V4 the balance of the
+// price (`balance`) is also locked here, until the buyer confirms delivery.
+export async function escrowSettle(chainId, winner, slash, evidence, downPayment, { balance = 0, deliverySeconds = 0 } = {}) {
   const { decimals } = await tokenInfo();
   // the escrow pulls the down payment and, in the same tx, the success fee agreed at open
   const feeBps = hasFee() ? Number((await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] }))[9]) : 0;
-  if (downPayment > 0) {
-    const dp = parseUnits(String(downPayment), decimals); // integer math, same rounding as the contract
-    await confirm(await wallet(process.env.BUYER_PRIVATE_KEY).writeContract({ address: TOKEN, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), dp + (dp * BigInt(feeBps)) / 10_000n] }));
+  const v4 = escrowV4();
+  const withFee = (x) => x + (x * BigInt(feeBps)) / 10_000n; // integer math, same rounding as the contract
+  const dp = parseUnits(String(downPayment), decimals), bal = v4 ? parseUnits(String(balance), decimals) : 0n;
+  if (dp > 0n || bal > 0n) {
+    await confirm(await wallet(process.env.BUYER_PRIVATE_KEY).writeContract({ address: TOKEN, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), withFee(dp) + withFee(bal)] }));
   }
-  const { hash, logs } = await send(process.env.BUYER_PRIVATE_KEY, 'settle', [BigInt(chainId), winner, slash, evidence, parseUnits(String(downPayment), decimals)]);
-  const events = logs.map((l) => ({ event: l.eventName, bidder: l.args.bidder ?? l.args.winner ?? l.args.treasury, amount: formatUnits(l.args.amount ?? l.args.downPayment ?? 0n, decimals), evidenceHash: l.args.evidenceHash }));
+  const { hash, logs } = await send(process.env.BUYER_PRIVATE_KEY, 'settle', [BigInt(chainId), winner, slash, evidence, dp, ...(v4 ? [bal, BigInt(deliverySeconds)] : [])]);
+  const events = logs.map((l) => ({ event: l.eventName, bidder: l.args.bidder ?? l.args.winner ?? l.args.treasury, amount: formatUnits(l.args.amount ?? l.args.downPayment ?? l.args.balance ?? 0n, decimals), evidenceHash: l.args.evidenceHash, ...(l.args.finalAt && { finalAt: Number(l.args.finalAt) }), ...(l.args.deadline && { deadline: Number(l.args.deadline) }) }));
   return { hash, events };
+}
+
+// A pending slash on a V4 escrow: `finalAt` 0 means none (finalized, overturned or never listed).
+export async function escrowPending(chainId, bidder, escrow) {
+  const e = escrowFor(escrow);
+  if (!e || !escrowV4(e.abi)) return { finalAt: 0 };
+  const [[finalAt, evidence], block] = await Promise.all([pub.readContract({ address: e.address, abi: e.abi, functionName: 'pendingSlash', args: [BigInt(chainId), bidder] }), pub.getBlock()]);
+  return { finalAt: Number(finalAt), evidence, now: Number(block.timestamp) };
+}
+// Anyone may finalize after the window; we send it from the buyer wallet only because it has gas.
+export const escrowFinalizeSlash = async (chainId, bidder, escrow) => send(process.env.BUYER_PRIVATE_KEY, 'finalizeSlash', [BigInt(chainId), bidder], escrowFor(escrow));
+// An approver's own vote to overturn: `quorum` of them must send it inside the window.
+export const escrowOverturn = async (pk, chainId, bidder, escrow) => send(pk, 'overturnSlash', [BigInt(chainId), bidder], escrowFor(escrow));
+export const escrowConfirmDelivery = async (chainId, escrow) => send(process.env.BUYER_PRIVATE_KEY, 'confirmDelivery', [BigInt(chainId)], escrowFor(escrow));
+export async function escrowDelivery(chainId, escrow) {
+  const e = escrowFor(escrow);
+  if (!e || !escrowV4(e.abi)) return null;
+  const [winner, balance, fee, deadline, closed] = await pub.readContract({ address: e.address, abi: e.abi, functionName: 'deliveries', args: [BigInt(chainId)] });
+  const { decimals } = await tokenInfo();
+  return { winner, balance: formatUnits(balance, decimals), fee: formatUnits(fee, decimals), deadline: Number(deadline), closed };
+}
+// Forfeited bonds waiting to pay bounties, in the tender token.
+export async function bountyPool() {
+  if (!escrowV4()) return null;
+  const { decimals } = await tokenInfo();
+  return Number(formatUnits(await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'bountyPool', args: [TOKEN] }), decimals));
+}
+// Treasury pays a bounty out of the pool: one payment per evidence hash, never above the pool (enforced on-chain).
+export async function escrowPayBounty(pk, to, amount, evidenceHash) {
+  const { decimals } = await tokenInfo();
+  return send(pk, 'payBounty', [TOKEN, to, parseUnits(String(amount), decimals), evidenceHash]);
 }
 
 // Reputation without a database: every evidence-backed slash of this bidder, read from the escrow's own events.

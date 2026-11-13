@@ -18,7 +18,9 @@ const logs = parseEventLogs({ abi, logs: (await chain.getTransactionReceipt({ ha
 // same normalization the server used to verify the quote (src/ai.js findManipulation)
 const norm = (x) => x.normalize('NFKC').replace(/[\p{Cf}\p{Mn}]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
 let n = 0;
-for (const log of logs.filter((l) => l.eventName === 'BondSlashed')) {
+// V4 records a slash as SlashPending at settle (it becomes BondSlashed after the challenge window); a zero evidence
+// hash is an unrevealed bid, not a manipulation slash.
+for (const log of logs.filter((l) => (l.eventName === 'BondSlashed' && BigInt(l.args.evidenceHash) !== 0n) || l.eventName === 'SlashPending')) {
   const bid = Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === log.args.bidder.toLowerCase());
   const [, docHash] = await chain.readContract({ address: rfq.escrow, abi, functionName: 'bids', args: [BigInt(rfq.chainId), log.args.bidder] });
   assert.equal(keccak256(toHex(bid.doc)), docHash, `${bid.label}: published document is the one revealed on-chain`);

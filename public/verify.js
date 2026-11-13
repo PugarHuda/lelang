@@ -27,12 +27,16 @@ async function settleLogs(rfq) {
   const logs = parseEventLogs({ abi: await abi(rfq.escrow), logs: rcpt.logs }).filter((l) => l.args.id === BigInt(rfq.chainId));
   return { rcpt, code, block, logs, settleTx };
 }
+const rcptBlock = (pre, ev) => ev.blockNumber ?? pre?.rcpt?.blockNumber ?? 0n;
 const supplierOf = (rfq, a) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === a.toLowerCase());
 
 // One slash, in full detail: what the browser computed next to what the chain holds.
 export async function checkSlash(rfq, bid, pre) {
-  const { logs, settleTx, block } = pre ?? (await settleLogs(rfq));
-  const ev = logs.find((l) => l.eventName === 'BondSlashed' && l.args.bidder.toLowerCase() === bid.supplier.toLowerCase());
+  pre ??= await settleLogs(rfq);
+  const { logs, settleTx, block } = pre;
+  // V4 escrows record a slash as SlashPending at settle; it becomes BondSlashed (to the bounty pool) after the window,
+  // or SlashOverturned if a quorum of approvers reverses it. The evidence hash is in the settle tx either way.
+  const ev = logs.find((l) => (l.eventName === 'BondSlashed' || l.eventName === 'SlashPending') && l.args.bidder.toLowerCase() === bid.supplier.toLowerCase());
   const [, docHashOnChain] = await client.readContract({ address: rfq.escrow, abi: await abi(rfq.escrow), functionName: 'bids', args: [BigInt(rfq.chainId), bid.supplier] });
   const quote = bid.evidence ?? bid.disqualified;
   const r = {
@@ -42,6 +46,13 @@ export async function checkSlash(rfq, bid, pre) {
     quoteInDoc: !bid.evidence || norm(bid.doc).includes(norm(bid.evidence)),
   };
   r.ok = Boolean(ev) && r.evidenceComputed === r.evidenceOnChain && r.docComputed === r.docOnChain && r.quoteInDoc;
+  if (ev?.eventName === 'SlashPending') {
+    const a = await abi(rfq.escrow);
+    const args = { id: BigInt(rfq.chainId), bidder: bid.supplier };
+    const [fin, over] = await Promise.all(['BondSlashed', 'SlashOverturned'].map((eventName) => client.getContractEvents({ address: rfq.escrow, abi: a, eventName, args, fromBlock: rcptBlock(pre, ev) })));
+    r.status = over.length ? 'overturned on appeal: the escrow returned the bond' : fin.length ? 'final: the bond went to the bounty pool, not to the buyer'
+      : `pending until ${new Date(Number(ev.args.finalAt) * 1000).toISOString()}: a quorum of approvers can still overturn it`;
+  }
   return r;
 }
 
@@ -53,10 +64,10 @@ export async function checkTender(rfq) {
   const add = (ok, text) => rows.push({ ok, text });
   add(rcpt.status === 'success' && rcpt.to?.toLowerCase() === rfq.escrow.toLowerCase(), `Settle tx succeeded and was sent to the escrow contract (block ${rcpt.blockNumber})`);
   add(Boolean(code && code !== '0x'), 'Escrow address holds deployed contract code');
-  for (const l of logs.filter((x) => x.eventName === 'BondSlashed')) {
+  for (const l of logs.filter((x) => (x.eventName === 'BondSlashed' && x.args.evidenceHash !== `0x${'0'.repeat(64)}`) || x.eventName === 'SlashPending')) {
     const bid = supplierOf(rfq, l.args.bidder);
     const s = await checkSlash(rfq, bid, pre);
-    add(s.ok, `${bid.label} slash: keccak(published quote) = on-chain evidence ${l.args.evidenceHash.slice(0, 10)}…, revealed document hash matches escrow storage, quote appears in the document`);
+    add(s.ok, `${bid.label} slash: keccak(published quote) = on-chain evidence ${l.args.evidenceHash.slice(0, 10)}…, revealed document hash matches escrow storage, quote appears in the document${s.status ? ` (${s.status})` : ''}`);
   }
   const refunded = logs.filter((x) => x.eventName === 'BondRefunded').map((x) => supplierOf(rfq, x.args.bidder)?.label).sort();
   const expected = Object.values(rfq.bids).filter((b) => !b.slash).map((b) => b.label).sort();

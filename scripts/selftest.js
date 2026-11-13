@@ -232,4 +232,15 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   await sealedBid(r, privateKeyToAccount(generatePrivateKey()), 'one', salt());
   await assert.rejects(sealedBid(r, privateKeyToAccount(generatePrivateKey()), 'two', salt()), /tender is full .1 bids./);
 }
+// Qualitative criterion in the formula: rating relative to the best eligible rating; absent weight = old formula.
+{
+  const { weightedScores: ws, scoreBreakdown: sb } = await import('../src/lelang.js');
+  const t = (total_usd, delivery_days, warranty_months) => ({ total_usd, delivery_days, warranty_months });
+  const bids = [{ label: 'A', terms: t(100, 10, 12), quality: { score: 8 } }, { label: 'B', terms: t(100, 10, 12), quality: { score: 4 } }];
+  const w = { price: 0.4, warranty: 0.2, delivery: 0.2, quality: 0.2 };
+  assert.deepEqual(ws(w, bids), { A: 1, B: 0.9 });
+  assert.equal(sb(w, bids).B.parts.quality, 0.5);
+  assert.deepEqual(ws({ price: 0.5, warranty: 0.3, delivery: 0.2 }, bids), { A: 1, B: 1 }); // no quality weight: ratings ignored
+  assert.deepEqual(ws(w, bids.map((b) => ({ ...b, quality: { score: 0 } }))), { A: 0.8, B: 0.8 }); // nobody rated: no NaN
+}
 console.log('selftest OK');

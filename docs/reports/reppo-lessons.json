@@ -1,0 +1,157 @@
+{
+  "distilledAt": "2026-11-13T18:31:58.748Z",
+  "model": "SERV gpt-6-luna-serv-kronos",
+  "scoredRationales": 30,
+  "lessons": [
+    {
+      "rule": "Check that criterion scores support the total and that the stated ranking matches the totals; explain material trade-offs..",
+      "from": [
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (wrong numbers)",
+          "route": "review",
+          "score": 86
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (wrong numbers)",
+          "route": "review",
+          "score": 80
+        },
+        {
+          "tender": "rfq-mweep1w6",
+          "source": "production",
+          "route": "ship",
+          "score": 96
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (wrong numbers)",
+          "route": "ship",
+          "score": 98
+        }
+      ]
+    },
+    {
+      "rule": "Give enough criterion-level evidence to make the comparison auditable, rather than relying on a bare value claim..",
+      "from": [
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (missing criteria)",
+          "route": "review",
+          "score": null
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (wrong numbers)",
+          "route": "ship",
+          "score": 98
+        }
+      ]
+    },
+    {
+      "rule": "Use the supplied eligibility and disqualification reasons accurately, and compare only eligible submissions..",
+      "from": [
+        {
+          "tender": "rfq-mwdm2642",
+          "source": "production repair",
+          "route": "block",
+          "score": 42
+        },
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (wrong numbers)",
+          "route": "ship",
+          "score": 95
+        },
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (hedged)",
+          "route": "ship",
+          "score": 96
+        }
+      ]
+    },
+    {
+      "rule": "Do not add facts, actions, or procedures that the input does not provide..",
+      "from": [
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (scope creep)",
+          "route": "block",
+          "score": 29
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (scope creep)",
+          "route": "block",
+          "score": 56
+        },
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (wrong numbers)",
+          "route": "ship",
+          "score": 95
+        },
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (hedged)",
+          "route": "ship",
+          "score": 96
+        }
+      ]
+    },
+    {
+      "rule": "Keep the final action consistent with any stated review or escalation gate; do not present an award when the input requires a human decision..",
+      "from": [
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (scope creep)",
+          "route": "review",
+          "score": 70
+        },
+        {
+          "tender": "rfq-mwdx3myt",
+          "source": "production",
+          "route": "ship",
+          "score": 100
+        },
+        {
+          "tender": "rfq-mweguzqa",
+          "source": "production",
+          "route": "ship",
+          "score": 100
+        }
+      ]
+    },
+    {
+      "rule": "Avoid unsupported uncertainty or hedging while still making a definitive decision..",
+      "from": [
+        {
+          "tender": "rfq-mwdqcnnx",
+          "source": "benchmark (hedged)",
+          "route": "review",
+          "score": 94
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (hedged)",
+          "route": "review",
+          "score": 92
+        },
+        {
+          "tender": "rfq-mweep1w6",
+          "source": "production",
+          "route": "ship",
+          "score": 96
+        },
+        {
+          "tender": "rfq-mwdsz7vo",
+          "source": "benchmark (wrong numbers)",
+          "route": "ship",
+          "score": 98
+        }
+      ]
+    }
+  ]
+}

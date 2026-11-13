@@ -1,7 +1,8 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment, kiteEnabled, balances, transferPie } from './kite.js';
+import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty } from './kite.js';
+import { keccak256, toHex } from 'viem';
 import { serveStatic } from './static.js';
 import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
@@ -40,14 +41,23 @@ async function body(req) {
 }
 const bad = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
 
+// Browsers (the dashboard's "Open a tender" page) call the API cross-origin. No cookies are involved: every action is
+// authorized by a payment or a token in the request, so any origin may ask.
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-headers': 'content-type, payment-signature, x-payment',
+  'access-control-allow-methods': 'GET, POST',
+  'access-control-expose-headers': 'payment-required, payment-response',
+};
 const json = (res, code, body) => {
   // public reads are open to any origin (the static dashboard shows what runs here); actions need a token or payment
-  res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+  res.writeHead(code, { 'content-type': 'application/json', ...CORS });
   res.end(JSON.stringify(body));
 };
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  if (req.method === 'OPTIONS') { res.writeHead(204, { ...CORS, 'access-control-max-age': '600' }); return res.end(); }
   try {
     if (url.pathname === '/deployment.json') return json(res, 200, deployment ?? {});
     if (url.pathname === '/api/rfqs' && req.method === 'GET') return json(res, 200, { running, rfqs: listRfqs().reverse() });
@@ -97,7 +107,7 @@ createServer(async (req, res) => {
             payer = p.payer; paymentTx = p.txUrl;
           } catch (e) {
             if (e.status !== 402) throw e;
-            res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+            res.writeHead(402, { 'content-type': 'application/json', ...CORS, 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
             return res.end(JSON.stringify(e.paymentRequired));
           }
         }
@@ -108,7 +118,15 @@ createServer(async (req, res) => {
           entry.bounty = { status: 'sending', amount: BOUNTY, asset: 'PYUSD on Kite testnet' };
           saveChallenges();
           try {
-            entry.bounty = { ...entry.bounty, status: 'sent', tx: `https://testnet.kitescan.ai/tx/${await transferPie(process.env.BUYER_PRIVATE_KEY, payer, BOUNTY)}` };
+            // Attackers fund the defence: on the V4 escrow the bounty comes out of forfeited bonds (treasury-signed,
+            // one per evidence hash, enforced on-chain); only when the pool can't cover it does the fee wallet pay.
+            const pool = process.env.TREASURY_PRIVATE_KEY ? await bountyPool().catch(() => null) : null;
+            if (pool != null && pool >= BOUNTY) {
+              const { hash } = await escrowPayBounty(process.env.TREASURY_PRIVATE_KEY, payer, BOUNTY, keccak256(toHex(`${payer}:${attack}`)));
+              entry.bounty = { ...entry.bounty, status: 'sent', source: 'bounty pool (forfeited bonds)', tx: `https://testnet.kitescan.ai/tx/${hash}` };
+            } else {
+              entry.bounty = { ...entry.bounty, status: 'sent', source: 'fee wallet', tx: `https://testnet.kitescan.ai/tx/${await transferPie(process.env.BUYER_PRIVATE_KEY, payer, BOUNTY)}` };
+            }
           } catch (e) {
             entry.bounty = { ...entry.bounty, status: 'unknown', error: e.shortMessage ?? e.message };
           }
@@ -141,7 +159,7 @@ createServer(async (req, res) => {
           return json(res, 200, { ...p.delivered, paidBy: { payer: p.payer, tx: p.txUrl } });
         } catch (e) {
           if (e.status !== 402) throw e;
-          res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+          res.writeHead(402, { 'content-type': 'application/json', ...CORS, 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
           return res.end(JSON.stringify(e.paymentRequired));
         }
       } finally {
@@ -174,21 +192,29 @@ createServer(async (req, res) => {
       const paid = !authorized;
       if (paid && !(FEE_BASE > 0 && kiteEnabled())) return json(res, 403, { error: 'demo token required' });
       const b = await body(req);
-      const allowed = ['title', 'budgetCapUsd', 'maxDeliveryDays', 'minSpecs', 'weights', 'minConfidence', 'bondPie', 'depositPie'];
+      const allowed = ['title', 'budgetCapUsd', 'maxDeliveryDays', 'minSpecs', 'weights', 'minConfidence', 'bondPie', 'depositPie', 'balancePie', 'deliveryDays', 'qualitative'];
       const spec = { ...DEMO_RFQ, ...Object.fromEntries(allowed.filter((k) => k in b).map((k) => [k, b[k]])) };
       // A paying stranger runs the tender through our buyer wallet, so it can't make that wallet pay a down payment.
       if (paid) {
         spec.depositPie = 0;
+        spec.balancePie = 0;
         spec.maxBids = b.maxBids ?? 5;
         if (!Number.isInteger(spec.maxBids) || spec.maxBids < 1 || spec.maxBids > 20) bad('maxBids must be an integer from 1 to 20');
       }
       if (typeof spec.title !== 'string' || !spec.title.trim() || spec.title.length > 200) bad('title required (max 200 chars)');
       for (const k of ['budgetCapUsd', 'maxDeliveryDays', 'bondPie', ...(paid ? [] : ['depositPie'])]) if (!(Number(spec[k]) > 0)) bad(`${k} must be > 0`);
+      const SPEC_KEYS = ['ram_gb', 'storage_gb', 'battery_hours'];
+      if (typeof spec.minSpecs !== 'object' || spec.minSpecs === null || Array.isArray(spec.minSpecs)
+        || Object.entries(spec.minSpecs).some(([k, v]) => !SPEC_KEYS.includes(k) || !(Number.isFinite(v) && v >= 0 && v < 1e6))) bad(`minSpecs may only hold ${SPEC_KEYS.join(', ')} as numbers`);
       const w = spec.weights ?? {};
-      if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery must sum to 1');
+      if (Object.keys(w).some((k) => !['price', 'warranty', 'delivery', 'quality'].includes(k)) || Object.values(w).some((v) => !(Number.isFinite(v) && v >= 0))) bad('weights may only hold price, warranty, delivery and quality, as numbers >= 0');
+      if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) + (w.quality ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery (+ quality) must sum to 1');
+      if (w.quality && !(typeof spec.qualitative?.criterion === 'string' && spec.qualitative.criterion.trim() && spec.qualitative.criterion.length <= 200)) bad('weights.quality needs qualitative.criterion (max 200 chars)');
+      if (spec.qualitative) spec.qualitative = w.quality ? { criterion: spec.qualitative.criterion.trim() } : undefined;
       // Validated before charging: a malformed request never costs the payer anything. Amounts must be plain decimals
       // (1e-7 passes `> 0` but can't be turned into token units, so the escrow call would fail after payment).
-      for (const k of ['bondPie', 'depositPie']) if (!/^\d+(\.\d{1,6})?$/.test(String(spec[k])) || Number(spec[k]) > 100) bad(`${k} must be a plain decimal with at most 6 places, at most 100`);
+      for (const k of ['bondPie', 'depositPie', ...(spec.balancePie ? ['balancePie'] : [])]) if (!/^\d+(\.\d{1,6})?$/.test(String(spec[k])) || Number(spec[k]) > 100) bad(`${k} must be a plain decimal with at most 6 places, at most 100`);
+      if (spec.deliveryDays != null && !(Number(spec.deliveryDays) > 0 && Number(spec.deliveryDays) <= 365)) bad('deliveryDays must be between 0 and 365');
       let payment, ownerToken, slot;
       try {
       if (paid) {
@@ -204,7 +230,7 @@ createServer(async (req, res) => {
         const fits = auth && String(auth.to).toLowerCase() === buyerAddress().toLowerCase() && terms.some((t) => { try { return BigInt(auth.value) >= BigInt(t.amount); } catch { return false; } });
         if (!fits) {
           const pr = paymentRequired(terms, header ? 'payment does not match the requirements' : 'payment required');
-          res.writeHead(402, { 'content-type': 'application/json', 'payment-required': Buffer.from(JSON.stringify(pr)).toString('base64') });
+          res.writeHead(402, { 'content-type': 'application/json', ...CORS, 'payment-required': Buffer.from(JSON.stringify(pr)).toString('base64') });
           return res.end(JSON.stringify(pr));
         }
         const claimed = String(auth.from).toLowerCase(); // unverified here; a false `from` can't settle
@@ -220,7 +246,7 @@ createServer(async (req, res) => {
           payment = await collect(header, terms);
         } catch (e) {
           if (e.status !== 402) throw e;
-          res.writeHead(402, { 'content-type': 'application/json', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+          res.writeHead(402, { 'content-type': 'application/json', ...CORS, 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
           return res.end(JSON.stringify(e.paymentRequired));
         }
         ownerToken = randomBytes(24).toString('hex'); // lets the payer close and evaluate this tender; only its hash is stored
@@ -248,6 +274,24 @@ createServer(async (req, res) => {
       const { supplier, reason, signature } = await body(req);
       if (!ADDR.test(supplier ?? '') || !/^0x[0-9a-fA-F]{130}$/.test(signature ?? '')) bad('supplier (address) and signature (65-byte hex) required');
       return json(res, 200, await appeal(ap[1], { supplier, reason, signature }));
+    }
+    // V4: the buyer confirms delivery and the escrow releases the held balance to the winner.
+    const cd = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/confirm-delivery$/);
+    if (cd && req.method === 'POST') {
+      const rfq = getRfq(cd[1]);
+      if (!rfq) return json(res, 404, { error: 'not found' });
+      const owner = rfq.paidBy && tokenHash(url.searchParams.get('token') ?? '') === rfq.paidBy.ownerTokenHash;
+      if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
+      return json(res, 200, await confirmDelivery(cd[1]));
+    }
+    // An approver's on-chain overturn vote (sent with its own key by scripts/decide-appeal.js), linked into the trace.
+    const ot = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/overturn-tx$/);
+    if (ot && req.method === 'POST') {
+      if (!authorized) return json(res, 403, { error: 'demo token required' });
+      const { label, tx, final } = await body(req);
+      if (typeof label !== 'string' || !/^https:\/\/testnet\.kitescan\.ai\/tx\/0x[0-9a-fA-F]{64}$/.test(tx ?? '')) bad('label and tx (Kitescan tx url) required');
+      await recordOverturnTx(ot[1], label, tx, Boolean(final));
+      return json(res, 200, { ok: true });
     }
     // A named approver decides an appeal the panel did not confirm (signed, APPROVERS only).
     const dc = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal-decision$/);
@@ -310,6 +354,9 @@ createServer(async (req, res) => {
     json(res, e.status ?? 500, { error: e.message });
   }
 }).listen(process.env.PORT || 3000, () => console.log(`Lelang on http://localhost:${process.env.PORT || 3000}`));
+
+// V4: make slashes final once their challenge window has passed (anyone could; the server just does it on a timer).
+if (escrowEnabled()) setInterval(() => finalizeDue().then((d) => d.length && console.log('finalized', d)).catch((e) => console.error('finalize', e.shortMessage ?? e.message)), 5 * 60_000).unref();
 
 // Lelang Bid Integrity Check on the OpenServ x402 Agent Market (opt-in; dependencies live in openserv/)
 // The server is the agent's one home, so it takes over a stale tunnel and retries if the platform refuses at first.

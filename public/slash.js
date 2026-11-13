@@ -47,11 +47,12 @@ try {
       <button id="go">Verify against Kite testnet</button>
       <div id="result" aria-live="polite"></div>
     </div>`;
-  // Attackers pay for audits: the slashed bond goes to the buyer and is set against the independent audits run.
+  // Attackers pay for audits. On escrows V1-V3 the slashed bond went to the buyer; on V4 it goes to the bounty pool.
+  const v4 = (rfq.settlement ?? []).some((e) => e.event === 'SlashPending');
   fetch('audit-fund.json').then((r) => (r.ok ? r.json() : null)).then((f) => {
     if (!f) return;
     document.querySelector('#fund').innerHTML = `<h2>Who pays for the audits</h2><div class="card">
-      <p>${bid.appeal?.outcome === 'overturned' ? `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) was refunded after the appeal and is not counted.` : `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) went to the buyer on-chain.`} Slashed bonds so far: <strong>${esc(f.slashedUsd)} USDT</strong> from ${esc(f.slashes)} manipulators,
+      <p>${bid.appeal?.outcome === 'overturned' ? `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) was refunded after the appeal and is not counted.` : `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) ${v4 ? 'goes to the bounty pool that pays whoever finds a hole in the evaluator, never to the buyer (escrow V4)' : 'went to the buyer on-chain (escrow before V4)'}.`} Slashed bonds so far: <strong>${esc(f.slashedUsd)} USDT</strong> from ${esc(f.slashes)} manipulators,
       against ${esc(f.audits)} independent Reppo audits (${esc(f.auditCostUsd)} USD at ${esc(f.auditUsd)} USD each): <strong>${esc(f.coveredPct)}% paid by attackers</strong>.</p>
       ${f.feesUsd ? `<p>Buyers paid <strong>${esc(f.feesUsd)} USD</strong> on top (${esc(f.tenderFees)} tender fee${f.tenderFees === 1 ? '' : 's'} over x402, ${esc(f.successFees)} success fee${f.successFees === 1 ? '' : 's'} at settle): attackers and buyers together cover <strong>${esc(f.coveredWithFeesPct)}%</strong>.</p>` : ''}
       <p class="kv">Testnet bonds are faucet-sized. With a 10 USD bond, one slash pays for ${esc(f.auditsPerSlashAt10UsdBond)} audits.</p></div>`;
@@ -65,6 +66,7 @@ try {
       const r = await checkSlash(rfq, bid);
       const row = (what, a, b) => `<tr><th>${what}</th><td>computed here<br><code>${esc(a)}</code></td><td>on Kite<br><code>${esc(b)}</code></td><td class="${a === b ? 'ok' : 'bad'}">${a === b ? '✓ match' : '✗ MISMATCH'}</td></tr>`;
       out.innerHTML = `<p><strong class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ The slash and its evidence match Kite testnet' : '✗ Something does not match Kite testnet'}</strong> <span class="kv">· block ${esc(r.block)}</span></p>
+        ${r.status ? `<p>Slash status on-chain: <strong>${esc(r.status)}</strong></p>` : ''}
         <table>${row('keccak256(quote)', r.evidenceComputed, r.evidenceOnChain)}${row('keccak256(document)', r.docComputed, r.docOnChain)}
         <tr><th>quote is in the document</th><td colspan="2">${r.quoteInDoc ? 'yes, character for character (whitespace-insensitive)' : 'no'}</td><td class="${r.quoteInDoc ? 'ok' : 'bad'}">${r.quoteInDoc ? '✓' : '✗'}</td></tr></table>`;
     } catch (e) {

@@ -21,14 +21,18 @@ if (!process.argv.includes('--verify-only')) {
   const keys = JSON.parse(readFileSync('data/agents/keys.json', 'utf8'));
   const treasury = privateKeyToAccount(keys.treasury ?? (keys.treasury = generatePrivateKey())).address;
   writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
-  const hash = await w.deployContract({ abi: art.abi, bytecode: art.bytecode, args: [treasury] });
+  // V4: a quorum of approvers can overturn a pending slash on-chain; two keys, both needed (no single person decides)
+  const approvers = [keys.approver, keys.approver2 ?? (keys.approver2 = generatePrivateKey())].map((k) => privateKeyToAccount(k).address);
+  writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
+  const quorum = BigInt(process.env.APPEAL_QUORUM ?? 2), challengeSeconds = BigInt(process.env.CHALLENGE_SECONDS ?? 3600);
+  const hash = await w.deployContract({ abi: art.abi, bytecode: art.bytecode, args: [treasury, approvers, quorum, challengeSeconds] });
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error('deploy reverted');
   deployment = {
     network: 'kite-testnet',
     chainId: kiteTestnet.id,
     explorer: kiteTestnet.blockExplorers.default.url,
-    escrow: { address: rcpt.contractAddress, deployTx: hash, block: Number(rcpt.blockNumber), deployer: account.address, treasury },
+    escrow: { address: rcpt.contractAddress, deployTx: hash, block: Number(rcpt.blockNumber), deployer: account.address, treasury, approvers, quorum: Number(quorum), challengeSeconds: Number(challengeSeconds) },
     compiler: `v${buildInfo.solcLongVersion}`,
     abi: art.abi,
     // older escrows keep their tenders, slashes and proofs: reputation and the verifier still read them

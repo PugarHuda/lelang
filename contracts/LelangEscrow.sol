@@ -8,8 +8,12 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// @title LelangEscrow
 /// @notice Sealed-bid tender escrow for agent-to-agent procurement. Bonds sit in this contract, not with the buyer.
 /// @dev Flow: open -> commit (bond in) -> closeCommits -> reveal -> settle (one tx: refunds, evidence-hashed slashes,
-///      down payment, success fee) or, if the buyer never settles, withdraw. There is no owner, admin or pause: no party can move
-///      bonds outside these rules.
+///      down payment, success fee, balance held for delivery) or, if the buyer never settles, withdraw. There is no owner,
+///      admin or pause: no party can move bonds outside these rules.
+///      V4: the buyer never profits from a forfeit. A slashed bond waits out a challenge window in which a quorum of
+///      approvers can overturn it on-chain; after that it goes to a bounty pool that pays whoever finds a hole in the
+///      evaluator. Attackers fund the defence. The balance after the down payment is held until the buyer confirms
+///      delivery (or, if the buyer stays silent past the deadline, a quorum of approvers decides).
 contract LelangEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -42,6 +46,37 @@ contract LelangEscrow is ReentrancyGuard {
     /// @notice Receives success fees (the operator running evaluation and audits). Fixed at deployment.
     address public immutable treasury;
 
+    /// @notice Addresses that can overturn a pending slash or resolve a stuck delivery, and how many must agree.
+    mapping(address => bool) public isApprover;
+    uint256 public immutable quorum;
+    /// @notice How long a slash stays pending (overturnable) before it is final.
+    uint64 public immutable challengeSeconds;
+
+    struct PendingSlash {
+        uint64 finalAt; // 0: no pending slash
+        bytes32 evidence;
+    }
+    /// @notice A slash listed at settle, held here until `finalAt`.
+    mapping(uint256 => mapping(address => PendingSlash)) public pendingSlash;
+
+    struct Delivery {
+        address winner;
+        uint256 balance; // paid to the winner on delivery
+        uint256 fee; // success fee on the balance, paid to the treasury with it
+        uint64 deadline; // after this, approvers can resolve if the buyer has not confirmed
+        bool closed;
+    }
+    /// @notice The balance of the contract price, held from settle until delivery is confirmed or resolved.
+    mapping(uint256 => Delivery) public deliveries;
+
+    /// @notice Forfeited bonds by token: they only ever leave as evidence-tagged bounties.
+    mapping(address => uint256) public bountyPool;
+    /// @notice Evidence hashes a bounty was already paid for (one bounty per finding).
+    mapping(bytes32 => bool) public bountyPaid;
+
+    mapping(bytes32 => mapping(address => bool)) public voted;
+    mapping(bytes32 => uint256) public votes;
+
     /// @notice Number of tenders opened so far; ids start at 1.
     uint256 public tenderCount;
     /// @notice Tender parameters and state by id.
@@ -60,6 +95,12 @@ contract LelangEscrow is ReentrancyGuard {
     event Awarded(uint256 indexed id, address indexed winner, uint256 downPayment);
     event BondWithdrawn(uint256 indexed id, address indexed bidder, uint256 amount);
     event FeePaid(uint256 indexed id, address indexed treasury, uint256 amount);
+    event SlashPending(uint256 indexed id, address indexed bidder, uint256 amount, bytes32 evidenceHash, uint64 finalAt);
+    event SlashOverturned(uint256 indexed id, address indexed bidder, uint256 amount, bytes32 evidenceHash);
+    event Voted(bytes32 indexed action, address indexed approver, uint256 votes);
+    event BalanceHeld(uint256 indexed id, address indexed winner, uint256 balance, uint64 deadline);
+    event DeliveryClosed(uint256 indexed id, address indexed to, uint256 amount, bool delivered);
+    event BountyPaid(address indexed token, address indexed to, uint256 amount, bytes32 evidenceHash);
 
     error WrongPhase();
     error NotBuyer();
@@ -70,10 +111,18 @@ contract LelangEscrow is ReentrancyGuard {
     error MissingEvidence();
     error InvalidParams();
     error TooManyBidders();
+    error NotApprover();
+    error AlreadyVoted();
 
-    constructor(address treasury_) {
-        if (treasury_ == address(0)) revert InvalidParams();
+    constructor(address treasury_, address[] memory approvers_, uint256 quorum_, uint64 challengeSeconds_) {
+        if (treasury_ == address(0) || quorum_ == 0 || quorum_ > approvers_.length || challengeSeconds_ == 0) revert InvalidParams();
+        for (uint256 i; i < approvers_.length; i++) {
+            if (approvers_[i] == address(0) || isApprover[approvers_[i]]) revert InvalidParams();
+            isApprover[approvers_[i]] = true;
+        }
         treasury = treasury_;
+        quorum = quorum_;
+        challengeSeconds = challengeSeconds_;
     }
 
     /// @notice Opens a tender; the caller becomes its buyer.
@@ -145,14 +194,20 @@ contract LelangEscrow is ReentrancyGuard {
         emit Revealed(id, msg.sender, docHash);
     }
 
-    /// @notice Settles the tender in one transaction: slashes listed bids (each needs a non-zero evidence hash),
-    ///         slashes unrevealed bids, refunds every other bond, and pays `downPayment` from the buyer to the winner.
+    /// @notice Settles the tender in one transaction: puts listed bids (each needs a non-zero evidence hash) on a pending
+    ///         slash, forfeits unrevealed bonds to the bounty pool, refunds every other bond, pays `downPayment` from the
+    ///         buyer to the winner and holds `balance` until delivery.
     /// @dev Allowed once the reveal window is over, or earlier if every bidder has revealed, so nobody is auto-slashed
     ///      for not having revealed yet.
-    function settle(uint256 id, address winner, address[] calldata slash, bytes32[] calldata evidence, uint256 downPayment)
-        external
-        nonReentrant
-    {
+    function settle(
+        uint256 id,
+        address winner,
+        address[] calldata slash,
+        bytes32[] calldata evidence,
+        uint256 downPayment,
+        uint256 balance,
+        uint64 deliverySeconds
+    ) external nonReentrant {
         Tender storage t = tenders[id];
         if (msg.sender != t.buyer) revert NotBuyer();
         bool revealDone = block.timestamp >= t.revealDeadline || (t.revealed == t.committed && block.timestamp >= t.commitDeadline);
@@ -167,8 +222,8 @@ contract LelangEscrow is ReentrancyGuard {
             if (slash[i] == winner) revert InvalidWinner();
             if (evidence[i] == 0) revert MissingEvidence();
             s.closed = true;
-            t.token.safeTransfer(t.buyer, s.bond);
-            emit BondSlashed(id, slash[i], s.bond, evidence[i]);
+            pendingSlash[id][slash[i]] = PendingSlash(uint64(block.timestamp) + challengeSeconds, evidence[i]);
+            emit SlashPending(id, slash[i], s.bond, evidence[i], uint64(block.timestamp) + challengeSeconds);
         }
         address[] storage list = bidderList[id];
         for (uint256 i; i < list.length; i++) {
@@ -179,7 +234,7 @@ contract LelangEscrow is ReentrancyGuard {
                 t.token.safeTransfer(list[i], b.bond);
                 emit BondRefunded(id, list[i], b.bond);
             } else {
-                t.token.safeTransfer(t.buyer, b.bond);
+                bountyPool[address(t.token)] += b.bond;
                 emit BondSlashed(id, list[i], b.bond, bytes32(0));
             }
         }
@@ -192,7 +247,95 @@ contract LelangEscrow is ReentrancyGuard {
                 emit FeePaid(id, treasury, fee);
             }
         }
+        if (balance > 0) _holdBalance(id, winner, balance, deliverySeconds);
         emit Awarded(id, winner, downPayment);
+    }
+
+    function _holdBalance(uint256 id, address winner, uint256 balance, uint64 deliverySeconds) internal {
+        if (deliverySeconds == 0) revert InvalidParams();
+        Tender storage t = tenders[id];
+        uint256 fee = (balance * t.feeBps) / 10_000;
+        uint64 deadline = uint64(block.timestamp) + deliverySeconds;
+        deliveries[id] = Delivery(winner, balance, fee, deadline, false);
+        t.token.safeTransferFrom(msg.sender, address(this), balance + fee);
+        emit BalanceHeld(id, winner, balance, deadline);
+    }
+
+    /// @notice After the challenge window, anyone makes a pending slash final: the bond goes to the bounty pool, never
+    ///         to the buyer, so the party that lists a slash cannot profit from it.
+    function finalizeSlash(uint256 id, address bidder) external nonReentrant {
+        PendingSlash memory p = pendingSlash[id][bidder];
+        if (p.finalAt == 0 || block.timestamp < p.finalAt) revert WrongPhase();
+        delete pendingSlash[id][bidder];
+        uint256 bond = bids[id][bidder].bond;
+        bountyPool[address(tenders[id].token)] += bond;
+        emit BondSlashed(id, bidder, bond, p.evidence);
+    }
+
+    /// @notice Inside the challenge window, `quorum` approvers overturn a pending slash: the bond goes back to the bidder
+    ///         and no BondSlashed event is ever emitted, so the slash never counts in reputation.
+    function overturnSlash(uint256 id, address bidder) external nonReentrant {
+        PendingSlash memory p = pendingSlash[id][bidder];
+        if (p.finalAt == 0 || block.timestamp >= p.finalAt) revert WrongPhase();
+        if (!_vote(keccak256(abi.encode("overturn", id, bidder)))) return;
+        delete pendingSlash[id][bidder];
+        uint256 bond = bids[id][bidder].bond;
+        tenders[id].token.safeTransfer(bidder, bond);
+        emit SlashOverturned(id, bidder, bond, p.evidence);
+    }
+
+    /// @notice The buyer confirms delivery: the held balance goes to the winner and its success fee to the treasury.
+    function confirmDelivery(uint256 id) external nonReentrant {
+        if (msg.sender != tenders[id].buyer) revert NotBuyer();
+        _closeDelivery(id, true);
+    }
+
+    /// @notice If the buyer has not confirmed by the deadline, `quorum` approvers decide: pay the winner, or refund the buyer.
+    function resolveDelivery(uint256 id, bool payWinner) external nonReentrant {
+        Delivery storage d = deliveries[id];
+        if (d.balance == 0 || d.closed || block.timestamp < d.deadline) revert WrongPhase();
+        if (!_vote(keccak256(abi.encode("delivery", id, payWinner)))) return;
+        _closeDelivery(id, payWinner);
+    }
+
+    function _closeDelivery(uint256 id, bool delivered) internal {
+        Delivery storage d = deliveries[id];
+        if (d.balance == 0 || d.closed) revert WrongPhase();
+        d.closed = true;
+        Tender storage t = tenders[id];
+        if (delivered) {
+            t.token.safeTransfer(d.winner, d.balance);
+            if (d.fee > 0) {
+                t.token.safeTransfer(treasury, d.fee);
+                emit FeePaid(id, treasury, d.fee);
+            }
+            emit DeliveryClosed(id, d.winner, d.balance, true);
+        } else {
+            t.token.safeTransfer(t.buyer, d.balance + d.fee);
+            emit DeliveryClosed(id, t.buyer, d.balance + d.fee, false);
+        }
+    }
+
+    /// @notice Pays a bounty from forfeited bonds to whoever found a hole in the evaluator. One payment per evidence hash.
+    /// @dev ponytail: treasury-only, so the operator decides what earns a bounty; every payment is public with its
+    ///      evidence hash. Upgrade path: require approver votes per bounty if the pool grows large.
+    function payBounty(address token, address to, uint256 amount, bytes32 evidenceHash) external nonReentrant {
+        if (msg.sender != treasury) revert NotApprover();
+        if (to == address(0) || amount == 0 || evidenceHash == 0 || bountyPaid[evidenceHash] || amount > bountyPool[token]) revert InvalidParams();
+        bountyPaid[evidenceHash] = true;
+        bountyPool[token] -= amount;
+        IERC20(token).safeTransfer(to, amount);
+        emit BountyPaid(token, to, amount, evidenceHash);
+    }
+
+    /// @dev Records the caller's vote on `action`; true once `quorum` approvers voted for it.
+    function _vote(bytes32 action) internal returns (bool) {
+        if (!isApprover[msg.sender]) revert NotApprover();
+        if (voted[action][msg.sender]) revert AlreadyVoted();
+        voted[action][msg.sender] = true;
+        uint256 n = ++votes[action];
+        emit Voted(action, msg.sender, n);
+        return n >= quorum;
     }
 
     /// @notice Safety valve against a buyer who disappears: bidders reclaim their bond after the settle deadline.
