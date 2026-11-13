@@ -51,3 +51,36 @@ writeFileSync('public/audit-fund.json', JSON.stringify(fund, null, 2));
 // The browser verifier reads the escrow ABI from here.
 writeFileSync('public/deployment.json', JSON.stringify(deployment, null, 2));
 console.log(index.map((t) => `${t.featured ? '*' : ' '} ${t.label}`).join('\n'));
+
+// Public attack gallery: every red-team case with its text and measured outcome. Published as data, rendered by
+// attacks.html; nothing here is re-run (the numbers are the ones in docs/reports).
+{
+  const { ATTACKS, CLEAN, base } = await import('./attacks.js');
+  const rep = (f) => JSON.parse(readFileSync(`docs/reports/${f}.json`, 'utf8'));
+  const fixed = rep('redteam'), confirmed = rep('redteam-with-second-confirmation');
+  const show = (doc) => (doc.startsWith(base) ? doc.slice(base.length) : doc).replace(/\u200b/g, '·'); // · marks a zero-width space
+  const adaptive = (r) => ({ ranAt: r.ranAt, attacker: r.attacker, summary: r.summary, attempts: r.attempts.map((a) => ({ round: a.round, text: a.text, outcome: a.outcome, isAttack: a.isAttack, p: a.p, numbersChanged: a.numbersChanged, bothReadersFooled: a.bothReadersFooled, ambiguous: a.ambiguous ?? [] })) });
+  writeFileSync('public/attacks.json', JSON.stringify({
+    base,
+    fixed: { ranAt: fixed.ranAt, summary: fixed.summary, confirmedSummary: confirmed.summary,
+      cases: Object.entries({ ...ATTACKS, ...CLEAN }).map(([name, doc]) => ({ name, clean: name in CLEAN, text: show(doc),
+        result: fixed.rows.find((r) => r.case === name), confirmed: confirmed.rows.find((r) => r.case === name) })) },
+    adaptiveBefore: adaptive(rep('redteam-adaptive-before-ambiguity-check')),
+    adaptiveAfter: adaptive(rep('redteam-adaptive')),
+  }, null, 2));
+}
+
+// Machine-readable reputation feed for other marketplaces: every supplier with a proven slash in a published tender,
+// the evidence on Kite, and the bond multiplier Lelang asks of it. Same rule as the evaluator (src/lelang.js
+// provenPriors + requiredBond); each entry can be re-checked on-chain with rep.html?a=<address>.
+// (ERC-8004 would be the standard home for this, but on Kite testnet its registries are still empty proxies.)
+{
+  const bySupplier = {};
+  for (const r of settled) for (const b of Object.values(r.bids)) {
+    if (!b.slash || !b.evidence || b.appeal?.outcome === 'overturned') continue;
+    (bySupplier[b.supplier.toLowerCase()] ??= []).push({ escrow: r.escrow, tender: r.chainId, bid: b.label, evidenceHash: b.evidenceHash, settleTx: r.settlement?.find((s) => s.tx)?.tx, proof: `slash.html?t=${encodeURIComponent(r.id)}&b=${encodeURIComponent(b.label)}` });
+  }
+  const feed = Object.entries(bySupplier).map(([address, slashes]) => ({ address, provenSlashes: slashes.length, bondMultiplier: 2 ** Math.min(slashes.length, 4), slashes }))
+    .sort((x, y) => y.provenSlashes - x.provenSlashes);
+  writeFileSync('public/reputation.json', JSON.stringify({ rule: 'bond = tender bond x 2^provenSlashes (max 16x); only evidence-backed slashes by a trusted buyer count; overturned slashes never count', trustedBuyer: deployment.escrow.deployer, escrows: [deployment, ...(deployment.previous ?? [])].map((d) => d.escrow.address), suppliers: feed }, null, 2));
+}

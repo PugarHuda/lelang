@@ -10,6 +10,20 @@ const dolphin = process.env.DOLPHIN_API_KEY
   : null;
 const DOLPHIN_MODEL = 'deepseek-ai/DeepSeek-V4.1-Flash';
 
+// Tokens and calls per model, as the providers report them: what a bid actually costs (scripts/cost-per-bid.js).
+export const usage = {};
+for (const client of [serv, dolphin].filter(Boolean)) {
+  const create = client.chat.completions.create.bind(client.chat.completions);
+  client.chat.completions.create = async (body, opts) => {
+    const r = await create(body, opts);
+    const u = (usage[body.model] ??= { calls: 0, input: 0, output: 0 });
+    u.calls += 1;
+    u.input += r.usage?.prompt_tokens ?? 0;
+    u.output += r.usage?.completion_tokens ?? 0;
+    return r;
+  };
+}
+
 // Every call judges a different untrusted document, so SERV's org-level prompt cache is turned off:
 // with it on, verdicts from one bid leaked into the next (honest bids flagged as injections).
 const NO_CACHE = { metadata: { prompt_cache: 'disabled' } };

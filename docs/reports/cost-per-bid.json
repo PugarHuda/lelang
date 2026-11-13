@@ -1,0 +1,70 @@
+{
+  "ranAt": "2026-11-13T05:14:50.292Z",
+  "note": "Dolphin publishes no per-token price through its API, so its cost is reported in tokens.",
+  "runs": [
+    {
+      "bids": 1,
+      "models": {
+        "gpt-6-luna": {
+          "calls": 5,
+          "input": 3035,
+          "output": 284,
+          "usd": 0.00058
+        },
+        "deepseek-ai/DeepSeek-V4.1-Flash": {
+          "calls": 1,
+          "input": 504,
+          "output": 321,
+          "usd": null
+        },
+        "gpt-6-luna-serv-kronos": {
+          "calls": 1,
+          "input": 683,
+          "output": 225,
+          "usd": null
+        }
+      },
+      "servUsd": 0.00058,
+      "reppoRounds": 1,
+      "reppoUsd": 0.22,
+      "decision": "award"
+    },
+    {
+      "bids": 5,
+      "models": {
+        "gpt-6-luna": {
+          "calls": 21,
+          "input": 11900,
+          "output": 1490,
+          "usd": 0.00252
+        },
+        "deepseek-ai/DeepSeek-V4.1-Flash": {
+          "calls": 4,
+          "input": 1844,
+          "output": 1214,
+          "usd": null
+        },
+        "gpt-6-luna-serv-kronos": {
+          "calls": 1,
+          "input": 994,
+          "output": 585,
+          "usd": null
+        }
+      },
+      "servUsd": 0.00252,
+      "reppoRounds": 1,
+      "reppoUsd": 0.22,
+      "decision": "award"
+    }
+  ],
+  "perBid": {
+    "servUsd": 0.00049,
+    "servCalls": 4,
+    "dolphinTokens": 558
+  },
+  "base": {
+    "servUsd": 0.00009,
+    "reppoUsd": 0.22,
+    "reppoRounds": 1
+  }
+}

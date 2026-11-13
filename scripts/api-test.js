@@ -26,6 +26,8 @@ try {
   // buyer side is token-gated and validated
   assert.equal((await call('/api/rfqs', 'POST', { title: 'x' })).status, 403);
   assert.equal((await call('/api/rfqs?token=t', 'POST', { weights: { price: 1, warranty: 1, delivery: 0 } })).status, 400);
+  // amounts that pass `> 0` but can't become token units are refused before anything is charged or opened
+  assert.equal((await call('/api/rfqs?token=t', 'POST', { title: 'x', bondPie: 1e-7 })).status, 400);
   const open = await call('/api/rfqs?token=t', 'POST', { title: 'API test tender' });
   assert.equal(open.status, 201);
   const id = open.body.id;

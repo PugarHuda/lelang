@@ -1,0 +1,17 @@
+{
+  "ranAt": "2026-11-13T05:09:59.862Z",
+  "decisions": 16,
+  "agreed": 15,
+  "agreementPct": 94,
+  "disagreements": [
+    {
+      "tender": "rfq-mwefdu6g",
+      "title": "40 classroom projectors for 8 vocational schools",
+      "chose": "Bid A",
+      "confidence": 0.99,
+      "formula": "Bid B",
+      "agreed": false
+    }
+  ],
+  "meanConfidenceWhenDisagreeing": 0.99
+}

@@ -69,7 +69,9 @@ assert.deepEqual(
   process.env.APPROVERS = k2.address;
   await assert.rejects(approve(r.id, await signed(k1)), /APPROVERS/);
   delete process.env.APPROVERS;
+  await assert.rejects(approve(r.id, await signed(k1)), /APPROVERS/); // fail closed: no list, no release
   assert.equal(getRfq(r.id).phase, 'held');
+  process.env.APPROVERS = `${k1.address},${k2.address}`;
   // two valid approvals at once: one payout, and the record names the signer whose approval released it
   const first = approve(r.id, await signed(k1, 'checked'));
   await assert.rejects(approve(r.id, await signed(k2)), /only held tenders|already/);
@@ -78,6 +80,7 @@ assert.deepEqual(
   assert.equal(getRfq(r.id).settlement.length, 2, 'one bond refund + one deposit');
   const h = getRfq(r.id).humanApproval;
   assert.equal(h.approver, k1.address);
+  delete process.env.APPROVERS;
   assert.ok(await verifyMessage({ address: h.approver, message: h.message, signature: h.signature }), 'stored approval re-verifies');
 }
 // spotlighting: marked text round-trips, and an attacker who guesses the marker gains nothing

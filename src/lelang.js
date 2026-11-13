@@ -1,12 +1,13 @@
 // Lelang: sealed-bid tender between agents.
 // commit (signed hash + bond) -> anchor on Kite -> reveal -> guard -> extract -> rules -> award -> Reppo audit -> settle
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives, confirmAddressedToEvaluator } from './ai.js';
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
-  escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory,
+  escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory, escrowTimes,
 } from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
@@ -60,10 +61,19 @@ export const provenPriors = (history, here, trustedBuyers, overturned = new Set(
 };
 // What a supplier should lock before committing: public, so a bidder knows the price of its history up front.
 // The same check runs again at evaluation; this answer is advice, the escrow amount is what counts.
+const quotes = new Map(); // ponytail: in-process, 60 s; a shared cache if the API runs on several instances
 export async function bondQuote(rfqId, supplier) {
   const rfq = getRfq(rfqId);
   if (!rfq) fail('unknown tender');
   if (!/^0x[0-9a-fA-F]{40}$/.test(supplier ?? '')) fail('supplier must be an address');
+  const k = `${rfqId}:${supplier.toLowerCase()}`, hit = quotes.get(k);
+  if (hit && Date.now() - hit.at < 60_000) return hit.quote;
+  const quote = await bondQuoteFresh(rfq, supplier);
+  if (quotes.size > 10_000) quotes.clear();
+  quotes.set(k, { at: Date.now(), quote });
+  return quote;
+}
+async function bondQuoteFresh(rfq, supplier) {
   const priors = rfq.chainId ? provenPriors(await slashHistory(supplier), rfq, trustedBuyers(), overturnedSlashes()) : [];
   return { base: rfq.bondPie, required: requiredBond(rfq.bondPie, priors.length), provenSlashes: priors.map(({ escrow, tender, tx }) => ({ escrow, tender, tx })) };
 }
@@ -100,7 +110,7 @@ export function readersDisagree(a, b) {
 export const bidOf = (rfq, supplier) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === String(supplier).toLowerCase());
 
 export async function createRfq(spec) {
-  const id = `rfq-${Date.now().toString(36)}`;
+  const id = `rfq-${Date.now().toString(36)}${randomBytes(2).toString('hex')}`; // two opens in one millisecond must not collide
   const rfq = { id, createdAt: new Date().toISOString(), phase: 'commit', bids: {}, events: [], ...spec };
   db.rfqs[id] = rfq;
   if (spec.paidBy) log(rfq, 'fee', `Tender fee paid over x402 by ${spec.paidBy.payer}: ${spec.paidBy.fee} ${spec.paidBy.asset}, settled on ${spec.paidBy.network ?? 'Kite testnet'} by the ${spec.paidBy.settledBy}`, { tx: spec.paidBy.txUrl ?? explorerTx(spec.paidBy.tx) });
@@ -253,6 +263,11 @@ export const wasEscalated = (events) => events.some((e) => e.step === 'award' &&
 export async function evaluate(rfqId) {
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'reveal') fail(`tender is in ${rfq.phase}, not reveal`);
+  // Evaluating early would shut out bidders still revealing (whoever opened the tender, a paying stranger included).
+  if (rfq.chainId && Object.values(rfq.bids).some((b) => !b.revealOk)) {
+    const { revealDeadline, now } = await escrowTimes(rfq.chainId);
+    if (now < revealDeadline) fail(`not every bid has revealed; the reveal window closes at ${new Date(Number(revealDeadline) * 1000).toISOString()}`);
+  }
   // An escalation sticks: re-running an interrupted evaluation must not re-roll a human hold into an automatic award.
   // (Found live: a paid tender escalated, the process stopped, and the re-run's decision node happened to agree.)
   rfq.escalatedBefore ||= wasEscalated(rfq.events);
@@ -260,7 +275,10 @@ export async function evaluate(rfqId) {
   const bids = Object.values(rfq.bids);
 
   for (const bid of bids) {
-    if (!bid.revealOk) { disqualify(rfq, bid, 'reveal does not match sealed commitment', true); continue; }
+    // No valid reveal is not proof of manipulation, and a stranger can post a junk reveal in someone else's name. So we
+    // never slash it ourselves: on-chain, the escrow refunds a bid that revealed there and slashes one that never did with
+    // a zero evidence hash, which reputation ignores. (Off-chain demo mode has no escrow; a mismatching document is kept.)
+    if (!bid.revealOk) { disqualify(rfq, bid, bid.doc ? 'reveal does not match sealed commitment' : 'not revealed', !rfq.chainId && Boolean(bid.doc)); continue; }
 
     // Reputation from the escrow's own events: a past evidence-backed slash doesn't disqualify a new bid (it may be
     // clean), but such a bidder can't win automatically; a human looks first. Unrevealed-bid slashes don't count.
@@ -598,14 +616,24 @@ export async function decideAppeal(rfqId, label, { approver, signature, overturn
   const message = appealDecisionMessage(rfqId, label, overturn);
   if (!signature || !(await verifyMessage({ address: approver, message, signature }).catch(() => false))) fail('the decision must be signed by the approver');
   if (!approvers().includes(String(approver).toLowerCase())) fail('approver is not on the APPROVERS list');
-  if (bid.appeal.outcome !== 'human') fail('this appeal was already decided'); // re-check after the await
+  if (bid.appeal.outcome !== 'human' || bid.appeal.deciding) fail('this appeal was already decided'); // re-check after the await
+  // Refund first, then record the decision: if the transfer fails the appeal is still waiting and the decision can be
+  // signed again; `deciding` stops a second decision from paying twice meanwhile.
+  bid.appeal.deciding = true;
+  let refund;
+  try {
+    if (overturn && kiteEnabled()) {
+      const amount = bid.bondPie ?? rfq.bondPie; // what this bidder actually lost
+      refund = { amount, tx: await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, amount) };
+    }
+  } finally {
+    delete bid.appeal.deciding;
+  }
   bid.appeal = { ...bid.appeal, outcome: overturn ? 'overturned' : 'upheld', decidedBy: { approver, message, signature, at: new Date().toISOString() } };
   log(rfq, 'appeal', `${approver} signed: ${overturn ? 'overturn' : 'uphold'} ${bid.label}'s slash`);
-  if (overturn && kiteEnabled()) {
-    const amount = bid.bondPie ?? rfq.bondPie; // what this bidder actually lost
-    const tx = await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, amount);
-    bid.appeal.refundTx = explorerTx(tx);
-    log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${amount}`, { tx: explorerTx(tx) });
+  if (refund) {
+    bid.appeal.refundTx = explorerTx(refund.tx);
+    log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${refund.amount}`, { tx: explorerTx(refund.tx) });
   }
   save();
   return bid.appeal;
@@ -622,7 +650,8 @@ export async function approve(rfqId, { approver, winner, note, signature }) {
   if (!bid || bid.disqualified) throw new Error('winner must be an eligible bid');
   const message = approvalMessage(rfqId, bid.label, note);
   if (!signature || !(await verifyMessage({ address: approver, message, signature }).catch(() => false))) fail('approval must be signed by the approver: bad or missing signature');
-  if (approvers().length && !approvers().includes(approver.toLowerCase())) fail('approver is not on the APPROVERS list');
+  // Fail closed: with no APPROVERS configured nobody can release held money (an unset variable must not mean "anyone").
+  if (!approvers().includes(approver.toLowerCase())) fail('approver is not on the APPROVERS list');
   // re-check after the await: a second approval racing this one must not overwrite whose signature released the money
   if (rfq.phase !== 'held') throw new Error(`tender is ${rfq.phase}, only held tenders can be approved`);
   rfq.award = { ...rfq.award, winner: bid.label, decision: 'award' };

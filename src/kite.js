@@ -114,6 +114,12 @@ export const escrowReveal = async (pk, chainId, docHash, salt) => (await send(pk
 // `escrow` picks an older contract (a tender opened before an upgrade); default is the current one.
 export const escrowWithdraw = async (pk, chainId, escrow) => (await send(pk, 'withdraw', [BigInt(chainId)], escrowFor(escrow))).hash;
 
+// Reveal deadline of a tender and the chain's current time (the contract's clock, not ours).
+export async function escrowTimes(chainId) {
+  const [t, block] = await Promise.all([pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] }), pub.getBlock()]);
+  return { revealDeadline: t[4], now: block.timestamp };
+}
+
 // `bond` is what this bidder locked (V2 escrow); undefined on the first escrow, where it always equals the tender bond.
 export async function escrowBid(chainId, bidder) {
   const [commitment, docHash, revealed, closed, bond] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'bids', args: [BigInt(chainId), bidder] });

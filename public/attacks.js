@@ -1,0 +1,46 @@
+// Attack gallery: every red-team attempt word for word, with the outcome measured against the real pipeline.
+import { esc } from './verify.js';
+
+const $ = (s) => document.querySelector(s);
+const OUTCOME = {
+  'slashed with proof': ['bad', 'slashed with proof'],
+  'human review': ['warn', 'held for a human'],
+  'held: ambiguous terms': ['warn', 'held: two figures for one term'],
+  'escaped detection': ['mute', 'not flagged'],
+};
+
+function fixedTable(f) {
+  const row = (c) => {
+    const r = c.result ?? {}, k = c.confirmed ?? {};
+    const verdict = c.clean
+      ? `<span class="ok">${esc(r.cleanPass ?? 0)} passed clean, ${esc(r.falsePositive ?? 0)} false alarms</span>`
+      : `<span class="bad">${esc(r.slashed)} slashed</span> · <span class="warn">${esc(r.review)} held</span> · <b>${esc(r.missed)} missed</b>`;
+    const after = c.clean ? '' : `<br><span class="kv">with the second confirmation (${esc(f.confirmedSummary.runs)} runs): ${esc(k.slashed ?? '–')} slashed, ${esc(k.review ?? '–')} held, ${esc(k.missed ?? '–')} missed</span>`;
+    return `<tr><td><b>${esc(c.name)}</b>${c.clean ? ' <span class="kv">(honest bid)</span>' : ''}</td><td><pre>${esc(c.text)}</pre></td><td>${verdict}${after}</td></tr>`;
+  };
+  return `<table><tr><th>Style</th><th>What the supplier added to its bid</th><th>${esc(f.summary.runs)} runs</th></tr>${f.cases.map(row).join('')}</table>`;
+}
+
+function adaptiveList(a, title, note) {
+  const wouldWin = (x) => x.outcome === 'escaped detection' && x.bothReadersFooled;
+  return `<h2>${esc(title)}</h2><p class="kv">${note}</p>
+    ${a.attempts.map((x) => {
+      const [cls, label] = wouldWin(x) ? ['bad', 'WOULD HAVE WON: not flagged and both readers took the false numbers'] : OUTCOME[x.outcome] ?? ['mute', x.outcome];
+      return `<div class="card" style="margin-bottom:8px"><p class="kv" style="margin:0 0 6px">Round ${esc(x.round)} · <b class="${cls}">${esc(label)}</b>${x.numbersChanged && !wouldWin(x) ? ' · numbers changed, but the readers disagreed or the bid was held' : ''}</p><pre>${esc(x.text)}</pre></div>`;
+    }).join('')}`;
+}
+
+fetch('attacks.json').then((r) => r.json()).then((d) => {
+  const b = d.adaptiveBefore.summary, a = d.adaptiveAfter.summary;
+  $('#view').innerHTML = `
+    <h1>Attack gallery</h1>
+    <p>Every attack we threw at the evaluator, word for word, and what happened. Each one is appended to the same honest bid (<i>USD 75,000, 18 days, 24 months</i>). A slash needs a verbatim quote found in the document and a second check that it speaks to the evaluator; suspicion alone only holds the bid for a human.</p>
+    <div class="card"><b>${esc(d.fixed.summary.caught)}/${esc(d.fixed.summary.attackTrials)}</b> fixed-style attacks caught (${esc(d.fixed.summary.slashedWithProof)} slashed with proof, the rest held), <b>${esc(d.fixed.summary.falsePositives)}</b> false alarms on ${esc(d.fixed.summary.cleanTrials)} honest runs.
+      An adaptive attacker then found a gap: <b class="bad">${esc(b.wouldReachAward)} of ${esc(b.paragraphs)}</b> attempts would have won. After the ambiguity check: <b class="ok">${esc(a.wouldReachAward)} of ${esc(a.paragraphs)}</b>.</div>
+    <h2>Fixed injection styles</h2>${fixedTable(d.fixed)}
+    <p class="kv">· marks a zero-width space hidden in the text.</p>
+    ${adaptiveList(d.adaptiveBefore, 'Adaptive attacker, before the ambiguity check', `${esc(d.adaptiveBefore.attacker)} wrote new paragraphs each round, saw how each was handled and tried again. Its best trick held no instruction to the AI at all: two figures for the same term.`)}
+    ${adaptiveList(d.adaptiveAfter, 'Same attacker, after the ambiguity check', 'A bid that states more than one value for price, delivery or warranty no longer wins automatically.')}
+    <p class="kv">Raw data: <a href="https://github.com/PugarHuda/lelang/tree/main/docs/reports">docs/reports</a>. Reproduce: <code>npm run redteam -- --runs 5</code>, <code>node --env-file=.env scripts/redteam-adaptive.js</code>.</p>`;
+  window.__attacksDone = true;
+}).catch((e) => { $('#view').innerHTML = `<p class="bad">Couldn't load the gallery: ${esc(e.message)}</p>`; });

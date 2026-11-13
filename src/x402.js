@@ -7,6 +7,11 @@
 import { formatUnits, parseUnits, parseSignature, createPublicClient, createWalletClient, http, defineChain } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { randomBytes } from 'node:crypto';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+
+mkdirSync('data', { recursive: true });
+const SEEN = process.env.X402_SEEN || 'data/x402-nonces.json'; // every accepted payment, by network:payer:nonce
+const seen = new Set(existsSync(SEEN) ? JSON.parse(readFileSync(SEEN, 'utf8')) : []);
 
 export const FACILITATOR = process.env.X402_FACILITATOR || 'https://facilitator.pieverse.io';
 const chain = (id, name, rpc, native) => defineChain({ id, name, nativeCurrency: native, rpcUrls: { default: { http: [rpc] } } });
@@ -75,8 +80,27 @@ export async function collect(header, reqs) {
   const o = optionOf(req);
   const a = payload?.payload?.authorization;
   if (!a || a.to?.toLowerCase() !== req.payTo.toLowerCase() || BigInt(a.value ?? 0) < BigInt(req.amount)) fail('payment does not match the requirements');
+  // A payment header buys one thing, once. The nonce is reserved before any await (two parallel requests with the same
+  // header can't both pass) and released only if this payment fails. A spent nonce is never taken as proof of payment:
+  // a replayed or cancelled authorization also reads as spent on-chain.
+  const key = `${o.network}:${String(a.from).toLowerCase()}:${String(a.nonce).toLowerCase()}`;
+  if (seen.has(key)) fail('this payment was already used');
+  seen.add(key);
+  try {
+    const out = await settleOnce(payload, req, o, a, reqs);
+    // the money has moved: a failed write must not release the nonce (it stays reserved in memory either way)
+    try { writeFileSync(SEEN, JSON.stringify([...seen])); } catch (e) { console.error(`x402: could not persist nonce ${key}: ${e.message}`); }
+    return out;
+  } catch (e) {
+    seen.delete(key);
+    throw e;
+  }
+}
+
+async function settleOnce(payload, req, o, a, reqs) {
+  const fail = (msg) => { throw Object.assign(new Error(msg), { status: 402, paymentRequired: paymentRequired(reqs, msg) }); };
   const amount = formatUnits(BigInt(req.amount), o.decimals);
-  const paid = (tx, settledBy, receipt) => ({ payer: a.from, tx, txUrl: `${o.explorer}/tx/${tx}`, amount, asset: o.name, network: o.label, settledBy, receipt: b64(receipt) });
+  const paid = (tx, settledBy, receipt) => ({ payer: a.from, tx, txUrl: tx ? `${o.explorer}/tx/${tx}` : null, amount, asset: o.name, network: o.label, settledBy, receipt: b64(receipt) });
   let s = {};
   if (o.facilitator) {
     const paymentPayload = { ...payload, resource: { url: req.resource, description: req.description, mimeType: req.mimeType }, accepted: req };
@@ -88,8 +112,9 @@ export async function collect(header, reqs) {
   // Fallback (or the only path, where no facilitator serves the network): the facilitator verified the signature but
   // couldn't land the transfer (on Kite testnet it answers "transaction_failed" without a tx; Kite's own gasless relayer
   // was down too). The seller may act as its own facilitator: we submit the payer's signed transferWithAuthorization
-  // and pay the gas. The simulation rejects a bad signature, a spent nonce (also if the facilitator's attempt landed
-  // after all) or a short balance, so nothing is charged twice and nothing is delivered unpaid.
+  // and pay the gas. The simulation rejects a bad signature, a spent nonce or a short balance, so nothing is charged
+  // twice and nothing is delivered unpaid. (If the facilitator's own tx lands late, our simulation fails and the payer
+  // gets a 402 although it paid: rare, never in our favour, and the tx is on-chain for a manual refund.)
   try {
     const tx = await selfSettle(a, payload.payload.signature, o);
     return paid(tx, o.facilitator ? 'seller (facilitator fallback)' : 'seller (no facilitator on this network)', { success: true, transaction: tx, network: o.network, payer: a.from });
@@ -101,6 +126,16 @@ export async function collect(header, reqs) {
 const TWA_ABI = [{ type: 'function', name: 'transferWithAuthorization', stateMutability: 'nonpayable', outputs: [], inputs: [
   { type: 'address', name: 'from' }, { type: 'address', name: 'to' }, { type: 'uint256', name: 'value' }, { type: 'uint256', name: 'validAfter' },
   { type: 'uint256', name: 'validBefore' }, { type: 'bytes32', name: 'nonce' }, { type: 'uint8', name: 'v' }, { type: 'bytes32', name: 'r' }, { type: 'bytes32', name: 's' }] }];
+// #2 in the review: if we took a payment and then couldn't deliver (e.g. the escrow tx failed), send it back.
+export async function refund(payment) {
+  const o = OPTIONS.find((x) => x.label === payment.network);
+  const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
+  const hash = await createWalletClient({ account, chain: o.chain, transport: http() }).writeContract({ address: o.asset, functionName: 'transfer', args: [payment.payer, parseUnits(payment.amount, o.decimals)],
+    abi: [{ type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'bool' }] }] });
+  await createPublicClient({ chain: o.chain, transport: http() }).waitForTransactionReceipt({ hash });
+  return `${o.explorer}/tx/${hash}`;
+}
+
 async function selfSettle(a, signature, o) {
   const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
   const pub = createPublicClient({ chain: o.chain, transport: http() });

@@ -1,0 +1,65 @@
+{
+  "rule": "bond = tender bond x 2^provenSlashes (max 16x); only evidence-backed slashes by a trusted buyer count; overturned slashes never count",
+  "trustedBuyer": "0x1875A37a4d22B5A27F910Afc59a382EBac809C8d",
+  "escrows": [
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67",
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae",
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b"
+  ],
+  "suppliers": [
+    {
+      "address": "0x5d6674ce278747115d8031e34d9fae6b42ca214e",
+      "provenSlashes": 3,
+      "bondMultiplier": 8,
+      "slashes": [
+        {
+          "escrow": "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67",
+          "tender": "2",
+          "bid": "Bid B",
+          "evidenceHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+          "settleTx": "https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9c16f16ebb5cc02ff65dc2970f94",
+          "proof": "slash.html?t=rfq-mweguzqa&b=Bid%20B"
+        },
+        {
+          "escrow": "0xd50f39cb489c7d492fa74b9849cfd054600f08ae",
+          "tender": "3",
+          "bid": "Bid C",
+          "evidenceHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+          "settleTx": "https://testnet.kitescan.ai/tx/0xbf230c665ca2747405b73139fd5a88f66b0d8815654f1337071d311a4cc12e99",
+          "proof": "slash.html?t=rfq-mwefdu6g&b=Bid%20C"
+        },
+        {
+          "escrow": "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b",
+          "tender": "7",
+          "bid": "Bid C",
+          "evidenceHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+          "settleTx": "https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648",
+          "proof": "slash.html?t=rfq-mwdsz7vo&b=Bid%20C"
+        }
+      ]
+    },
+    {
+      "address": "0xda039f110e3370b494f24539800bfade299b38ae",
+      "provenSlashes": 2,
+      "bondMultiplier": 4,
+      "slashes": [
+        {
+          "escrow": "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b",
+          "tender": "8",
+          "bid": "Bid E",
+          "evidenceHash": "0x6fbbe4dfc288c91569a30202ba2059e49f56fcb1176382cf1a88aa665509febf",
+          "settleTx": "https://testnet.kitescan.ai/tx/0xc90e54074d8e1e8eb583898ec843d9c65a7b05c005e780d9427685d81a6c5f12",
+          "proof": "slash.html?t=rfq-mwdt4xm3&b=Bid%20E"
+        },
+        {
+          "escrow": "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b",
+          "tender": "4",
+          "bid": "Bid E",
+          "evidenceHash": "0xad1dd8ef8236090f7804800b5bae95f714ba101091e0f83aa39277af36b830ce",
+          "settleTx": "https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2",
+          "proof": "slash.html?t=rfq-mwdqcnnx&b=Bid%20E"
+        }
+      ]
+    }
+  ]
+}

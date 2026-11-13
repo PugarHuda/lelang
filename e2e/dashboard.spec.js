@@ -152,3 +152,14 @@ test('a tender paid for over x402 shows who paid and links the fee transaction',
   await expect(page.locator('#x402')).toHaveAttribute('href', href);
   await expect(page.locator('#view')).toContainText(`paid the ${paidBy.fee} ${paidBy.asset} tender fee`);
 });
+
+// Attack gallery: every published red-team case renders, with its measured outcome; nothing executes from attack text.
+test('attack gallery lists every case and the adaptive attacker before and after the fix', async ({ page }) => {
+  const d = JSON.parse(readFileSync('public/attacks.json', 'utf8'));
+  await page.goto('/attacks.html');
+  await expect.poll(() => page.evaluate(() => window.__attacksDone)).toBe(true);
+  for (const c of d.fixed.cases) await expect(page.locator('#view')).toContainText(c.name);
+  await expect(page.locator('pre')).toHaveCount(d.fixed.cases.length + d.adaptiveBefore.attempts.length + d.adaptiveAfter.attempts.length);
+  await expect(page.locator('#view')).toContainText(`${d.adaptiveBefore.summary.wouldReachAward} of ${d.adaptiveBefore.summary.paragraphs}`);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+});

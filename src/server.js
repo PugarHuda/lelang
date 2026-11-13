@@ -1,9 +1,9 @@
 import { createServer } from 'node:http';
 import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment, kiteEnabled } from './kite.js';
+import { deployment, kiteEnabled, balances } from './kite.js';
 import { serveStatic } from './static.js';
-import { allRequirements, collect } from './x402.js';
+import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
 
@@ -13,6 +13,10 @@ let running = null;
 // tender takes no more bids than it paid for. TENDER_FEE_BASE=0 turns paid tenders off (then only DEMO_TOKEN opens tenders).
 const FEE_BASE = Number(process.env.TENDER_FEE_BASE ?? 0.2);
 const FEE_PER_BID = Number(process.env.TENDER_FEE_PER_BID ?? 0.06);
+const MAX_OPEN_PAID = 5, MAX_OPEN_PER_PAYER = 2;
+const pendingPaid = new Map(); // paid opens in flight: slot -> { payer (claimed), ip }
+const OPEN_TTL = 6 * 3600_000; // an open paid tender older than this no longer counts against the caps
+let bondLookups = 0; // fresh /bond lookups in flight (each scans the chain)
 export const tenderFee = (maxBids) => +(FEE_BASE + FEE_PER_BID * maxBids).toFixed(6);
 const tokenHash = (t) => createHash('sha256').update(String(t)).digest('hex');
 
@@ -50,9 +54,22 @@ createServer(async (req, res) => {
       return rfq ? json(res, 200, publicView(rfq)) : json(res, 404, { error: 'not found' });
     }
     const bq = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/bond$/);
-    if (bq && req.method === 'GET') return json(res, 200, await bondQuote(bq[1], url.searchParams.get('supplier')));
+    if (bq && req.method === 'GET') {
+      // each fresh quote scans the chain's logs: bound how many run at once (cached answers are free)
+      if (bondLookups >= 4) return json(res, 429, { error: 'too many bond lookups right now; retry in a few seconds' });
+      bondLookups += 1;
+      try { return json(res, 200, await bondQuote(bq[1], url.searchParams.get('supplier'))); } finally { bondLookups -= 1; }
+    }
     // Actions spend credits or move testnet money, so a public deploy gates them with DEMO_TOKEN.
-    const authorized = !process.env.DEMO_TOKEN || url.searchParams.get('token') === process.env.DEMO_TOKEN;
+    // Fail closed: without DEMO_TOKEN only a caller on this machine is the operator (local `npm start`); an unset
+    // variable on a public deploy must not hand the buyer wallet to anyone.
+    // A tunnel or reverse proxy also connects from 127.0.0.1, so a direct local request must also name localhost and
+    // carry no forwarding headers; a public deploy should set DEMO_TOKEN anyway.
+    const loopback = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
+      && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host ?? '') && !Object.keys(req.headers).some((h) => h.startsWith('x-forwarded') || h === 'forwarded');
+    // ...and, without a token, a page on another site in the operator's browser must not drive it (CSRF).
+    const sameOrigin = !req.headers.origin || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.origin);
+    const authorized = process.env.DEMO_TOKEN ? url.searchParams.get('token') === process.env.DEMO_TOKEN : loopback && sameOrigin;
     const a = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/approve$/);
     if (a && req.method === 'POST') {
       if (!authorized) return json(res, 403, { error: 'demo token required' });
@@ -91,12 +108,38 @@ createServer(async (req, res) => {
       for (const k of ['budgetCapUsd', 'maxDeliveryDays', 'bondPie', ...(paid ? [] : ['depositPie'])]) if (!(Number(spec[k]) > 0)) bad(`${k} must be > 0`);
       const w = spec.weights ?? {};
       if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery must sum to 1');
-      // Validated before charging: a malformed request never costs the payer anything.
-      let payment, ownerToken;
+      // Validated before charging: a malformed request never costs the payer anything. Amounts must be plain decimals
+      // (1e-7 passes `> 0` but can't be turned into token units, so the escrow call would fail after payment).
+      for (const k of ['bondPie', 'depositPie']) if (!/^\d+(\.\d{1,6})?$/.test(String(spec[k]))) bad(`${k} must be a plain decimal with at most 6 places`);
+      let payment, ownerToken, slot;
+      try {
       if (paid) {
+        // Testnet fees are free-mintable tokens, so the fee alone can't stop someone draining our gas and AI credits:
+        // cap open paid tenders per payer and overall. Slots are counted and reserved with no await in between, so
+        // parallel requests can't all slip under the caps. Only a request that carries a well-formed payment for our
+        // terms takes a slot (a bare request gets its 402 straight away), at most one in flight per IP, and an open paid
+        // tender stops counting after OPEN_TTL so abandoned ones don't block the cap forever.
         const terms = allRequirements({ amount: tenderFee(spec.maxBids), payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/rfqs`, description: `Lelang: open a sealed-bid tender for up to ${spec.maxBids} bids (${FEE_BASE} base + ${FEE_PER_BID} per bid: AI evaluation and the Reppo audit)` });
+        const header = req.headers['payment-signature'] ?? req.headers['x-payment'];
+        let auth;
+        try { auth = JSON.parse(Buffer.from(header ?? '', 'base64').toString()).payload.authorization; } catch {}
+        const fits = auth && String(auth.to).toLowerCase() === buyerAddress().toLowerCase() && terms.some((t) => { try { return BigInt(auth.value) >= BigInt(t.amount); } catch { return false; } });
+        if (!fits) {
+          const pr = paymentRequired(terms, header ? 'payment does not match the requirements' : 'payment required');
+          res.writeHead(402, { 'content-type': 'application/json', 'payment-required': Buffer.from(JSON.stringify(pr)).toString('base64') });
+          return res.end(JSON.stringify(pr));
+        }
+        const claimed = String(auth.from).toLowerCase(); // unverified here; a false `from` can't settle
+        const ip = req.socket.remoteAddress;
+        if ([...pendingPaid.values()].some((p) => p.ip === ip)) return json(res, 429, { error: 'one paid request at a time per client' });
+        const payers = [...listRfqs().map((r) => getRfq(r.id)).filter((r) => r.paidBy && !['settled', 'held'].includes(r.phase) && Date.now() - Date.parse(r.createdAt) < OPEN_TTL).map((r) => r.paidBy.payer.toLowerCase()), ...[...pendingPaid.values()].map((p) => p.payer)];
+        if (payers.length >= MAX_OPEN_PAID) return json(res, 429, { error: `${MAX_OPEN_PAID} paid tenders are already running; try again later` });
+        if (claimed && payers.filter((p) => p === claimed).length >= MAX_OPEN_PER_PAYER) return json(res, 429, { error: `this payer already has ${MAX_OPEN_PER_PAYER} tenders running; nothing was charged` });
+        slot = Symbol('paid tender');
+        pendingPaid.set(slot, { payer: claimed, ip });
+        if (Number((await balances(buyerAddress())).kite) < 0.01) return json(res, 503, { error: 'operator is out of gas; not taking payments right now' });
         try {
-          payment = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
+          payment = await collect(header, terms);
         } catch (e) {
           if (e.status !== 402) throw e;
           res.writeHead(402, { 'content-type': 'application/json', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
@@ -106,8 +149,19 @@ createServer(async (req, res) => {
         spec.paidBy = { payer: payment.payer, fee: payment.amount, asset: payment.asset, network: payment.network, tx: payment.tx, txUrl: payment.txUrl, settledBy: payment.settledBy, ownerTokenHash: tokenHash(ownerToken) };
         res.setHeader('payment-response', payment.receipt);
       }
-      const rfq = await createRfq(spec);
+      let rfq;
+      try {
+        rfq = await createRfq(spec);
+      } catch (e) {
+        if (!payment) throw e;
+        // paid but nothing opened: give the money back rather than asking the payer to pay again
+        const back = await refund(payment).catch((err) => `refund failed, contact the operator with the payment tx: ${err.shortMessage ?? err.message}`);
+        return json(res, 502, { error: `tender could not be opened (${e.shortMessage ?? e.message}); payment returned`, payment: { tx: payment.txUrl }, refund: back });
+      }
       return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase, ...(paid && { ownerToken, payment: { payer: payment.payer, tx: payment.tx, network: payment.network } }) });
+      } finally {
+        pendingPaid.delete(slot); // the tender now counts itself (or nothing was opened)
+      }
     }
     // A slashed supplier appeals with its own signature: no token, one appeal per slashed bid.
     const ap = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal$/);
