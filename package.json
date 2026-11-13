@@ -42,5 +42,8 @@
     "ajv-formats": "^3.0.1",
     "hardhat": "^2.29.2",
     "solc": "^0.8.28"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

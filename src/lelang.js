@@ -1,6 +1,6 @@
 // Lelang: sealed-bid tender between agents.
 // commit (signed hash + bond) -> anchor on Kite -> reveal -> guard -> extract -> rules -> award -> Reppo audit -> settle
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
 import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives, confirmAddressedToEvaluator } from './ai.js';
@@ -568,7 +568,14 @@ export async function settle(rfqId) {
 // The contract can't un-slash, so an overturned slash is refunded by the buyer and stops counting against the
 // supplier's reputation. The panel can confirm a slash; overturning one takes a signed human decision. One signed appeal per slashed bid. Every untrusted text going to the panel is datamarked.
 export const appealMessage = (rfqId, label, reason) => `LELANG appeal ${rfqId} ${label} reason: ${reason}`;
-export const overturnedSlashes = () => new Set(Object.values(db.rfqs).flatMap((r) => Object.values(r.bids)
+// Overturned slashes from this server's tenders and from the published ones (public/tenders), so a fresh deployment
+// with an empty state still knows which slashes an appeal reversed.
+const published = () => {
+  const dir = new URL('../public/tenders/', import.meta.url);
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => /^rfq-[w-]+.json$/.test(f) && !f.endsWith('.ocds.json')).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
+};
+export const overturnedSlashes = () => new Set([...Object.values(db.rfqs), ...published()].flatMap((r) => Object.values(r.bids ?? {})
   .filter((b) => b.appeal?.outcome === 'overturned').map((b) => slashKey(r.escrow, r.chainId, b.supplier))));
 
 export async function appeal(rfqId, { supplier, reason, signature }) {
