@@ -34,7 +34,8 @@ async function body(req) {
 const bad = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
 
 const json = (res, code, body) => {
-  res.writeHead(code, { 'content-type': 'application/json' });
+  // public reads are open to any origin (the static dashboard shows what runs here); actions need a token or payment
+  res.writeHead(code, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
   res.end(JSON.stringify(body));
 };
 

@@ -163,3 +163,13 @@ test('attack gallery lists every case and the adaptive attacker before and after
   await expect(page.locator('#view')).toContainText(`${d.adaptiveBefore.summary.wouldReachAward} of ${d.adaptiveBefore.summary.paragraphs}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
+
+// The live panel reads the hosted API; it either lists what runs there or says plainly that it didn't answer.
+test('live panel shows the public API or says it did not answer', async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.goto('/');
+  await expect.poll(() => page.evaluate(() => window.__liveDone), { timeout: 100_000 }).toBeTruthy();
+  const done = await page.evaluate(() => window.__liveDone);
+  await expect(page.locator('#live')).toContainText(done.up ? 'is up' : "didn't answer in time");
+  await expect(page.locator('#live')).toContainText('Try it with your own agent');
+});

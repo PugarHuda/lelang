@@ -24,6 +24,11 @@ export const OPTIONS = [
   { network: 'eip155:5042002', chain: chain(5042002, 'Arc Testnet', 'https://rpc.testnet.arc.network', { name: 'USDC', symbol: 'USDC', decimals: 18 }),
     asset: '0x3600000000000000000000000000000000000000', name: 'USDC', version: '2', decimals: 6, facilitator: false,
     label: 'Arc testnet', explorer: 'https://testnet.arcscan.app' },
+  // Base mainnet USDC, real money: what a production Kite Passport pays with ("exact-scheme USDC x402 ... Base mainnet").
+  // Opt-in (X402_BASE=1), facilitator only: we hold no ETH on Base, so there is no self-settle fallback here.
+  ...(process.env.X402_BASE === '1' ? [{ network: 'eip155:8453', chain: chain(8453, 'Base', 'https://mainnet.base.org', { name: 'Ether', symbol: 'ETH', decimals: 18 }),
+    asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', name: 'USD Coin', version: '2', decimals: 6, facilitator: true, noSelfSettle: true,
+    label: 'Base mainnet', explorer: 'https://basescan.org' }] : []),
 ];
 export const NETWORK = OPTIONS[0].network;
 export const ASSET = { address: OPTIONS[0].asset, name: OPTIONS[0].name, version: OPTIONS[0].version, decimals: OPTIONS[0].decimals };
@@ -108,6 +113,7 @@ async function settleOnce(payload, req, o, a, reqs) {
     if (!v.isValid) fail(`payment rejected by facilitator: ${v.invalidReason ?? v.error ?? 'invalid'}`);
     s = await facilitator('settle', paymentPayload, req);
     if (s.success) return { ...paid(s.transaction, 'facilitator', s), payer: s.payer ?? a.from };
+    if (o.noSelfSettle) fail(`settlement failed: facilitator ${s.errorReason ?? s.error ?? 'unknown'}`);
   }
   // Fallback (or the only path, where no facilitator serves the network): the facilitator verified the signature but
   // couldn't land the transfer (on Kite testnet it answers "transaction_failed" without a tx; Kite's own gasless relayer

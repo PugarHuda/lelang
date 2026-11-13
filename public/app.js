@@ -80,6 +80,37 @@ async function loadStatic() {
   nav.hidden = index.length < 2;
   nav.onclick = (e) => { const id = e.target.closest('button')?.dataset.id; if (id) show(id); };
   await show((index.find((t) => t.featured) ?? index[0]).id);
+  live();
+}
+
+// The hosted API, live: whatever is running there now (a free instance sleeps when idle, so the first call can be slow).
+const LIVE = 'https://lelang-6k05.onrender.com';
+async function live() {
+  const box = $('#live');
+  box.hidden = false;
+  const tryIt = `<details class="kv"><summary>Try it with your own agent</summary><pre>Bid as a supplier from any MCP client (Claude Desktop / Code):
+{ "mcpServers": { "lelang": { "command": "node", "args": ["&lt;repo&gt;/src/mcp.js"],
+  "env": { "LELANG_URL": "${LIVE}", "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
+
+Open a tender as a buyer: POST ${LIVE}/api/rfqs answers 402 with x402 terms
+(PYUSD on Kite testnet, USDC on Arc testnet); pay, get an owner token, run it.</pre></details>`;
+  const draw = (inner) => { box.innerHTML = `<h2>Live on the public API</h2><div class="card">${inner}${tryIt}</div>`; };
+  draw('<p class="kv">Waking the public API (a free instance sleeps when idle)…</p>');
+  const poll = async () => {
+    try {
+      const ctl = new AbortController();
+      setTimeout(() => ctl.abort(), 70_000);
+      const { rfqs, running } = await (await fetch(`${LIVE}/api/rfqs`, { signal: ctl.signal })).json();
+      const rows = rfqs.slice(0, 6).map((r) => `<li><code>${esc(r.id)}</code> · ${esc(r.title)} · <b>${esc(r.phase)}</b>${r.id === running ? ' (being evaluated now)' : ''}</li>`).join('');
+      draw(`<p class="kv" style="margin:0 0 6px">${esc(LIVE.replace('https://', ''))} is up · ${rfqs.length} tender${rfqs.length === 1 ? '' : 's'} since its last restart (settled ones are also published above)</p>${rows ? `<ul style="margin:0 0 8px;padding-left:18px">${rows}</ul>` : '<p class="kv">No tender running right now: open one, or bid in the next.</p>'}`);
+      window.__liveDone = { up: true, count: rfqs.length };
+    } catch {
+      draw(`<p class="kv">The public API didn't answer in time (it may be waking up). It is at <code>${esc(LIVE)}</code>.</p>`);
+      window.__liveDone = { up: false };
+    }
+  };
+  await poll();
+  setInterval(poll, 30_000);
 }
 
 async function tick() {
