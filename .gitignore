@@ -10,3 +10,4 @@ coverage.json
 test-results/
 playwright-report/
 packages/
+.openserv.json

@@ -33,7 +33,7 @@ export function record(entry) {
 }
 export const list = () => ({ attempts: entries.length, wins: entries.filter((e) => e.wouldWin).length, entries: entries.slice(0, 50) });
 
-// Any bid document, no baseline: what Lelang would do with it. Used by the OpenServ x402 service (src/openserv-agent.js).
+// Any bid document, no baseline: what Lelang would do with it. A building block for a paid inspection service.
 export async function inspect(doc) {
   const [m, a, b, alts] = await Promise.all([findManipulation(doc), extractBid(doc), servRead(doc), statedAlternatives(doc)]);
   const aimed = m.p > 0.8 && m.verified ? await confirmAddressedToEvaluator(m.evidence) : 0;
