@@ -8,7 +8,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// @title LelangEscrow
 /// @notice Sealed-bid tender escrow for agent-to-agent procurement. Bonds sit in this contract, not with the buyer.
 /// @dev Flow: open -> commit (bond in) -> closeCommits -> reveal -> settle (one tx: refunds, evidence-hashed slashes,
-///      down payment) or, if the buyer never settles, withdraw. There is no owner, admin or pause: no party can move
+///      down payment, success fee) or, if the buyer never settles, withdraw. There is no owner, admin or pause: no party can move
 ///      bonds outside these rules.
 contract LelangEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -23,6 +23,7 @@ contract LelangEscrow is ReentrancyGuard {
         bool settled;
         uint32 committed;
         uint32 revealed;
+        uint16 feeBps; // success fee on the down payment, agreed by the buyer when it opens the tender
     }
 
     struct Bid {
@@ -35,6 +36,11 @@ contract LelangEscrow is ReentrancyGuard {
 
     /// @notice Cap on bidders per tender, so `settle` (which loops over bidders) always fits in a block.
     uint256 public constant MAX_BIDDERS = 100;
+
+    /// @notice Cap on the success fee: 5% of the down payment.
+    uint16 public constant MAX_FEE_BPS = 500;
+    /// @notice Receives success fees (the operator running evaluation and audits). Fixed at deployment.
+    address public immutable treasury;
 
     /// @notice Number of tenders opened so far; ids start at 1.
     uint256 public tenderCount;
@@ -53,6 +59,7 @@ contract LelangEscrow is ReentrancyGuard {
     event BondSlashed(uint256 indexed id, address indexed bidder, uint256 amount, bytes32 evidenceHash);
     event Awarded(uint256 indexed id, address indexed winner, uint256 downPayment);
     event BondWithdrawn(uint256 indexed id, address indexed bidder, uint256 amount);
+    event FeePaid(uint256 indexed id, address indexed treasury, uint256 amount);
 
     error WrongPhase();
     error NotBuyer();
@@ -64,23 +71,29 @@ contract LelangEscrow is ReentrancyGuard {
     error InvalidParams();
     error TooManyBidders();
 
+    constructor(address treasury_) {
+        if (treasury_ == address(0)) revert InvalidParams();
+        treasury = treasury_;
+    }
+
     /// @notice Opens a tender; the caller becomes its buyer.
     /// @param token ERC-20 used for bonds and the down payment.
     /// @param bond Minimum bond each bidder locks on commit (token units).
     /// @param commitSeconds Length of the commit window from now.
     /// @param revealSeconds Length of the reveal window after commits close.
     /// @param settleSeconds Time the buyer has to settle after the reveal window; afterwards bidders can withdraw.
+    /// @param feeBps Success fee in basis points of the down payment, paid to the treasury only when an award settles.
     /// @return id The new tender id.
-    function open(IERC20 token, uint256 bond, uint64 commitSeconds, uint64 revealSeconds, uint64 settleSeconds)
+    function open(IERC20 token, uint256 bond, uint64 commitSeconds, uint64 revealSeconds, uint64 settleSeconds, uint16 feeBps)
         external
         returns (uint256 id)
     {
-        if (address(token) == address(0) || bond == 0 || commitSeconds == 0 || revealSeconds == 0 || settleSeconds == 0) {
+        if (address(token) == address(0) || bond == 0 || commitSeconds == 0 || revealSeconds == 0 || settleSeconds == 0 || feeBps > MAX_FEE_BPS) {
             revert InvalidParams();
         }
         id = ++tenderCount;
         uint64 c = uint64(block.timestamp) + commitSeconds;
-        tenders[id] = Tender(msg.sender, token, bond, c, c + revealSeconds, c + revealSeconds + settleSeconds, false, 0, 0);
+        tenders[id] = Tender(msg.sender, token, bond, c, c + revealSeconds, c + revealSeconds + settleSeconds, false, 0, 0, feeBps);
         emit TenderOpened(id, msg.sender, address(token), bond, c);
     }
 
@@ -170,7 +183,15 @@ contract LelangEscrow is ReentrancyGuard {
                 emit BondSlashed(id, list[i], b.bond, bytes32(0));
             }
         }
-        if (downPayment > 0) t.token.safeTransferFrom(msg.sender, winner, downPayment);
+        if (downPayment > 0) {
+            t.token.safeTransferFrom(msg.sender, winner, downPayment);
+            // The operator is paid in the same transaction as the winner, and only then: no award, no fee.
+            uint256 fee = (downPayment * t.feeBps) / 10_000;
+            if (fee > 0) {
+                t.token.safeTransferFrom(msg.sender, treasury, fee);
+                emit FeePaid(id, treasury, fee);
+            }
+        }
         emit Awarded(id, winner, downPayment);
     }
 

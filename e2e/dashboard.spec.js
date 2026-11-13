@@ -145,9 +145,10 @@ test('a tender paid for over x402 shows who paid and links the fee transaction',
   const t = index.find((x) => JSON.parse(readFileSync(`public/tenders/${x.id}.json`, 'utf8')).paidBy);
   test.skip(!t, 'no paid tender published');
   const { paidBy } = JSON.parse(readFileSync(`public/tenders/${t.id}.json`, 'utf8'));
+  const href = paidBy.txUrl ?? `https://testnet.kitescan.ai/tx/${paidBy.tx}`;
   await page.goto('/');
   await page.locator(`#tenders button[data-id="${t.id}"]`).click();
   await expect.poll(() => shown(page)).toBe(t.id);
-  await expect(page.locator('#x402')).toHaveAttribute('href', `https://testnet.kitescan.ai/tx/${paidBy.tx}`);
-  await expect(page.locator('#view')).toContainText(`paid the ${paidBy.fee} PYUSD tender fee`);
+  await expect(page.locator('#x402')).toHaveAttribute('href', href);
+  await expect(page.locator('#view')).toContainText(`paid the ${paidBy.fee} ${paidBy.asset} tender fee`);
 });

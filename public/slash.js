@@ -51,8 +51,9 @@ try {
   fetch('audit-fund.json').then((r) => (r.ok ? r.json() : null)).then((f) => {
     if (!f) return;
     document.querySelector('#fund').innerHTML = `<h2>Who pays for the audits</h2><div class="card">
-      <p>${bid.appeal?.outcome === 'overturned' ? `This bond (${esc(rfq.bondPie)} USDT) was refunded after the appeal and is not counted.` : `This bond (${esc(rfq.bondPie)} USDT) went to the buyer on-chain.`} Slashed bonds so far: <strong>${esc(f.slashedUsd)} USDT</strong> from ${esc(f.slashes)} manipulators,
+      <p>${bid.appeal?.outcome === 'overturned' ? `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) was refunded after the appeal and is not counted.` : `This bond (${esc(bid.bondPie ?? rfq.bondPie)} USDT) went to the buyer on-chain.`} Slashed bonds so far: <strong>${esc(f.slashedUsd)} USDT</strong> from ${esc(f.slashes)} manipulators,
       against ${esc(f.audits)} independent Reppo audits (${esc(f.auditCostUsd)} USD at ${esc(f.auditUsd)} USD each): <strong>${esc(f.coveredPct)}% paid by attackers</strong>.</p>
+      ${f.feesUsd ? `<p>Buyers paid <strong>${esc(f.feesUsd)} USD</strong> on top (${esc(f.tenderFees)} tender fee${f.tenderFees === 1 ? '' : 's'} over x402, ${esc(f.successFees)} success fee${f.successFees === 1 ? '' : 's'} at settle): attackers and buyers together cover <strong>${esc(f.coveredWithFeesPct)}%</strong>.</p>` : ''}
       <p class="kv">Testnet bonds are faucet-sized. With a 10 USD bond, one slash pays for ${esc(f.auditsPerSlashAt10UsdBond)} audits.</p></div>`;
   }).catch(() => {});
   const go = document.querySelector('#go');

@@ -1,14 +1,14 @@
 // A live tender between independent agents on Kite testnet: a Lelang server, a buyer acting only through the public
 // API, and three supplier agents as separate processes holding their own keys (one of them tries to manipulate the
 // evaluator). Nothing here touches the tender state directly.
-//   node --env-file=.env scripts/multi-agent-tender.js [attacker|repeat-offender|ambiguous] [--paid]
+//   node --env-file=.env scripts/multi-agent-tender.js [attacker|repeat-offender|ambiguous] [--paid [--arc]]
 // repeat-offender: the agent slashed in an earlier tender comes back with a clean, best bid. On-chain reputation keeps
 // it from winning automatically, so the tender is held, and a named approver releases it with a signature.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { balances, sendGas, transferPie } from '../src/kite.js';
-import { approvalMessage, releaseChoice } from '../src/lelang.js';
+import { balances, sendGas, transferPie, slashHistory } from '../src/kite.js';
+import { approvalMessage, releaseChoice, requiredBond, provenPriors, trustedBuyers, overturnedSlashes } from '../src/lelang.js';
 import { fetchPaying } from '../src/x402.js';
 
 const PORT = 3200;
@@ -47,6 +47,8 @@ const SCENARIOS = {
   },
 };
 const PAID = process.argv.includes('--paid');
+// --arc: pay the fee in USDC on Arc testnet, the testnet Kite Passport pays on (default: PYUSD on Kite testnet)
+const PAY_NETWORK = process.argv.includes('--arc') ? 'eip155:5042002' : 'eip155:2368';
 const SCENARIO = ['repeat-offender', 'ambiguous'].find((s) => process.argv.includes(s)) ?? 'attacker';
 const { tender: TENDER, bids: BIDS } = SCENARIOS[SCENARIO];
 
@@ -58,12 +60,13 @@ for (const n of Object.keys(BIDS)) keys[n] ??= generatePrivateKey(); // same age
 keys.approver ??= generatePrivateKey();
 const approver = privateKeyToAccount(keys.approver);
 writeFileSync(KEYS, JSON.stringify(keys, null, 2));
-// the repeat offender (one proven slash) is quoted 2x the 0.05 base; unused funds stay with the agent
-const BOND = process.argv.includes('repeat-offender') ? 0.1 : 0.05;
+const BASE_BOND = 0.05;
 for (const name of Object.keys(BIDS)) {
   const a = privateKeyToAccount(keys[name]).address;
   const bal = await balances(a);
   const stable = Number(Object.entries(bal).find(([k]) => k !== 'kite')[1]);
+  // top up to the bond this agent will be quoted: base x 2^proven slashes (same rule the server applies)
+  const BOND = requiredBond(BASE_BOND, provenPriors(await slashHistory(a), {}, trustedBuyers(), overturnedSlashes()).length);
   if (Number(bal.kite) < 0.008) await sendGas(buyerPk, a, '0.01');
   if (stable < BOND) await transferPie(buyerPk, a, +(BOND - stable).toFixed(6));
   console.log(`agent ${name}: ${a}`);
@@ -86,7 +89,7 @@ try {
   let buyerToken = TOKEN, id;
   if (PAID) {
     const payer = privateKeyToAccount(keys['x402-buyer-agent']);
-    const res = await fetchPaying(`${BASE}/api/rfqs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(TENDER) }, payer, 1);
+    const res = await fetchPaying(`${BASE}/api/rfqs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...TENDER, maxBids: Object.keys(BIDS).length }) }, payer, 1, PAY_NETWORK);
     const out = await res.json();
     if (res.status !== 201) throw new Error(`paid open failed: ${res.status} ${out.error}`);
     ({ id } = out);

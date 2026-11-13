@@ -3,15 +3,17 @@ import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, close
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
 import { serveStatic } from './static.js';
-import { requirements, collect } from './x402.js';
+import { allRequirements, collect } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
 
 let running = null;
-// Tender fee in PYUSD over x402; 0 turns paid tenders off (then only DEMO_TOKEN opens tenders).
-// ponytail: flat fee per tender; evaluation cost grows with bids (up to the escrow's 100), so a per-bid fee or a bid cap
-// for paid tenders is the upgrade once strangers open large tenders.
-const TENDER_FEE = Number(process.env.TENDER_FEE ?? 0.5);
+// Tender fee in PYUSD over x402: a base for the tender (rationale, Reppo audit) plus a price per bid slot (each bid costs
+// a Prompt Guard pass, a manipulation check, two readers and an ambiguity check). The payer picks maxBids (1-20) and the
+// tender takes no more bids than it paid for. TENDER_FEE_BASE=0 turns paid tenders off (then only DEMO_TOKEN opens tenders).
+const FEE_BASE = Number(process.env.TENDER_FEE_BASE ?? 0.2);
+const FEE_PER_BID = Number(process.env.TENDER_FEE_PER_BID ?? 0.06);
+export const tenderFee = (maxBids) => +(FEE_BASE + FEE_PER_BID * maxBids).toFixed(6);
 const tokenHash = (t) => createHash('sha256').update(String(t)).digest('hex');
 
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
@@ -75,12 +77,16 @@ createServer(async (req, res) => {
     // agents included). The fee covers the SERV, Dolphin and Reppo calls the tender will make.
     if (url.pathname === '/api/rfqs' && req.method === 'POST') {
       const paid = !authorized;
-      if (paid && !(TENDER_FEE > 0 && kiteEnabled())) return json(res, 403, { error: 'demo token required' });
+      if (paid && !(FEE_BASE > 0 && kiteEnabled())) return json(res, 403, { error: 'demo token required' });
       const b = await body(req);
       const allowed = ['title', 'budgetCapUsd', 'maxDeliveryDays', 'minSpecs', 'weights', 'minConfidence', 'bondPie', 'depositPie'];
       const spec = { ...DEMO_RFQ, ...Object.fromEntries(allowed.filter((k) => k in b).map((k) => [k, b[k]])) };
       // A paying stranger runs the tender through our buyer wallet, so it can't make that wallet pay a down payment.
-      if (paid) spec.depositPie = 0;
+      if (paid) {
+        spec.depositPie = 0;
+        spec.maxBids = b.maxBids ?? 5;
+        if (!Number.isInteger(spec.maxBids) || spec.maxBids < 1 || spec.maxBids > 20) bad('maxBids must be an integer from 1 to 20');
+      }
       if (typeof spec.title !== 'string' || !spec.title.trim() || spec.title.length > 200) bad('title required (max 200 chars)');
       for (const k of ['budgetCapUsd', 'maxDeliveryDays', 'bondPie', ...(paid ? [] : ['depositPie'])]) if (!(Number(spec[k]) > 0)) bad(`${k} must be > 0`);
       const w = spec.weights ?? {};
@@ -88,7 +94,7 @@ createServer(async (req, res) => {
       // Validated before charging: a malformed request never costs the payer anything.
       let payment, ownerToken;
       if (paid) {
-        const terms = requirements({ amount: TENDER_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/rfqs`, description: 'Lelang: open a sealed-bid tender (fee covers AI evaluation and the Reppo audit)' });
+        const terms = allRequirements({ amount: tenderFee(spec.maxBids), payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/rfqs`, description: `Lelang: open a sealed-bid tender for up to ${spec.maxBids} bids (${FEE_BASE} base + ${FEE_PER_BID} per bid: AI evaluation and the Reppo audit)` });
         try {
           payment = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
         } catch (e) {
@@ -97,11 +103,11 @@ createServer(async (req, res) => {
           return res.end(JSON.stringify(e.paymentRequired));
         }
         ownerToken = randomBytes(24).toString('hex'); // lets the payer close and evaluate this tender; only its hash is stored
-        spec.paidBy = { payer: payment.payer, fee: payment.amount, asset: 'PYUSD', tx: payment.tx, settledBy: payment.settledBy, ownerTokenHash: tokenHash(ownerToken) };
+        spec.paidBy = { payer: payment.payer, fee: payment.amount, asset: payment.asset, network: payment.network, tx: payment.tx, txUrl: payment.txUrl, settledBy: payment.settledBy, ownerTokenHash: tokenHash(ownerToken) };
         res.setHeader('payment-response', payment.receipt);
       }
       const rfq = await createRfq(spec);
-      return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase, ...(paid && { ownerToken, payment: { payer: payment.payer, tx: payment.tx } }) });
+      return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase, ...(paid && { ownerToken, payment: { payer: payment.payer, tx: payment.tx, network: payment.network } }) });
     }
     // A slashed supplier appeals with its own signature: no token, one appeal per slashed bid.
     const ap = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal$/);

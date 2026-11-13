@@ -34,7 +34,7 @@ function render(rfq) {
       <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
       ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(rfq.anchorTx)}" target="_blank">${rfq.chainId ? 'commits closed on-chain' : 'sealed commits on Kite'}</a>` : ''}
       ${rfq.escrow ? ` · bonds held by <a href="https://testnet.kitescan.ai/address/${esc(rfq.escrow)}" target="_blank">escrow contract</a> (tender #${esc(rfq.chainId)})` : ''}
-      ${rfq.paidBy ? `<br>Opened by agent <a href="https://testnet.kitescan.ai/address/${esc(rfq.paidBy.payer)}" target="_blank">${esc(rfq.paidBy.payer.slice(0, 10))}…</a>, which paid the ${esc(rfq.paidBy.fee)} ${esc(rfq.paidBy.asset)} tender fee over <a id="x402" href="https://testnet.kitescan.ai/tx/${esc(rfq.paidBy.tx)}" target="_blank">x402</a> (settled by the ${esc(rfq.paidBy.settledBy)})` : ''}
+      ${rfq.paidBy ? `<br>Opened by agent <code>${esc(rfq.paidBy.payer.slice(0, 10))}…</code>, which paid the ${esc(rfq.paidBy.fee)} ${esc(rfq.paidBy.asset)} tender fee over <a id="x402" href="${esc(rfq.paidBy.txUrl ?? `https://testnet.kitescan.ai/tx/${rfq.paidBy.tx}`)}" target="_blank">x402</a> on ${esc(rfq.paidBy.network ?? 'Kite testnet')} (settled by the ${esc(rfq.paidBy.settledBy)})` : ''}
       · <a id="ocds" href="${staticMode ? `tenders/${esc(rfq.id)}.ocds.json` : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
     <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
     ${rfq.award ? `<h2>Decision</h2><div class="card">

@@ -6,16 +6,18 @@ const { time, loadFixture } = require('@nomicfoundation/hardhat-toolbox/network-
 const H = (s) => ethers.keccak256(ethers.toUtf8Bytes(s));
 const COMMIT = 3600, REVEAL = 3600, SETTLE = 86400;
 const BOND = ethers.parseUnits('0.1', 18);
+const TREASURY = ethers.getAddress('0x' + 'fe'.repeat(20)); // receives success fees
+const FEE_BPS = 200; // 2% of the down payment
 
 async function deploy(tokenName = 'TestToken') {
   const [buyer, a, b, c, outsider] = await ethers.getSigners();
   const token = await ethers.deployContract(tokenName);
-  const escrow = await ethers.deployContract('LelangEscrow');
+  const escrow = await ethers.deployContract('LelangEscrow', [TREASURY]);
   for (const s of [buyer, a, b, c, outsider]) {
     await token.mint(s.address, ethers.parseUnits('100', 18));
     await token.connect(s).approve(await escrow.getAddress(), ethers.MaxUint256);
   }
-  await escrow.open(await token.getAddress(), BOND, COMMIT, REVEAL, SETTLE);
+  await escrow.open(await token.getAddress(), BOND, COMMIT, REVEAL, SETTLE, FEE_BPS);
   return { escrow, token, buyer, a, b, c, outsider, id: 1n };
 }
 const fixture = () => deploy();
@@ -33,15 +35,17 @@ describe('LelangEscrow', () => {
     it('rejects zero token, bond or windows', async () => {
       const { escrow, token } = await loadFixture(fixture);
       const t = await token.getAddress();
-      await expect(escrow.open(ethers.ZeroAddress, BOND, 1, 1, 1)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
-      await expect(escrow.open(t, 0, 1, 1, 1)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
-      await expect(escrow.open(t, BOND, 0, 1, 1)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
-      await expect(escrow.open(t, BOND, 1, 0, 1)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
-      await expect(escrow.open(t, BOND, 1, 1, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(ethers.ZeroAddress, BOND, 1, 1, 1, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(t, 0, 1, 1, 1, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(t, BOND, 0, 1, 1, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(t, BOND, 1, 0, 1, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(t, BOND, 1, 1, 0, 0)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      await expect(escrow.open(t, BOND, 1, 1, 1, 501)).to.be.revertedWithCustomError(escrow, 'InvalidParams'); // fee above 5%
+      await expect(ethers.deployContract('LelangEscrow', [ethers.ZeroAddress])).to.be.reverted;
     });
     it('emits TenderOpened and stores the buyer', async () => {
       const { escrow, token, buyer } = await loadFixture(fixture);
-      await expect(escrow.open(await token.getAddress(), BOND, COMMIT, REVEAL, SETTLE)).to.emit(escrow, 'TenderOpened');
+      await expect(escrow.open(await token.getAddress(), BOND, COMMIT, REVEAL, SETTLE, FEE_BPS)).to.emit(escrow, 'TenderOpened');
       expect((await escrow.tenders(2)).buyer).to.equal(buyer.address);
       expect(await escrow.tenderCount()).to.equal(2n);
     });
@@ -161,7 +165,7 @@ describe('LelangEscrow', () => {
         .and.to.emit(escrow, 'BondRefunded').withArgs(id, b.address, BOND)
         .and.to.emit(escrow, 'Awarded').withArgs(id, a.address, dp);
       expect(await token.balanceOf(a.address)).to.equal(aBefore + BOND + dp);
-      expect(await token.balanceOf(buyer.address)).to.equal(buyerBefore + BOND - dp);
+      expect(await token.balanceOf(buyer.address)).to.equal(buyerBefore + BOND - dp - (dp * BigInt(FEE_BPS)) / 10_000n); // the success fee is on top of the down payment
       expect(await token.balanceOf(await escrow.getAddress())).to.equal(0n);
       await expect(escrow.settle(id, a.address, [], [], 0)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
     });
@@ -192,6 +196,29 @@ describe('LelangEscrow', () => {
     });
   });
 
+  describe('success fee', () => {
+    it('pays the treasury its share of the down payment in the settle transaction, and only on an award with a payment', async () => {
+      const { escrow, token, buyer, a, id } = await loadFixture(fixture);
+      await commitAs(escrow, a, id, 'bid a', salt(1));
+      await escrow.closeCommits(id);
+      await escrow.connect(a).reveal(id, H('bid a'), salt(1));
+      const dp = ethers.parseUnits('10', 18);
+      const fee = (dp * BigInt(FEE_BPS)) / 10_000n;
+      const buyer0 = await token.balanceOf(buyer.address);
+      await expect(escrow.settle(id, a.address, [], [], dp)).to.emit(escrow, 'FeePaid').withArgs(id, TREASURY, fee);
+      expect(await token.balanceOf(TREASURY)).to.equal(fee);
+      expect(await token.balanceOf(buyer.address)).to.equal(buyer0 - dp - fee);
+      expect((await escrow.tenders(id)).feeBps).to.equal(FEE_BPS);
+    });
+    it('no down payment, no fee', async () => {
+      const { escrow, a, id } = await loadFixture(fixture);
+      await commitAs(escrow, a, id, 'bid a', salt(1));
+      await escrow.closeCommits(id);
+      await escrow.connect(a).reveal(id, H('bid a'), salt(1));
+      await expect(escrow.settle(id, a.address, [], [], 0)).not.to.emit(escrow, 'FeePaid');
+    });
+  });
+
   describe('withdraw', () => {
     it('lets bidders reclaim bonds only after an unsettled deadline, once', async () => {
       const { escrow, token, a, outsider, id } = await loadFixture(fixture);
@@ -218,9 +245,9 @@ describe('LelangEscrow', () => {
   it('caps bidders per tender and settle stays within block gas at the cap', async () => {
     const [buyer] = await ethers.getSigners();
     const token = await ethers.deployContract('TestToken');
-    const escrow = await ethers.deployContract('LelangEscrow');
+    const escrow = await ethers.deployContract('LelangEscrow', [TREASURY]);
     const addr = await escrow.getAddress();
-    await escrow.open(await token.getAddress(), 1n, COMMIT, REVEAL, SETTLE);
+    await escrow.open(await token.getAddress(), 1n, COMMIT, REVEAL, SETTLE, 0);
     const wallets = [];
     for (let i = 0; i < 101; i++) {
       const w = ethers.Wallet.createRandom().connect(ethers.provider);
@@ -256,20 +283,20 @@ describe('LelangEscrow', () => {
     const [buyer] = signers;
     const pool = signers.slice(1, 10);
     const token = await ethers.deployContract('TestToken');
-    const escrow = await ethers.deployContract('LelangEscrow');
+    const escrow = await ethers.deployContract('LelangEscrow', [TREASURY]);
     const addr = await escrow.getAddress();
     for (const s of signers.slice(0, 10)) {
       await token.mint(s.address, ethers.parseUnits('1000000', 18));
       await token.connect(s).approve(addr, ethers.MaxUint256);
     }
-    const total = async () => (await Promise.all(signers.slice(0, 10).map((s) => token.balanceOf(s.address)))).reduce((x, y) => x + y, 0n) + (await token.balanceOf(addr));
+    const total = async () => (await Promise.all(signers.slice(0, 10).map((s) => token.balanceOf(s.address)))).reduce((x, y) => x + y, 0n) + (await token.balanceOf(addr)) + (await token.balanceOf(TREASURY));
     const supply = await total();
     let seed = 0x5eed;
     const rnd = (n) => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) % n);
 
     for (let round = 0; round < 200; round++) {
       const bond = BigInt(1 + rnd(10_000)) * 10n ** BigInt(rnd(18));
-      await escrow.open(await token.getAddress(), bond, COMMIT, REVEAL, SETTLE);
+      await escrow.open(await token.getAddress(), bond, COMMIT, REVEAL, SETTLE, rnd(501)); // any fee up to the 5% cap
       const id = await escrow.tenderCount();
       const bidders = pool.slice(0, 1 + rnd(pool.length));
       let posted = 0n;

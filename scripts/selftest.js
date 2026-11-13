@@ -214,4 +214,10 @@ assert.deepEqual(ambiguousTerms(undefined), []);
 // a re-run can't re-roll an escalation: the trace of the earlier run keeps the tender out of auto-award
 assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid A (confidence 0.99), formula says Bid B: escalated to a human because …' }]), true);
 assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confidence 0.95), matching the published formula' }, { step: 'review', msg: 'escalated to a human' }]), false);
+// a paid tender takes only the bids its fee paid for
+{
+  const r = await createRfq({ ...DEMO_RFQ, title: 'paid for one bid', maxBids: 1 });
+  await sealedBid(r, privateKeyToAccount(generatePrivateKey()), 'one', salt());
+  await assert.rejects(sealedBid(r, privateKeyToAccount(generatePrivateKey()), 'two', salt()), /tender is full .1 bids./);
+}
 console.log('selftest OK');

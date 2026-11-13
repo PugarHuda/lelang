@@ -103,7 +103,7 @@ export async function createRfq(spec) {
   const id = `rfq-${Date.now().toString(36)}`;
   const rfq = { id, createdAt: new Date().toISOString(), phase: 'commit', bids: {}, events: [], ...spec };
   db.rfqs[id] = rfq;
-  if (spec.paidBy) log(rfq, 'fee', `Tender fee paid over x402 by ${spec.paidBy.payer}: ${spec.paidBy.fee} ${spec.paidBy.asset}, settled on Kite by the ${spec.paidBy.settledBy}`, { tx: explorerTx(spec.paidBy.tx) });
+  if (spec.paidBy) log(rfq, 'fee', `Tender fee paid over x402 by ${spec.paidBy.payer}: ${spec.paidBy.fee} ${spec.paidBy.asset}, settled on ${spec.paidBy.network ?? 'Kite testnet'} by the ${spec.paidBy.settledBy}`, { tx: spec.paidBy.txUrl ?? explorerTx(spec.paidBy.tx) });
   if (escrowEnabled()) {
     const { chainId, tx } = await escrowOpen(spec.bondPie);
     Object.assign(rfq, { chainId, escrow: escrowAddress() });
@@ -132,7 +132,9 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
   // could both pass the first check. (Off-chain verifyMessage never yields, so no offline test can hit this.)
   if (bidOf(rfq, supplier)) fail('supplier already committed');
   // Same cap as LelangEscrow.MAX_BIDDERS. On-chain every slot costs a bond locked in the escrow.
-  if (Object.keys(rfq.bids).length >= 100) fail('tender is full (100 bids)');
+  // A paid tender takes as many bids as its fee paid for (maxBids); otherwise the escrow's cap.
+  const cap = rfq.maxBids ?? 100;
+  if (Object.keys(rfq.bids).length >= cap) fail(`tender is full (${cap} bids)`);
   const label = `Bid ${bidLabel(Object.keys(rfq.bids).length)}`;
   rfq.bids[label] = { label, supplier, hash, signature, bondTx, ...(bondPie !== undefined && { bondPie }) };
   const extra = bondPie > rfq.bondPie ? ` of ${bondPie} (${+(bondPie / rfq.bondPie).toFixed(2)}x the tender bond)` : '';
@@ -522,8 +524,8 @@ export async function settle(rfqId) {
       const labelOf = (addr) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === addr?.toLowerCase())?.label ?? addr;
       rfq.settlement = events.map((e) => ({ ...e, label: labelOf(e.bidder), tx: explorerTx(hash) }));
       for (const e of rfq.settlement) {
-        const what = { BondRefunded: 'bond refunded', BondSlashed: `bond slashed${e.evidenceHash && e.evidenceHash !== `0x${'0'.repeat(64)}` ? ` (evidence ${e.evidenceHash.slice(0, 10)}…)` : ' (never revealed)'}`, Awarded: 'wins: down payment' }[e.event];
-        log(rfq, 'settle', `${e.label} ${what}: ${e.amount}`, { tx: explorerTx(hash) });
+        const what = { BondRefunded: 'bond refunded', BondSlashed: `bond slashed${e.evidenceHash && e.evidenceHash !== `0x${'0'.repeat(64)}` ? ` (evidence ${e.evidenceHash.slice(0, 10)}…)` : ' (never revealed)'}`, Awarded: 'wins: down payment', FeePaid: 'success fee to the Lelang treasury' }[e.event];
+        log(rfq, 'settle', `${e.event === 'FeePaid' ? 'Operator' : e.label} ${what}: ${e.amount}`, { tx: explorerTx(hash) });
       }
     } else {
       for (const b of Object.values(rfq.bids)) {

@@ -32,6 +32,8 @@ writeFileSync(SALT_FILE, JSON.stringify({ salt }));
 let rfq = await api(`/api/rfqs/${rfqId}`);
 if (rfq.phase === 'commit') {
   const hash = commitHash(doc, salt, me.address, rfq.chainId ?? 0);
+  // Don't lock a bond in a tender that can't take our bid (a paid tender takes only the bids its fee paid for).
+  if (Object.keys(rfq.bids).length >= (rfq.maxBids ?? 100)) throw new Error(`tender is full (${rfq.maxBids ?? 100} bids); not committing`);
   // A supplier with a slashing history is quoted a higher bond; locking it lets the bid compete without a human hold.
   const quote = rfq.chainId ? await api(`/api/rfqs/${rfqId}/bond?supplier=${me.address}`) : null;
   if (quote?.required > quote?.base) console.log(`bond quote: ${quote.required} (base ${quote.base}, ${quote.provenSlashes.length} proven slash(es) on record); locking it`);

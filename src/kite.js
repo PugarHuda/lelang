@@ -86,16 +86,13 @@ async function send(pk, functionName, args, { address, abi } = { address: ESCROW
   return { hash, logs: parseEventLogs({ abi, logs: rcpt.logs }) };
 }
 
-async function approveEscrow(pk, amount) {
-  const { decimals } = await tokenInfo();
-  const w = wallet(pk);
-  const hash = await w.writeContract({ address: TOKEN, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), parseUnits(String(amount), decimals)] });
-  return confirm(hash);
-}
-
+// SUCCESS_FEE_BPS: the buyer's agreed success fee (basis points of the down payment), paid to the escrow's treasury at
+// settle. Escrows before V3 have no fee parameter.
+export const successFeeBps = () => Number(process.env.SUCCESS_FEE_BPS ?? 200);
+const hasFee = () => ESCROW_ABI.some((f) => f.name === 'open' && f.inputs.length === 6);
 export async function escrowOpen(bond, { commitSeconds = 3600, revealSeconds = 3600, settleSeconds = 86400 } = {}) {
   const { decimals } = await tokenInfo();
-  const { hash, logs } = await send(process.env.BUYER_PRIVATE_KEY, 'open', [TOKEN, parseUnits(String(bond), decimals), BigInt(commitSeconds), BigInt(revealSeconds), BigInt(settleSeconds)]);
+  const { hash, logs } = await send(process.env.BUYER_PRIVATE_KEY, 'open', [TOKEN, parseUnits(String(bond), decimals), BigInt(commitSeconds), BigInt(revealSeconds), BigInt(settleSeconds), ...(hasFee() ? [successFeeBps()] : [])]);
   return { chainId: logs.find((l) => l.eventName === 'TenderOpened').args.id.toString(), tx: hash };
 }
 
@@ -127,9 +124,14 @@ export async function escrowBid(chainId, bidder) {
 // Refunds, slashes (with evidence hashes) and the down payment happen in one transaction.
 export async function escrowSettle(chainId, winner, slash, evidence, downPayment) {
   const { decimals } = await tokenInfo();
-  if (downPayment > 0) await approveEscrow(process.env.BUYER_PRIVATE_KEY, downPayment);
+  // the escrow pulls the down payment and, in the same tx, the success fee agreed at open
+  const feeBps = hasFee() ? Number((await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] }))[9]) : 0;
+  if (downPayment > 0) {
+    const dp = parseUnits(String(downPayment), decimals); // integer math, same rounding as the contract
+    await confirm(await wallet(process.env.BUYER_PRIVATE_KEY).writeContract({ address: TOKEN, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), dp + (dp * BigInt(feeBps)) / 10_000n] }));
+  }
   const { hash, logs } = await send(process.env.BUYER_PRIVATE_KEY, 'settle', [BigInt(chainId), winner, slash, evidence, parseUnits(String(downPayment), decimals)]);
-  const events = logs.map((l) => ({ event: l.eventName, bidder: l.args.bidder ?? l.args.winner, amount: formatUnits(l.args.amount ?? l.args.downPayment ?? 0n, decimals), evidenceHash: l.args.evidenceHash }));
+  const events = logs.map((l) => ({ event: l.eventName, bidder: l.args.bidder ?? l.args.winner ?? l.args.treasury, amount: formatUnits(l.args.amount ?? l.args.downPayment ?? 0n, decimals), evidenceHash: l.args.evidenceHash }));
   return { hash, events };
 }
 

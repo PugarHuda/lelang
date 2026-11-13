@@ -3,7 +3,7 @@
 //   npx hardhat compile && node --env-file=.env scripts/deploy-escrow.js [--verify-only]
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { createWalletClient, createPublicClient, http } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { kiteTestnet, explorerTx } from '../src/kite.js';
 
 const OUT = 'deployments/kite-testnet.json';
@@ -17,14 +17,18 @@ if (!process.argv.includes('--verify-only')) {
   const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
   const w = createWalletClient({ account, chain: kiteTestnet, transport: http() });
   const pub = createPublicClient({ chain: kiteTestnet, transport: http() });
-  const hash = await w.deployContract({ abi: art.abi, bytecode: art.bytecode });
+  // success fees go to a treasury key of its own, kept apart from the buyer wallet so the fee flow is visible on-chain
+  const keys = JSON.parse(readFileSync('data/agents/keys.json', 'utf8'));
+  const treasury = privateKeyToAccount(keys.treasury ?? (keys.treasury = generatePrivateKey())).address;
+  writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
+  const hash = await w.deployContract({ abi: art.abi, bytecode: art.bytecode, args: [treasury] });
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error('deploy reverted');
   deployment = {
     network: 'kite-testnet',
     chainId: kiteTestnet.id,
     explorer: kiteTestnet.blockExplorers.default.url,
-    escrow: { address: rcpt.contractAddress, deployTx: hash, block: Number(rcpt.blockNumber), deployer: account.address },
+    escrow: { address: rcpt.contractAddress, deployTx: hash, block: Number(rcpt.blockNumber), deployer: account.address, treasury },
     compiler: `v${buildInfo.solcLongVersion}`,
     abi: art.abi,
     // older escrows keep their tenders, slashes and proofs: reputation and the verifier still read them
