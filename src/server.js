@@ -121,27 +121,27 @@ createServer(async (req, res) => {
     }
     // Lelang as a guard for any agent: before acting on a document someone else wrote (a bid, an email, a tool result),
     // pay 0.05 and get the verdict a tender would reach. The same checks as the OpenServ listing, without OpenServ.
-    if (url.pathname === '/api/inspect' && req.method === 'POST') {
+    // /v1/inspect is the same service under the path Kite's service catalog expects.
+    if ((url.pathname === '/api/inspect' || url.pathname === '/v1/inspect') && req.method === 'POST') {
       const { document } = await body(req);
       if (typeof document !== 'string' || document.trim().length < 20 || document.length > 20000) bad('document: the text to check, 20-20000 characters');
       const ip = req.socket.remoteAddress;
       if (challengesInFlight.size >= 2 || challengesInFlight.has(ip)) return json(res, 429, { error: 'another check is running; retry in a few seconds' });
       challengesInFlight.add(ip);
       try {
-        let paidBy = 'operator';
-        if (!authorized) {
-          if (!kiteEnabled()) return json(res, 403, { error: 'inspection is off on this server' });
-          const terms = allRequirements({ amount: INSPECT_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/inspect`, description: `Lelang integrity check of one document (${INSPECT_FEE})` });
-          try {
-            const p = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
-            paidBy = { payer: p.payer, tx: p.txUrl };
-          } catch (e) {
-            if (e.status !== 402) throw e;
-            res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
-            return res.end(JSON.stringify(e.paymentRequired));
-          }
+        if (authorized) return json(res, 200, { ...(await inspect(document)), paidBy: 'operator' });
+        if (!kiteEnabled()) return json(res, 403, { error: 'inspection is off on this server' });
+        const terms = allRequirements({ amount: INSPECT_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}${url.pathname}`, description: `Lelang integrity check of one document (${INSPECT_FEE})` });
+        try {
+          // charge only on success: the check runs between verifying the payment and settling it
+          const p = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms, () => inspect(document));
+          res.setHeader('payment-response', p.receipt);
+          return json(res, 200, { ...p.delivered, paidBy: { payer: p.payer, tx: p.txUrl } });
+        } catch (e) {
+          if (e.status !== 402) throw e;
+          res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+          return res.end(JSON.stringify(e.paymentRequired));
         }
-        return json(res, 200, { ...(await inspect(document)), paidBy });
       } finally {
         challengesInFlight.delete(ip);
       }

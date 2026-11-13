@@ -81,7 +81,10 @@ async function facilitator(path, paymentPayload, paymentRequirements) {
 // Seller side: the payer says which option it paid with; we take OUR terms for that option (never the ones it echoes
 // back), check payee and amount, then settle. Returns { payer, tx, network, asset } once the money moved on-chain;
 // throws a 402-able error otherwise.
-export async function collect(header, reqs) {
+// With `deliver`, the payment is checked first (facilitator verify, or a dry run of our own settlement), then
+// deliver() runs, and the money moves only if it succeeded: "charge only on success", as Kite's service catalog asks.
+// A deliver() that throws charges nothing and frees the nonce. Its result comes back as `delivered`.
+export async function collect(header, reqs, deliver) {
   const fail = (msg) => { throw Object.assign(new Error(msg), { status: 402, paymentRequired: paymentRequired(reqs, msg) }); };
   if (!header) fail('payment required');
   let payload;
@@ -97,7 +100,7 @@ export async function collect(header, reqs) {
   if (seen.has(key)) fail('this payment was already used');
   seen.add(key);
   try {
-    const out = await settleOnce(payload, req, o, a, reqs);
+    const out = await settleOnce(payload, req, o, a, reqs, deliver);
     // the money has moved: a failed write must not release the nonce (it stays reserved in memory either way)
     try { writeFileSync(SEEN, JSON.stringify([...seen])); } catch (e) { console.error(`x402: could not persist nonce ${key}: ${e.message}`); }
     return out;
@@ -107,15 +110,17 @@ export async function collect(header, reqs) {
   }
 }
 
-async function settleOnce(payload, req, o, a, reqs) {
+async function settleOnce(payload, req, o, a, reqs, deliver) {
   const fail = (msg) => { throw Object.assign(new Error(msg), { status: 402, paymentRequired: paymentRequired(reqs, msg) }); };
   const amount = formatUnits(BigInt(req.amount), o.decimals);
-  const paid = (tx, settledBy, receipt) => ({ payer: a.from, tx, txUrl: tx ? `${o.explorer}/tx/${tx}` : null, amount, asset: o.name, network: o.label, settledBy, receipt: b64(receipt) });
+  let delivered;
+  const paid = (tx, settledBy, receipt) => ({ payer: a.from, tx, txUrl: tx ? `${o.explorer}/tx/${tx}` : null, amount, asset: o.name, network: o.label, settledBy, receipt: b64(receipt), delivered });
   let s = {};
   if (o.facilitator) {
     const paymentPayload = { ...payload, resource: { url: req.resource, description: req.description, mimeType: req.mimeType }, accepted: req };
     const v = await facilitator('verify', paymentPayload, req);
     if (!v.isValid) fail(`payment rejected by facilitator: ${v.invalidReason ?? v.error ?? 'invalid'}`);
+    if (deliver) delivered = await deliver();
     s = await facilitator('settle', paymentPayload, req);
     if (s.success) return { ...paid(s.transaction, 'facilitator', s), payer: s.payer ?? a.from };
     if (o.noSelfSettle) fail(`settlement failed: facilitator ${s.errorReason ?? s.error ?? 'unknown'}`);
@@ -126,6 +131,10 @@ async function settleOnce(payload, req, o, a, reqs) {
   // and pay the gas. The simulation rejects a bad signature, a spent nonce or a short balance, so nothing is charged
   // twice and nothing is delivered unpaid. (If the facilitator's own tx lands late, our simulation fails and the payer
   // gets a 402 although it paid: rare, never in our favour, and the tx is on-chain for a manual refund.)
+  if (deliver && !o.facilitator) {
+    try { await selfSettle(a, payload.payload.signature, o, true); } catch (e) { fail(`payment rejected: ${e.shortMessage ?? e.message}`); }
+    delivered = await deliver();
+  }
   try {
     const tx = await selfSettle(a, payload.payload.signature, o);
     return paid(tx, o.facilitator ? 'seller (facilitator fallback)' : 'seller (no facilitator on this network)', { success: true, transaction: tx, network: o.network, payer: a.from });
@@ -149,7 +158,7 @@ export async function refund(payment) {
   return `${o.explorer}/tx/${hash}`;
 }
 
-async function selfSettle(a, signature, o) {
+async function selfSettle(a, signature, o, dryRun = false) {
   const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
   const pub = createPublicClient({ chain: o.chain, transport: http() });
   const auth = [a.from, a.to, BigInt(a.value), BigInt(a.validAfter), BigInt(a.validBefore), a.nonce];
@@ -157,6 +166,7 @@ async function selfSettle(a, signature, o) {
   const { request } = await pub.simulateContract(o.sigBytes
     ? { account, address: o.asset, abi: TWA_BYTES_ABI, functionName: 'transferWithAuthorization', args: [...auth, signature] }
     : { account, address: o.asset, abi: TWA_ABI, functionName: 'transferWithAuthorization', args: [...auth, Number(v), r, s] });
+  if (dryRun) return null; // the simulation passed: signature, nonce and balance are good
   const hash = await createWalletClient({ account, chain: o.chain, transport: http() }).writeContract(request);
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error(`transferWithAuthorization reverted: ${hash}`);
