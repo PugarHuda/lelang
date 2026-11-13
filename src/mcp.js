@@ -72,10 +72,10 @@ server.registerTool('submit_bid', {
   store(key, { salt, doc: document, server: BASE }); // before anything is sent
   const hash = commitHash(document, salt, me.address, r.chainId ?? 0);
   const quote = r.chainId ? await api(`/api/rfqs/${encodeURIComponent(tender)}/bond?supplier=${me.address}`) : null;
-  if (quote && !(quote.required <= MAX_BOND)) throw new Error(`the server quotes a bond of ${quote.required}, above this agent's cap of ${MAX_BOND} (LELANG_MAX_BOND); not bidding`);
+  if (quote && !(typeof quote.required === 'number' && quote.required > 0 && quote.required <= MAX_BOND)) throw new Error(`the server quotes a bond of ${quote.required}, not a positive number within this agent's cap of ${MAX_BOND} (LELANG_MAX_BOND); not bidding`);
   let bondTx = prev?.bondTx;
   if (r.chainId && !bondTx) {
-    bondTx = await escrowCommit(pk, r.chainId, hash, quote?.required);
+    bondTx = await escrowCommit(pk, r.chainId, hash, quote?.required, { maxAmount: MAX_BOND }); // the cap holds on-chain too
     store(key, { hash, bondTx }); // right away: a retry then only re-registers, it never locks again
   }
   const signature = r.chainId ? undefined : await me.signMessage({ message: commitMessage(tender, hash) });

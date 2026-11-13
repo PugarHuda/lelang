@@ -99,11 +99,13 @@ export async function escrowOpen(bond, { commitSeconds = 3600, revealSeconds = 3
 // Token and bond amount come from the tender on-chain, not from local config: an outside bidder may not share
 // our STABLE_TOKEN, and approving the wrong token makes commit revert with ERC20InsufficientAllowance.
 // `amount` (token units, e.g. '0.1') posts more than the tender bond: what a bidder with a slashing history is asked for.
-export async function escrowCommit(pk, chainId, commitment, amount) {
+// `maxAmount` caps what is actually locked (the quote or, without one, the tender's own on-chain bond).
+export async function escrowCommit(pk, chainId, commitment, amount, { maxAmount } = {}) {
   const [, token, bond] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] });
   const decimals = await pub.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' });
   const posted = amount ? parseUnits(String(amount), decimals) : bond;
   if (posted < bond) throw new Error(`bond ${amount} is below the tender minimum ${formatUnits(bond, decimals)}`);
+  if (maxAmount != null && posted > parseUnits(String(maxAmount), decimals)) throw new Error(`bond ${formatUnits(posted, decimals)} is above this bidder's cap of ${maxAmount}`);
   await confirm(await wallet(pk).writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), posted] }));
   return (await send(pk, 'commit', [BigInt(chainId), commitment, posted])).hash;
 }
