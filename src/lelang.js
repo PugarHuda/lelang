@@ -65,8 +65,8 @@ export async function bondQuote(rfqId, supplier, agentId) {
   const rfq = getRfq(rfqId);
   if (!rfq) fail('unknown tender');
   if (!/^0x[0-9a-fA-F]{40}$/.test(supplier ?? '')) fail('supplier must be an address');
-  if (agentId != null && !/^d{1,20}$/.test(String(agentId))) fail('agentId must be an ERC-8004 agent id');
-  const k = `${rfqId}:${supplier.toLowerCase()}:${agentId ?? ''}`, hit = quotes.get(k);
+  if (agentId != null && !/^\d{1,20}$/.test(String(agentId))) fail('agentId must be an ERC-8004 agent id');
+  const k =`${rfqId}:${supplier.toLowerCase()}:${agentId ?? ''}`, hit = quotes.get(k);
   if (hit && Date.now() - hit.at < 60_000) return hit.quote;
   const quote = await bondQuoteFresh(rfq, supplier, agentId);
   if (quotes.size > 10_000) quotes.clear();
@@ -78,8 +78,8 @@ async function bondQuoteFresh(rfq, supplier, agentId) {
   const ext = rfq.chainId ? await outsideReputation(supplier, agentId) : { externalSlashes: 0 };
   return { base: rfq.bondPie, required: requiredBond(rfq.bondPie, priors.length + ext.externalSlashes), provenSlashes: priors.map(({ escrow, tender, tx }) => ({ escrow, tender, tx })), erc8004: ext };
 }
-// Slashes on marketplaces the operator trusts, read from ERC-8004 on Arc. An unreadable registry adds nothing:
-// the escrows on Kite stay the source of truth, this only ever raises the bond.
+// Slashes on marketplaces the operator trusts, read from ERC-8004 on Arc. In a quote an unreadable registry is
+// reported as an error; at evaluation it sends the bid to a human when trusted marketplaces are configured.
 const outsideReputation = (supplier, agentId) => externalReputation(supplier, agentId, trustedBuyers()).catch((e) => ({ externalSlashes: 0, error: e.shortMessage ?? e.message }));
 // Price of a second chance: a bidder with n proven slashes must lock base x 2^n (capped at 16x) to compete normally.
 // Less than that and it can still bid, but it can't win without a human looking first.
@@ -133,7 +133,7 @@ export async function createRfq(spec) {
 // On-chain mode: the bidder's own commit transaction is its authentication, so we read it back from the escrow.
 // Off-chain mode: an EIP-191 signature over the commitment stands in for it.
 export async function submitCommit(rfqId, { supplier, hash, signature, bondTx, agentId }) {
-  if (agentId != null && !/^d{1,20}$/.test(String(agentId))) fail('agentId must be an ERC-8004 agent id');
+  if (agentId != null && !/^\d{1,20}$/.test(String(agentId))) fail('agentId must be an ERC-8004 agent id');
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'commit') fail('commit phase closed');
   if (bidOf(rfq, supplier)) fail('supplier already committed');
@@ -299,6 +299,12 @@ export async function evaluate(rfqId) {
         log(rfq, 'reputation', `${bid.label}: couldn't read slash history from the escrow; flagged for review`);
       }
       const ext = await outsideReputation(bid.supplier, bid.agentId);
+      // fail closed, like the escrow history above: with trusted marketplaces configured, an unreadable record
+      // (RPC down, or a claimed agentId that doesn't exist) must not let the bid win on its own
+      if (ext.error && process.env.EXTERNAL_REPUTATION_CLIENTS && !ext.error.startsWith('this agentId is not owned')) {
+        bid.review ??= `ERC-8004 reputation check failed (${ext.error}): a human should look`;
+        log(rfq, 'reputation', `${bid.label}: couldn't read its ERC-8004 reputation on Arc; flagged for review`);
+      }
       if (ext.externalSlashes) {
         bid.externalSlashes = ext;
         log(rfq, 'reputation', `${bid.label}: ${ext.externalSlashes} slash(es) recorded by a trusted marketplace in ERC-8004 (agent #${ext.agentId} on Arc)`);

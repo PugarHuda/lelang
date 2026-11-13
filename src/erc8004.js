@@ -24,17 +24,17 @@ export async function externalReputation(supplier, claimedAgentId, ownClients = 
   const addr = supplier.toLowerCase();
   const agentId = claimedAgentId ?? published()[addr]?.agentId;
   if (!agentId || !/^\d+$/.test(String(agentId))) return { agentId: null, externalSlashes: 0 };
-  const owner = await pub.readContract({ address: IDENTITY, abi: ABI, functionName: 'ownerOf', args: [BigInt(agentId)] }).catch(() => null);
-  if (owner?.toLowerCase() !== addr) return { agentId: String(agentId), error: 'this agentId is not owned by the supplier', externalSlashes: 0 };
+  // throws on an RPC error or an id that doesn't exist: the caller fails closed (a human looks)
+  const owner = await pub.readContract({ address: IDENTITY, abi: ABI, functionName: 'ownerOf', args: [BigInt(agentId)] });
+  if (owner.toLowerCase() !== addr) return { agentId: String(agentId), error: 'this agentId is not owned by the supplier', externalSlashes: 0 };
   const own = new Set(ownClients.map((c) => c.toLowerCase()));
-  const clients = (await pub.readContract({ address: REPUTATION, abi: ABI, functionName: 'getClients', args: [BigInt(agentId)] })).filter((c) => !own.has(c.toLowerCase()));
-  const trusted = new Set(list(process.env.EXTERNAL_REPUTATION_CLIENTS));
-  const trustedClients = clients.filter((c) => trusted.has(c.toLowerCase()));
+  // Only the trusted list goes to getSummary: the registry's client list is open to anyone, so a padded one must not
+  // be able to make this read fail and the bond fall back to the base.
+  const trusted = list(process.env.EXTERNAL_REPUTATION_CLIENTS).filter((c) => !own.has(c));
   const count = async (cs, tag1 = '') => (cs.length ? Number((await pub.readContract({ address: REPUTATION, abi: ABI, functionName: 'getSummary', args: [BigInt(agentId), cs, tag1, ''] }))[0]) : 0);
-  return {
-    agentId: String(agentId), registry: `eip155:5042002:${REPUTATION}`,
-    otherClients: clients.length, otherFeedback: await count(clients),
-    trustedClients: trustedClients.length,
-    externalSlashes: await count(trustedClients, 'slashed'), // these raise the bond
-  };
+  const externalSlashes = await count(trusted, 'slashed'); // these raise the bond; a failed read throws
+  // shown for information only, best effort
+  const others = await pub.readContract({ address: REPUTATION, abi: ABI, functionName: 'getClients', args: [BigInt(agentId)] })
+    .then((cs) => cs.filter((c) => !own.has(c.toLowerCase()))).catch(() => null);
+  return { agentId: String(agentId), registry: `eip155:5042002:${REPUTATION}`, trustedClients: trusted.length, externalSlashes, otherClients: others?.length ?? null };
 }

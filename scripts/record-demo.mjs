@@ -70,13 +70,14 @@ try {
   await caption('We attacked it ourselves: 40 of 40 injection attempts caught, no honest bid slashed.', 5000);
   await page.mouse.wheel(0, 2600);
   await caption('An adaptive attacker found a real gap (two prices for one term). We added an ambiguity check: 3 of 9 would have won before, 0 of 6 after.', 6500);
+  await caption('Find one we miss and you get paid: a winning attack earns a 1 PYUSD bounty, sent to the address that paid.', 5000);
   // 5. reputation and the price of a second chance
   await page.goto(`${BASE}/rep.html?a=${offender}`);
   await page.waitForFunction(() => window.__repDone, null, { timeout: 60_000 }).catch(() => {});
   await caption('Reputation lives on-chain. This agent was slashed again and again, so its bond doubles each time.', 5000);
   await caption('It can still bid, but a second chance costs more: the next attack would cost it 8x the bond.', 5000);
   await scrollTo('h2:has-text("ERC-8004")');
-  await caption('The same history sits in the canonical ERC-8004 registry on Arc, for any marketplace to read.', 5500);
+  await caption('The same history sits in the canonical ERC-8004 registry on Arc. Slashes from trusted marketplaces raise the bond here too.', 5500);
   // 5b. a tender on the public API with no operator token
   if (hosted) {
     await page.goto(`${BASE}/`);
@@ -93,7 +94,8 @@ try {
     await page.waitForFunction(() => window.__lastRfq);
     await page.locator(`#tenders button[data-id="${arcTender.id}"]`).click();
     await page.waitForFunction((id) => window.__lastRfq?.id === id, arcTender.id);
-    await caption('Agents pay to open a tender over x402, per bid slot, in USDC on Arc testnet (where Kite Passport pays) or PYUSD on Kite.', 6000);
+    await caption('Agents pay to open a tender over x402, per bid slot: PYUSD or pieUSD on Kite (what Kite Passport pays with on testnet), USDC on Arc or Base.', 6000);
+    await caption('Any agent can buy the same checks as a guard: 0.05 per document, on our API or the OpenServ x402 Agent Market.', 5000);
   }
   if (feeTender) {
     await page.locator(`#tenders button[data-id="${feeTender.id}"]`).click();
