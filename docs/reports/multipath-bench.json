@@ -1,0 +1,720 @@
+{
+  "summary": {
+    "ranAt": "2026-11-13T18:43:48.424Z",
+    "tenders": 16,
+    "repeats": 3,
+    "plain": {
+      "runs": 48,
+      "agreed": 44,
+      "agreementPct": 91.7,
+      "confidentMisses": 4,
+      "errors": 0
+    },
+    "multipath": {
+      "runs": 48,
+      "agreed": 44,
+      "agreementPct": 91.7,
+      "confidentMisses": 3,
+      "errors": 0
+    },
+    "productionDisagreement": {
+      "tender": "rfq-mwefdu6g",
+      "formula": "Bid B",
+      "margin": 0.135,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    }
+  },
+  "rows": [
+    {
+      "tender": "rfq-mwdqcnnx",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.97,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdsz7vo",
+      "formula": "Bid B",
+      "margin": 0.135,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdt4xm3",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdx3myt",
+      "formula": "Bid A",
+      "margin": 0.229,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdydhws",
+      "formula": "Bid B",
+      "margin": 0.144,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mweep1w6",
+      "formula": "Bid A",
+      "margin": 0.229,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwefdu6g",
+      "formula": "Bid B",
+      "margin": 0.135,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mweguzqa",
+      "formula": "Bid C",
+      "margin": 0.135,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid A",
+            "confidence": 1,
+            "agreed": false
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwegzyl1",
+      "formula": "Bid B",
+      "margin": 0.144,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.98,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwekfbc95c00",
+      "formula": "Bid B",
+      "margin": 0.155,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": false
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid B",
+            "confidence": 0.95,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwcy6twj",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.98,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwczfd6r",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwczp829",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdm2642",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwdmfd6m",
+      "formula": "Bid C",
+      "margin": 0.119,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid A",
+            "confidence": 0.99,
+            "agreed": false
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid C",
+            "confidence": 0.95,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 1,
+            "agreed": true
+          }
+        ]
+      }
+    },
+    {
+      "tender": "rfq-mwfb6biw36a7",
+      "formula": "Bid B",
+      "margin": 0.153,
+      "runs": {
+        "plain": [
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 0.99,
+            "agreed": true
+          }
+        ],
+        "multipath": [
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid B",
+            "confidence": 1,
+            "agreed": true
+          },
+          {
+            "choice": "Bid C",
+            "confidence": 0.81,
+            "agreed": false
+          }
+        ]
+      }
+    }
+  ]
+}

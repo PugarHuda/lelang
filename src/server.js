@@ -290,9 +290,9 @@ createServer(async (req, res) => {
     const ot = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/overturn-tx$/);
     if (ot && req.method === 'POST') {
       if (!authorized) return json(res, 403, { error: 'demo token required' });
-      const { label, tx, final } = await body(req);
+      const { label, tx } = await body(req);
       if (typeof label !== 'string' || !/^https:\/\/testnet\.kitescan\.ai\/tx\/0x[0-9a-fA-F]{64}$/.test(tx ?? '')) bad('label and tx (Kitescan tx url) required');
-      await recordOverturnTx(ot[1], label, tx, Boolean(final));
+      await recordOverturnTx(ot[1], label, tx);
       return json(res, 200, { ok: true });
     }
     // A named approver decides an appeal the panel did not confirm (signed, APPROVERS only).

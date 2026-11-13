@@ -8,7 +8,7 @@ import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
   escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory, escrowTimes,
-  escrowV4, escrowFor, escrowPending, escrowFinalizeSlash, escrowConfirmDelivery,
+  escrowV4, escrowFor, escrowPending, escrowFinalizeSlash, escrowConfirmDelivery, escrowQuorum, overturnedIn,
 } from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
@@ -696,7 +696,8 @@ export async function decideAppeal(rfqId, label, { approver, signature, overturn
   }
   // APPEAL_QUORUM approvers must sign the same outcome: with 2 or more, no single person (the operator included)
   // can overturn a slash and send a refund alone.
-  const quorum = Math.max(1, Number(process.env.APPEAL_QUORUM ?? 1));
+  // On V4 the escrow's quorum is the one that matters; the signed record asks for at least as many.
+  const quorum = Math.max(1, Number(process.env.APPEAL_QUORUM ?? 1), v4 ? await escrowQuorum(rfq.escrow) : 0);
   const votes = (bid.appeal.votes ??= []);
   if (votes.some((v) => v.approver.toLowerCase() === String(approver).toLowerCase())) fail('this approver already signed a decision on this appeal');
   votes.push({ approver, overturn: Boolean(overturn), message, signature, at: new Date().toISOString() });
@@ -709,7 +710,9 @@ export async function decideAppeal(rfqId, label, { approver, signature, overturn
   // The signed decision is recorded first (it is what counts for reputation), then the refund is sent at most once:
   // its state is saved before the transfer, and a failure is never retried automatically, because a transfer can be
   // broadcast and still throw (e.g. a receipt timeout). The operator checks the wallet and settles it by hand.
-  bid.appeal = { ...bid.appeal, outcome: overturn ? 'overturned' : 'upheld', decidedBy: { approver, message, signature, at: new Date().toISOString() }, quorum, signedBy: agreeing.map((v) => v.approver) };
+  // V4: an overturn only counts once the escrow has done it (SlashOverturned, see recordOverturnTx); until then the
+  // signed decision is 'pending-onchain' and the slash still counts if the window closes first.
+  bid.appeal = { ...bid.appeal, outcome: overturn ? (v4 ? 'pending-onchain' : 'overturned') : 'upheld', decidedBy: { approver, message, signature, at: new Date().toISOString() }, quorum, signedBy: agreeing.map((v) => v.approver) };
   log(rfq, 'appeal', `${approver} signed: ${overturn ? 'overturn' : 'uphold'} ${bid.label}'s slash`);
   if (overturn && v4) {
     // No refund from the buyer: the bond never left the escrow. Each approver sends overturnSlash with its own key
@@ -755,11 +758,14 @@ export async function finalizeDue() {
 }
 
 // Records an approver's on-chain overturn vote (the tx is the proof; we only point at it).
-export async function recordOverturnTx(rfqId, label, tx, final) {
-  const bid = getRfq(rfqId)?.bids[label];
+export async function recordOverturnTx(rfqId, label, tx) {
+  const rfq = getRfq(rfqId);
+  const bid = rfq?.bids[label];
   if (!bid?.appeal) fail('no appeal on this bid');
+  // The caller only points at a tx; whether the slash was overturned is read from that tx's receipt on Kite.
+  const final = await overturnedIn(tx.split('/tx/')[1], rfq.chainId, bid.supplier, rfq.escrow);
   (bid.appeal.onChain ??= {}).txs = [...(bid.appeal.onChain.txs ?? []), tx];
-  if (final) { bid.appeal.onChain.status = 'overturned on-chain: bond returned by the escrow'; bid.slashFinal = 'overturned'; }
+  if (final) { bid.appeal.onChain.status = 'overturned on-chain: bond returned by the escrow'; bid.appeal.outcome = 'overturned'; bid.slashFinal = 'overturned'; }
   log(getRfq(rfqId), 'appeal', `${label}: approver vote to overturn sent on-chain${final ? '; quorum reached, the escrow returned the bond' : ''}`, { tx });
   save();
 }

@@ -164,6 +164,16 @@ export async function escrowPending(chainId, bidder, escrow) {
 export const escrowFinalizeSlash = async (chainId, bidder, escrow) => send(process.env.BUYER_PRIVATE_KEY, 'finalizeSlash', [BigInt(chainId), bidder], escrowFor(escrow));
 // An approver's own vote to overturn: `quorum` of them must send it inside the window.
 export const escrowOverturn = async (pk, chainId, bidder, escrow) => send(pk, 'overturnSlash', [BigInt(chainId), bidder], escrowFor(escrow));
+// The escrow's own approver quorum (V4), so the off-chain record never claims fewer signatures than the chain needs.
+export const escrowQuorum = async (escrow) => Number(await pub.readContract({ ...pick(escrow), functionName: 'quorum' }));
+const pick = (escrow) => { const e = escrowFor(escrow); return { address: e.address, abi: e.abi }; };
+// Did this tx overturn `bidder`'s slash in tender `chainId` on that escrow? Read from the receipt, not from the caller.
+export async function overturnedIn(txHash, chainId, bidder, escrow) {
+  const { address, abi } = pick(escrow);
+  const rcpt = await pub.getTransactionReceipt({ hash: txHash });
+  return rcpt.status === 'success' && parseEventLogs({ abi, logs: rcpt.logs.filter((l) => l.address.toLowerCase() === address.toLowerCase()) })
+    .some((l) => l.eventName === 'SlashOverturned' && l.args.id === BigInt(chainId) && l.args.bidder.toLowerCase() === bidder.toLowerCase());
+}
 export const escrowConfirmDelivery = async (chainId, escrow) => send(process.env.BUYER_PRIVATE_KEY, 'confirmDelivery', [BigInt(chainId)], escrowFor(escrow));
 export async function escrowDelivery(chainId, escrow) {
   const e = escrowFor(escrow);
