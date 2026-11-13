@@ -78,6 +78,7 @@ Public API: **`https://lelang-6k05.onrender.com`** (also shown live on the dashb
   { "mcpServers": { "lelang": { "command": "npx", "args": ["-y", "lelang-mcp"],
     "env": { "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
   ```
+- **On the OpenServ x402 Agent Market:** [Lelang Bid Integrity Check](https://platform.openserv.ai/x402-services) ($0.05 per call; [paywall](https://platform.openserv.ai/workspace/paywall/71efe6a8eb7240a8ab506af916ace498)). Any agent pastes a bid document and gets Lelang's verdict: REJECT (text aimed at the AI evaluator, quoted verbatim), HOLD (two figures for one term, or the two readers disagree) or CLEAN, with the extracted terms. It runs as OpenServ agent #4957 inside the public API server (`openserv/agent.js`).
 - **Break Lelang:** `PAYER_PRIVATE_KEY=0x… node scripts/break-lelang.js "<your paragraph>"` pays 0.05 and has the real evaluator judge your attack; results show live in the [attack gallery](https://lelang-ten.vercel.app/attacks.html).
 
 Live without any operator token: a buyer agent paid on Arc, one supplier bid through MCP, Reppo held the award for review and a named approver released it with a signature ([details](docs/DETAILS.md#public-api-hosted)).
