@@ -48,11 +48,29 @@ export const bidLabel = (i) => (i >= 26 ? bidLabel(Math.floor(i / 26) - 1) : '')
 // TRUSTED_BUYERS adds other buyers whose slashes count (e.g. a consortium sharing reputation). Overturned slashes
 // (a successful appeal) never count.
 export const trustedBuyers = () => [buyerAddress(), ...(process.env.TRUSTED_BUYERS ?? '').split(',').map((a) => a.trim())].filter(Boolean);
-export const provenPriors = (history, chainId, trustedBuyers, overturned = new Set()) => {
+// Tender ids restart on every escrow, so a slash is identified by escrow + tender + bidder.
+export const slashKey = (escrow, tender, bidder) => `${String(escrow ?? '').toLowerCase()}:${tender}:${String(bidder ?? '').toLowerCase()}`;
+// `here` is the current tender: { escrow, chainId } (a bare chainId is accepted for single-escrow callers).
+export const provenPriors = (history, here, trustedBuyers, overturned = new Set()) => {
+  const { escrow, chainId } = typeof here === 'object' && here ? here : { chainId: here };
   const trusted = new Set(trustedBuyers.filter(Boolean).map((a) => a.toLowerCase()));
-  return history.filter((h) => h.proven && String(h.tender) !== String(chainId) && trusted.has(String(h.buyer).toLowerCase())
-    && !overturned.has(`${h.tender}:${String(h.bidder ?? '').toLowerCase()}`));
+  const sameEscrow = (h) => !escrow || !h.escrow || h.escrow.toLowerCase() === escrow.toLowerCase();
+  return history.filter((h) => h.proven && !(String(h.tender) === String(chainId) && sameEscrow(h)) && trusted.has(String(h.buyer).toLowerCase())
+    && !overturned.has(slashKey(h.escrow, h.tender, h.bidder)));
 };
+// What a supplier should lock before committing: public, so a bidder knows the price of its history up front.
+// The same check runs again at evaluation; this answer is advice, the escrow amount is what counts.
+export async function bondQuote(rfqId, supplier) {
+  const rfq = getRfq(rfqId);
+  if (!rfq) fail('unknown tender');
+  if (!/^0x[0-9a-fA-F]{40}$/.test(supplier ?? '')) fail('supplier must be an address');
+  const priors = rfq.chainId ? provenPriors(await slashHistory(supplier), rfq, trustedBuyers(), overturnedSlashes()) : [];
+  return { base: rfq.bondPie, required: requiredBond(rfq.bondPie, priors.length), provenSlashes: priors.map(({ escrow, tender, tx }) => ({ escrow, tender, tx })) };
+}
+// Price of a second chance: a bidder with n proven slashes must lock base x 2^n (capped at 16x) to compete normally.
+// Less than that and it can still bid, but it can't win without a human looking first.
+// ponytail: fixed doubling; a buyer-set schedule if someone needs a different curve.
+export const requiredBond = (base, priors) => +(base * 2 ** Math.min(priors, 4)).toFixed(6);
 // What the public may see. Full documents only where they are evidence (slashed bids) or the contract (the settled
 // winner); every other bid keeps its document hash and extracted terms (enough to re-run the formula), and its owner
 // can still prove the text with its own salt. Before an award no document is public.
@@ -101,9 +119,11 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'commit') fail('commit phase closed');
   if (bidOf(rfq, supplier)) fail('supplier already committed');
+  let bondPie;
   if (rfq.chainId) {
     const onChain = await escrowBid(rfq.chainId, supplier);
     if (onChain.commitment !== hash) fail('commitment not found in escrow');
+    bondPie = onChain.bond; // read from the escrow, never from the request
   } else if (!signature || !(await verifyMessage({ address: supplier, message: commitMessage(rfqId, hash), signature }))) {
     fail('bad commit signature');
   }
@@ -113,8 +133,9 @@ export async function submitCommit(rfqId, { supplier, hash, signature, bondTx })
   // Same cap as LelangEscrow.MAX_BIDDERS. On-chain every slot costs a bond locked in the escrow.
   if (Object.keys(rfq.bids).length >= 100) fail('tender is full (100 bids)');
   const label = `Bid ${bidLabel(Object.keys(rfq.bids).length)}`;
-  rfq.bids[label] = { label, supplier, hash, signature, bondTx };
-  log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ` and locked its bond${rfq.chainId ? ' in escrow' : ''}` : ''}`, bondTx && { tx: explorerTx(bondTx) });
+  rfq.bids[label] = { label, supplier, hash, signature, bondTx, ...(bondPie !== undefined && { bondPie }) };
+  const extra = bondPie > rfq.bondPie ? ` of ${bondPie} (${+(bondPie / rfq.bondPie).toFixed(2)}x the tender bond)` : '';
+  log(rfq, 'commit', `${label} committed a sealed hash${bondTx ? ` and locked its bond${extra}${rfq.chainId ? ' in escrow' : ''}` : ''}`, bondTx && { tx: explorerTx(bondTx) });
   return label;
 }
 
@@ -238,7 +259,7 @@ export async function evaluate(rfqId) {
     if (rfq.chainId) {
       let priors;
       try {
-        priors = provenPriors(await slashHistory(bid.supplier), rfq.chainId, trustedBuyers(), overturnedSlashes());
+        priors = provenPriors(await slashHistory(bid.supplier), rfq, trustedBuyers(), overturnedSlashes());
       } catch (e) {
         // fail closed: an unreadable history must not let a repeat offender win automatically
         bid.review = `reputation check failed (${e.shortMessage ?? e.message}): a human should look`;
@@ -246,8 +267,17 @@ export async function evaluate(rfqId) {
       }
       if (priors?.length) {
         bid.priorSlashes = priors;
-        bid.review = `slashed before for proven manipulation (escrow tender ${priors.map((h) => `#${h.tender}`).join(', ')}): a human should look`;
-        log(rfq, 'reputation', `${bid.label}: supplier was slashed with on-chain evidence in tender ${priors.map((h) => `#${h.tender}`).join(', ')}; it can't win automatically`, { tx: priors[0].tx });
+        const where = priors.map((h) => `#${h.tender}`).join(', ');
+        const need = requiredBond(rfq.bondPie, priors.length);
+        const posted = bid.bondPie ?? rfq.bondPie;
+        bid.bondRequired = need;
+        if (posted >= need) {
+          // It paid for its second chance: a repeat offence now costs it `posted`, so it competes like anyone else.
+          log(rfq, 'reputation', `${bid.label}: slashed with on-chain evidence before (tender ${where}); it locked ${posted}, at least the ${need} asked of a bidder with ${priors.length} proven slash${priors.length > 1 ? 'es' : ''}, so it competes normally`, { tx: priors[0].tx });
+        } else {
+          bid.review = `slashed before for proven manipulation (escrow tender ${where}) and locked ${posted}, under the ${need} that would let it win on its own: a human should look`;
+          log(rfq, 'reputation', `${bid.label}: supplier was slashed with on-chain evidence in tender ${where}; it locked ${posted} of the ${need} required, so it can't win automatically`, { tx: priors[0].tx });
+        }
       }
     }
 
@@ -513,7 +543,7 @@ export async function settle(rfqId) {
 // supplier's reputation. The panel can confirm a slash; overturning one takes a signed human decision. One signed appeal per slashed bid. Every untrusted text going to the panel is datamarked.
 export const appealMessage = (rfqId, label, reason) => `LELANG appeal ${rfqId} ${label} reason: ${reason}`;
 export const overturnedSlashes = () => new Set(Object.values(db.rfqs).flatMap((r) => Object.values(r.bids)
-  .filter((b) => b.appeal?.outcome === 'overturned').map((b) => `${r.chainId}:${b.supplier.toLowerCase()}`)));
+  .filter((b) => b.appeal?.outcome === 'overturned').map((b) => slashKey(r.escrow, r.chainId, b.supplier))));
 
 export async function appeal(rfqId, { supplier, reason, signature }) {
   const rfq = getRfq(rfqId);
@@ -564,9 +594,10 @@ export async function decideAppeal(rfqId, label, { approver, signature, overturn
   bid.appeal = { ...bid.appeal, outcome: overturn ? 'overturned' : 'upheld', decidedBy: { approver, message, signature, at: new Date().toISOString() } };
   log(rfq, 'appeal', `${approver} signed: ${overturn ? 'overturn' : 'uphold'} ${bid.label}'s slash`);
   if (overturn && kiteEnabled()) {
-    const tx = await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, rfq.bondPie);
+    const amount = bid.bondPie ?? rfq.bondPie; // what this bidder actually lost
+    const tx = await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, amount);
     bid.appeal.refundTx = explorerTx(tx);
-    log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${rfq.bondPie}`, { tx: explorerTx(tx) });
+    log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${amount}`, { tx: explorerTx(tx) });
   }
   save();
   return bid.appeal;

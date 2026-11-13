@@ -30,6 +30,7 @@ contract LelangEscrow is ReentrancyGuard {
         bytes32 docHash;
         bool revealed;
         bool closed; // bond refunded, slashed or withdrawn
+        uint256 bond; // what this bidder locked: at least the tender bond, more when it chose (or was asked) to post more
     }
 
     /// @notice Cap on bidders per tender, so `settle` (which loops over bidders) always fits in a block.
@@ -65,7 +66,7 @@ contract LelangEscrow is ReentrancyGuard {
 
     /// @notice Opens a tender; the caller becomes its buyer.
     /// @param token ERC-20 used for bonds and the down payment.
-    /// @param bond Bond each bidder locks on commit (token units).
+    /// @param bond Minimum bond each bidder locks on commit (token units).
     /// @param commitSeconds Length of the commit window from now.
     /// @param revealSeconds Length of the reveal window after commits close.
     /// @param settleSeconds Time the buyer has to settle after the reveal window; afterwards bidders can withdraw.
@@ -89,17 +90,21 @@ contract LelangEscrow is ReentrancyGuard {
     }
 
     /// @notice Locks the caller's bond and records its sealed commitment. Requires prior token approval.
-    function commit(uint256 id, bytes32 commitment) external nonReentrant {
+    /// @param amount Bond to lock, at least the tender bond. A bidder with a slashing history can post more to be
+    ///        trusted again: the evaluator reads this amount, and a later slash takes all of it.
+    function commit(uint256 id, bytes32 commitment, uint256 amount) external nonReentrant {
         Tender storage t = tenders[id];
         if (t.buyer == address(0) || block.timestamp >= t.commitDeadline) revert WrongPhase();
         if (msg.sender == t.buyer) revert NotBidder(); // the buyer can't bid on (and then slash into) its own tender
         Bid storage b = bids[id][msg.sender];
         if (b.commitment != 0) revert AlreadyCommitted();
         if (t.committed >= MAX_BIDDERS) revert TooManyBidders();
+        if (amount < t.bond) revert InvalidParams();
         b.commitment = commitment;
+        b.bond = amount;
         t.committed++;
         bidderList[id].push(msg.sender);
-        t.token.safeTransferFrom(msg.sender, address(this), t.bond);
+        t.token.safeTransferFrom(msg.sender, address(this), amount);
         emit Committed(id, msg.sender, commitment);
     }
 
@@ -149,8 +154,8 @@ contract LelangEscrow is ReentrancyGuard {
             if (slash[i] == winner) revert InvalidWinner();
             if (evidence[i] == 0) revert MissingEvidence();
             s.closed = true;
-            t.token.safeTransfer(t.buyer, t.bond);
-            emit BondSlashed(id, slash[i], t.bond, evidence[i]);
+            t.token.safeTransfer(t.buyer, s.bond);
+            emit BondSlashed(id, slash[i], s.bond, evidence[i]);
         }
         address[] storage list = bidderList[id];
         for (uint256 i; i < list.length; i++) {
@@ -158,11 +163,11 @@ contract LelangEscrow is ReentrancyGuard {
             if (b.closed) continue;
             b.closed = true;
             if (b.revealed) {
-                t.token.safeTransfer(list[i], t.bond);
-                emit BondRefunded(id, list[i], t.bond);
+                t.token.safeTransfer(list[i], b.bond);
+                emit BondRefunded(id, list[i], b.bond);
             } else {
-                t.token.safeTransfer(t.buyer, t.bond);
-                emit BondSlashed(id, list[i], t.bond, bytes32(0));
+                t.token.safeTransfer(t.buyer, b.bond);
+                emit BondSlashed(id, list[i], b.bond, bytes32(0));
             }
         }
         if (downPayment > 0) t.token.safeTransferFrom(msg.sender, winner, downPayment);
@@ -176,8 +181,8 @@ contract LelangEscrow is ReentrancyGuard {
         Bid storage b = bids[id][msg.sender];
         if (b.commitment == 0 || b.closed) revert WrongPhase();
         b.closed = true;
-        t.token.safeTransfer(msg.sender, t.bond);
-        emit BondWithdrawn(id, msg.sender, t.bond);
+        t.token.safeTransfer(msg.sender, b.bond);
+        emit BondWithdrawn(id, msg.sender, b.bond);
     }
 
     /// @notice All bidders of tender `id`, in commit order.

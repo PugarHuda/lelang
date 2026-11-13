@@ -18,6 +18,7 @@ function bidCard(b, rfq) {
     ${b.slash && staticMode && rfq.phase === 'settled' ? `<div class="kv"><a href="slash.html?t=${encodeURIComponent(rfq.id)}&b=${encodeURIComponent(b.label)}">proof page: verify this slash yourself →</a></div>` : ''}
     ${b.evidence ? `<details class="kv"><summary>evidence</summary><pre>${esc(b.evidence)}</pre>${b.evidenceHash ? `keccak256 on-chain: <code>${esc(b.evidenceHash.slice(0, 18))}…</code>` : ''}</details>` : ''}
     ${b.review ? `<div class="kv warn">review: ${esc(b.review)}</div>` : ''}
+    ${b.priorSlashes?.length ? `<div class="kv ${b.bondPie >= b.bondRequired ? '' : 'warn'}">history: ${b.priorSlashes.length} proven slash${b.priorSlashes.length > 1 ? 'es' : ''} · bond locked ${esc(b.bondPie ?? rfq.bondPie)} of ${esc(b.bondRequired)} required${b.bondPie >= b.bondRequired ? ' · competes normally' : ''}</div>` : ''}
     ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
     <div class="kv">${b.bondTx ? `<a href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
       ${b.revealTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(b.revealTx)}" target="_blank">reveal tx</a>` : ''}</div>

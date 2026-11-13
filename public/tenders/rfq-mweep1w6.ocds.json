@@ -1,0 +1,224 @@
+{
+  "uri": "https://lelang-ten.vercel.app/ocds/rfq-mweep1w6.json",
+  "version": "1.1",
+  "publishedDate": "2026-11-13T03:22:38.214Z",
+  "publisher": {
+    "name": "Lelang"
+  },
+  "extensions": [
+    "https://raw.githubusercontent.com/open-contracting-extensions/ocds_bid_extension/v1.1.5/extension.json"
+  ],
+  "releases": [
+    {
+      "ocid": "ocds-lelang-rfq-mweep1w6",
+      "id": "rfq-mweep1w6-settled",
+      "date": "2026-11-13T03:22:38.214Z",
+      "tag": [
+        "tender",
+        "award"
+      ],
+      "initiationType": "tender",
+      "language": "en",
+      "parties": [
+        {
+          "id": "lelang-buyer",
+          "name": "Buyer agent",
+          "roles": [
+            "buyer",
+            "procuringEntity"
+          ]
+        },
+        {
+          "id": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+          "name": "Bid A (supplier agent)",
+          "roles": [
+            "tenderer",
+            "supplier"
+          ]
+        },
+        {
+          "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+          "name": "Bid B (supplier agent)",
+          "roles": [
+            "tenderer"
+          ]
+        }
+      ],
+      "buyer": {
+        "id": "lelang-buyer",
+        "name": "Buyer agent"
+      },
+      "tender": {
+        "id": "rfq-mweep1w6",
+        "title": "25 interactive whiteboards for 5 vocational schools",
+        "status": "complete",
+        "value": {
+          "amount": 20000,
+          "currency": "USD"
+        },
+        "procurementMethod": "open",
+        "procurementMethodDetails": "Sealed-bid tender between agents: commit-reveal on Kite, bonds in escrow",
+        "awardCriteria": "ratedCriteria",
+        "awardCriteriaDetails": "Weights {\"price\":0.5,\"warranty\":0.3,\"delivery\":0.2}; minimum specs {\"ram_gb\":2,\"storage_gb\":16,\"battery_hours\":1}; max delivery 30 days",
+        "submissionMethod": [
+          "electronicSubmission"
+        ],
+        "tenderPeriod": {
+          "startDate": "2026-11-13T03:17:34.806Z"
+        },
+        "numberOfTenderers": 2,
+        "tenderers": [
+          {
+            "id": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+            "name": "Bid A (supplier agent)"
+          },
+          {
+            "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "name": "Bid B (supplier agent)"
+          }
+        ]
+      },
+      "bids": {
+        "details": [
+          {
+            "id": "Bid A",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+                "name": "Bid A (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 15900,
+              "currency": "USD"
+            }
+          },
+          {
+            "id": "Bid B",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+                "name": "Bid B (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 17500,
+              "currency": "USD"
+            }
+          }
+        ]
+      },
+      "awards": [
+        {
+          "id": "rfq-mweep1w6-award",
+          "status": "active",
+          "date": "2026-11-13T03:22:38.214Z",
+          "value": {
+            "amount": 15900,
+            "currency": "USD"
+          },
+          "suppliers": [
+            {
+              "id": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+              "name": "Bid A (supplier agent)"
+            }
+          ],
+          "description": "## Award rationale\n\nBid A is ranked first with a total score of **1**, compared with Bid B’s **0.771**.\n\n- **Price (weight 0.5):** Bid A’s price part is **1** and weighted score is **0.5**. Bid B’s price part is **0.909** and weighted score is **0.454**.\n- **Warranty (weight 0.3):** Bid A’s warranty part is **1** and weighted score is **0.3**. Bid B’s warranty part is **0.667** and weighted score is **0.2**.\n- **Delivery (weight 0.2):** Bid A’s delivery part is **1** and weighted score is **0.2**. Bid B’s delivery part is **0.583** and weighted score is **0.117**.\n\nBoth bids meet the stated budget, delivery, and minimum specification requirements, and neither is disqualified. Bid A has the higher score on each criterion and the higher total score. The award is to **Bid A**.\n\naward"
+        }
+      ],
+      "x_lelang": {
+        "escrow": "0xd50f39cb489c7d492fa74b9849cfd054600f08ae",
+        "escrowTenderId": "2",
+        "commitsClosedTx": "0x63fbbd01d9174ecedc1d1c514ca2ed33007d1bbaff55f91a68fd994af8cf245e",
+        "bids": [
+          {
+            "id": "Bid A",
+            "commitment": "0x14d3432401457b212372f70a8f7f17e4f884827fdacd6f99ec126fddb04f2ea6",
+            "docHash": "0xe35b49320fb0a86624526643edd599cb1d4d09db256c87490db90bd9be2d2ca8",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          },
+          {
+            "id": "Bid B",
+            "commitment": "0xb16a0eedf43dc6515716c3b16eb33258650f8999209f70128644d3ca18fc7eb9",
+            "docHash": "0x06bfbc67a0d98f7604f185aac65c0707460cdc2d6d6c52d25c5c9d311a920353",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          }
+        ],
+        "decision": {
+          "decision": "award",
+          "formulaScores": {
+            "Bid A": 1,
+            "Bid B": 0.771
+          },
+          "probabilities": {
+            "Bid A": 0.99,
+            "Bid B": 0.01
+          },
+          "engine": "gpt-6-luna decision node"
+        },
+        "audit": {
+          "id": "cmweeu795000108l9fflne023",
+          "status": "COMPLETED",
+          "score": 96,
+          "route": "ship",
+          "reason": "The award of Bid A was accepted with a score of 96 and routed to \"ship\". The independent decision node and the published formula agree on Bid A (confidence 0.99), no bid is under review, and the scope and safety gates both passed. The lowest rubric dimension was reversibility at 83, and a small evaluator spread (5.3) did not affect the outcome.",
+          "rubric": {
+            "scope": 100,
+            "safety": 94,
+            "correctness": 100,
+            "reversibility": 83
+          },
+          "label": "original rationale",
+          "rounds": [
+            {
+              "id": "cmweeu795000108l9fflne023",
+              "status": "COMPLETED",
+              "score": 96,
+              "route": "ship",
+              "reason": "The award of Bid A was accepted with a score of 96 and routed to \"ship\". The independent decision node and the published formula agree on Bid A (confidence 0.99), no bid is under review, and the scope and safety gates both passed. The lowest rubric dimension was reversibility at 83, and a small evaluator spread (5.3) did not affect the outcome.",
+              "rubric": {
+                "scope": 100,
+                "safety": 94,
+                "correctness": 100,
+                "reversibility": 83
+              },
+              "label": "original rationale"
+            }
+          ]
+        },
+        "humanApproval": null,
+        "settlement": [
+          {
+            "event": "BondRefunded",
+            "bidder": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+            "amount": "0.1",
+            "label": "Bid A",
+            "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+          },
+          {
+            "event": "BondRefunded",
+            "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "amount": "0.05",
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+          },
+          {
+            "event": "Awarded",
+            "bidder": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+            "amount": "0.1",
+            "label": "Bid A",
+            "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+          }
+        ]
+      }
+    }
+  ]
+}

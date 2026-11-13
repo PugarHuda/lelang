@@ -32,7 +32,10 @@ writeFileSync(SALT_FILE, JSON.stringify({ salt }));
 let rfq = await api(`/api/rfqs/${rfqId}`);
 if (rfq.phase === 'commit') {
   const hash = commitHash(doc, salt, me.address, rfq.chainId ?? 0);
-  const bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash) : undefined;
+  // A supplier with a slashing history is quoted a higher bond; locking it lets the bid compete without a human hold.
+  const quote = rfq.chainId ? await api(`/api/rfqs/${rfqId}/bond?supplier=${me.address}`) : null;
+  if (quote?.required > quote?.base) console.log(`bond quote: ${quote.required} (base ${quote.base}, ${quote.provenSlashes.length} proven slash(es) on record); locking it`);
+  const bondTx = rfq.chainId ? await escrowCommit(pk, rfq.chainId, hash, quote?.required) : undefined;
   const signature = rfq.chainId ? undefined : await me.signMessage({ message: commitMessage(rfqId, hash) });
   const { label } = await api(`/api/rfqs/${rfqId}/commit`, { method: 'POST', body: { supplier: me.address, hash, signature, bondTx } });
   console.log(`committed as ${label}; waiting for the buyer to close commits`);

@@ -44,8 +44,8 @@ const onChainCommitment = await pub.readContract({ address: (process.env.ESCROW_
 assert.equal(onChainCommitment, commitment, 'JS and Solidity commitments must match');
 
 await escrowCommit(supPk, chainId, commitment);
-await reverts(sup, 'commit', [id, commitment], 'AlreadyCommitted');
-await reverts(buyer, 'commit', [id, commitment], 'NotBidder'); // buyer can't bid into its own tender
+await reverts(sup, 'commit', [id, commitment, 1n], 'AlreadyCommitted');
+await reverts(buyer, 'commit', [id, commitment, 10n ** 30n], 'NotBidder'); // buyer can't bid into its own tender
 await reverts(sup, 'reveal', [id, docHashOf(doc), salt], 'WrongPhase'); // commits still open
 await reverts(sup, 'closeCommits', [id], 'NotBuyer');
 await escrowCloseCommits(chainId);

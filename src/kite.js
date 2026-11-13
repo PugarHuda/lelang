@@ -72,13 +72,18 @@ export const deployment = existsSync(DEPLOYMENT_URL) ? JSON.parse(readFileSync(D
 const ESCROW_ABI = deployment?.abi ?? [];
 const ESCROW = () => process.env.ESCROW_ADDRESS || deployment?.escrow.address;
 export const escrowEnabled = () => kiteEnabled() && Boolean(ESCROW()) && ESCROW_ABI.length > 0;
+// Every escrow we deployed: the current one takes new tenders; older ones (deployment.previous) keep their history,
+// so reputation and proofs survive a contract upgrade.
+export const escrows = () => (ESCROW() ? [{ address: ESCROW(), abi: ESCROW_ABI, block: deployment?.escrow.block ?? 0 }] : [])
+  .concat((deployment?.previous ?? []).map((p) => ({ address: p.escrow.address, abi: p.abi, block: p.escrow.block })));
+export const escrowFor = (address) => escrows().find((e) => e.address.toLowerCase() === String(address ?? ESCROW()).toLowerCase());
 
-async function send(pk, functionName, args) {
+async function send(pk, functionName, args, { address, abi } = { address: ESCROW(), abi: ESCROW_ABI }) {
   const w = wallet(pk);
-  const hash = await w.writeContract({ address: ESCROW(), abi: ESCROW_ABI, functionName, args });
+  const hash = await w.writeContract({ address, abi, functionName, args });
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error(`${functionName} reverted: ${hash}`);
-  return { hash, logs: parseEventLogs({ abi: ESCROW_ABI, logs: rcpt.logs }) };
+  return { hash, logs: parseEventLogs({ abi, logs: rcpt.logs }) };
 }
 
 async function approveEscrow(pk, amount) {
@@ -96,20 +101,27 @@ export async function escrowOpen(bond, { commitSeconds = 3600, revealSeconds = 3
 
 // Token and bond amount come from the tender on-chain, not from local config: an outside bidder may not share
 // our STABLE_TOKEN, and approving the wrong token makes commit revert with ERC20InsufficientAllowance.
-export async function escrowCommit(pk, chainId, commitment) {
+// `amount` (token units, e.g. '0.1') posts more than the tender bond: what a bidder with a slashing history is asked for.
+export async function escrowCommit(pk, chainId, commitment, amount) {
   const [, token, bond] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] });
-  await confirm(await wallet(pk).writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), bond] }));
-  return (await send(pk, 'commit', [BigInt(chainId), commitment])).hash;
+  const decimals = await pub.readContract({ address: token, abi: erc20Abi, functionName: 'decimals' });
+  const posted = amount ? parseUnits(String(amount), decimals) : bond;
+  if (posted < bond) throw new Error(`bond ${amount} is below the tender minimum ${formatUnits(bond, decimals)}`);
+  await confirm(await wallet(pk).writeContract({ address: token, abi: erc20Abi, functionName: 'approve', args: [ESCROW(), posted] }));
+  return (await send(pk, 'commit', [BigInt(chainId), commitment, posted])).hash;
 }
 
 export const escrowCloseCommits = async (chainId) => (await send(process.env.BUYER_PRIVATE_KEY, 'closeCommits', [BigInt(chainId)])).hash;
 export const escrowReveal = async (pk, chainId, docHash, salt) => (await send(pk, 'reveal', [BigInt(chainId), docHash, salt])).hash;
 // Safety valve: after an unsettled tender's settle deadline, a bidder takes its own bond back.
-export const escrowWithdraw = async (pk, chainId) => (await send(pk, 'withdraw', [BigInt(chainId)])).hash;
+// `escrow` picks an older contract (a tender opened before an upgrade); default is the current one.
+export const escrowWithdraw = async (pk, chainId, escrow) => (await send(pk, 'withdraw', [BigInt(chainId)], escrowFor(escrow))).hash;
 
+// `bond` is what this bidder locked (V2 escrow); undefined on the first escrow, where it always equals the tender bond.
 export async function escrowBid(chainId, bidder) {
-  const [commitment, docHash, revealed, closed] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'bids', args: [BigInt(chainId), bidder] });
-  return { commitment, docHash, revealed, closed };
+  const [commitment, docHash, revealed, closed, bond] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'bids', args: [BigInt(chainId), bidder] });
+  const { decimals } = await tokenInfo();
+  return { commitment, docHash, revealed, closed, bond: bond === undefined ? undefined : Number(formatUnits(bond, decimals)) };
 }
 
 // Refunds, slashes (with evidence hashes) and the down payment happen in one transaction.
@@ -123,19 +135,22 @@ export async function escrowSettle(chainId, winner, slash, evidence, downPayment
 
 // Reputation without a database: every evidence-backed slash of this bidder, read from the escrow's own events.
 // A zero evidence hash means "never revealed", which is not proven manipulation, so it is reported separately.
+// Tender ids restart at 1 on every escrow, so each entry names its escrow.
 export async function slashHistory(bidder) {
-  if (!ESCROW() || !ESCROW_ABI.length) return [];
-  const logs = await pub.getContractEvents({
-    address: ESCROW(), abi: ESCROW_ABI, eventName: 'BondSlashed', args: { bidder }, fromBlock: BigInt(deployment?.escrow.block ?? 0),
-  });
+  const out = [];
+  for (const e of escrows().filter((x) => x.abi?.length)) out.push(...(await slashHistoryIn(e, bidder)));
+  return out;
+}
+async function slashHistoryIn({ address, abi, block }, bidder) {
+  const logs = await pub.getContractEvents({ address, abi, eventName: 'BondSlashed', args: { bidder }, fromBlock: BigInt(block ?? 0) });
   // The escrow is permissionless and doesn't check what an evidence hash proves, so the caller must decide whose
   // slashes to trust: each entry carries the buyer that opened (and therefore settled) that tender.
   const buyers = new Map();
   for (const id of new Set(logs.map((l) => l.args.id))) {
-    const [buyer] = await pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [id] });
+    const [buyer] = await pub.readContract({ address, abi, functionName: 'tenders', args: [id] });
     buyers.set(id, buyer);
   }
-  return logs.map((l) => ({ tender: l.args.id.toString(), bidder: l.args.bidder, buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
+  return logs.map((l) => ({ escrow: address, tender: l.args.id.toString(), bidder: l.args.bidder, buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
 }
 
 export const escrowAddress = () => ESCROW();

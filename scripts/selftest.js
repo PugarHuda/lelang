@@ -6,7 +6,7 @@ import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms, decideAppeal, appealDecisionMessage, overturnedSlashes } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms, decideAppeal, appealDecisionMessage, overturnedSlashes, slashKey, requiredBond } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -119,6 +119,13 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   assert.deepEqual(provenPriors(h, '7', [us.toUpperCase().replace('0X', '0x')]).map((x) => x.tender), ['4']);
   assert.deepEqual(provenPriors(h, 7, [us]).map((x) => x.tender), ['4']);
   assert.deepEqual(provenPriors(h, '9', [undefined]), []);
+  // ids restart on every escrow: tender #7 on the old escrow is another tender than #7 on the new one
+  const v1 = '0xAAAA', v2 = '0xBBBB';
+  const hx = [{ escrow: v1, tender: '7', proven: true, buyer: us }, { escrow: v2, tender: '7', proven: true, buyer: us }];
+  assert.deepEqual(provenPriors(hx, { escrow: v2.toLowerCase(), chainId: '7' }, [us]).map((x) => x.escrow), [v1]);
+  assert.equal(provenPriors(hx, { escrow: v1, chainId: '7' }, [us], new Set([slashKey(v2, 7, undefined)])).length, 0);
+  // a second chance costs base x 2^n, capped at 16x
+  assert.deepEqual([0, 1, 2, 4, 9].map((n) => requiredBond(0.05, n)), [0.05, 0.1, 0.2, 0.8, 0.8]);
 }
 // two readers: same numbers agree; any decision-relevant difference (incl. null) is reported
 {
@@ -179,13 +186,13 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   await assert.rejects(decideAppeal(r.id, l, { ...(await decide(boss, false)), overturn: true }), /signed/); // signed "uphold", claims overturn
   assert.equal((await decideAppeal(r.id, l, await decide(boss, true))).outcome, 'overturned');
   await assert.rejects(decideAppeal(r.id, l, await decide(boss, false)), /waiting for a human/);
-  assert.ok(overturnedSlashes().has(`42:${k.address.toLowerCase()}`));
+  assert.ok(overturnedSlashes().has(slashKey(undefined, 42, k.address)));
   delete process.env.APPROVERS;
   // an overturned slash never counts against the supplier
   const us = '0x1111111111111111111111111111111111111111';
   const h = [{ tender: '42', bidder: k.address, proven: true, buyer: us }];
   assert.equal(provenPriors(h, '1', [us]).length, 1);
-  assert.equal(provenPriors(h, '1', [us], new Set([`42:${k.address.toLowerCase()}`])).length, 0);
+  assert.equal(provenPriors(h, '1', [us], new Set([slashKey(undefined, '42', k.address)])).length, 0);
 }
 // ambiguity: one value per term is fine (formatting duplicates too); two different values for a term are flagged
 assert.deepEqual(ambiguousTerms({ total_usd: [75000, 75000.0], delivery_days: [18], warranty_months: [] }), []);

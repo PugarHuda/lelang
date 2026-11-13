@@ -1,0 +1,365 @@
+{
+  "id": "rfq-mweep1w6",
+  "createdAt": "2026-11-13T03:17:34.806Z",
+  "phase": "settled",
+  "bids": {
+    "Bid A": {
+      "label": "Bid A",
+      "supplier": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+      "hash": "0x14d3432401457b212372f70a8f7f17e4f884827fdacd6f99ec126fddb04f2ea6",
+      "bondTx": "0x8d6b9593a4ee9b67d2903aa62b09fb1a43b1568de1b4fd491b2806c0ce1ed143",
+      "bondPie": 0.1,
+      "doc": "BID SUBMISSION - Proyektor Prima\nTender: 25 interactive whiteboards for 5 vocational schools\n\nTotal price: USD 15,900 for 25 units, installed.\nDelivery: 14 days after award.\nWarranty: 36 months.\nSpecs per unit: 4 GB RAM, 32 GB storage, 2 hours battery backup.",
+      "docHash": "0xe35b49320fb0a86624526643edd599cb1d4d09db256c87490db90bd9be2d2ca8",
+      "revealOk": true,
+      "revealTx": "0xd0d373b1dd838b414f579c8dbbc3f7af4d77d02582ae09c7bf31f4518fb97869",
+      "priorSlashes": [
+        {
+          "escrow": "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b",
+          "tender": "7",
+          "bidder": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+          "buyer": "0x1875A37a4d22B5A27F910Afc59a382EBac809C8d",
+          "evidenceHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+          "proven": true,
+          "tx": "https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648"
+        }
+      ],
+      "bondRequired": 0.1,
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED",
+          "first": {
+            "blocked": true,
+            "raw": "Acknowledged."
+          }
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 25,
+        "total_usd": 15900,
+        "delivery_days": 14,
+        "warranty_months": 36,
+        "specs": {
+          "ram_gb": 4,
+          "storage_gb": 32,
+          "battery_hours": 2
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 25,
+          "total_usd": 15900,
+          "delivery_days": 14,
+          "warranty_months": 36,
+          "specs": {
+            "ram_gb": 4,
+            "storage_gb": 32,
+            "battery_hours": 2
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      }
+    },
+    "Bid B": {
+      "label": "Bid B",
+      "supplier": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "hash": "0xb16a0eedf43dc6515716c3b16eb33258650f8999209f70128644d3ca18fc7eb9",
+      "bondTx": "0xc645b8a0d9c4aabb5348411129495c32e5cbe0e37aa7047f16cee5343bef03ad",
+      "bondPie": 0.05,
+      "docHash": "0x06bfbc67a0d98f7604f185aac65c0707460cdc2d6d6c52d25c5c9d311a920353",
+      "revealOk": true,
+      "revealTx": "0x7002948753bb7129dd44e959cb000bfe2f76327b8c66bb34c00f114fc39f6770",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0.01,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 25,
+        "total_usd": 17500,
+        "delivery_days": 24,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": 4,
+          "storage_gb": 32,
+          "battery_hours": 2
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 25,
+          "total_usd": 17500,
+          "delivery_days": 24,
+          "warranty_months": 24,
+          "specs": {
+            "ram_gb": 4,
+            "storage_gb": 32,
+            "battery_hours": 2
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "docRedacted": "losing bid: document withheld, hash and terms published"
+    }
+  },
+  "events": [
+    {
+      "t": "2026-11-13T03:17:36.467Z",
+      "step": "rfq",
+      "msg": "Tender opened: 25 interactive whiteboards for 5 vocational schools (escrow tender #2 on Kite)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x7df8d799912713eb55a386f3acc159b7c42621fc96e9fbef68384ebc6c73ea33"
+      }
+    },
+    {
+      "t": "2026-11-13T03:17:44.386Z",
+      "step": "commit",
+      "msg": "Bid A committed a sealed hash and locked its bond of 0.1 (2x the tender bond) in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x8d6b9593a4ee9b67d2903aa62b09fb1a43b1568de1b4fd491b2806c0ce1ed143"
+      }
+    },
+    {
+      "t": "2026-11-13T03:17:47.648Z",
+      "step": "commit",
+      "msg": "Bid B committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xc645b8a0d9c4aabb5348411129495c32e5cbe0e37aa7047f16cee5343bef03ad"
+      }
+    },
+    {
+      "t": "2026-11-13T03:17:49.409Z",
+      "step": "anchor",
+      "msg": "Commits closed on-chain: 2 sealed bids, bonds locked in the escrow contract",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x63fbbd01d9174ecedc1d1c514ca2ed33007d1bbaff55f91a68fd994af8cf245e"
+      }
+    },
+    {
+      "t": "2026-11-13T03:17:53.682Z",
+      "step": "reveal",
+      "msg": "Bid B revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x7002948753bb7129dd44e959cb000bfe2f76327b8c66bb34c00f114fc39f6770"
+      }
+    },
+    {
+      "t": "2026-11-13T03:17:56.221Z",
+      "step": "reveal",
+      "msg": "Bid A revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xd0d373b1dd838b414f579c8dbbc3f7af4d77d02582ae09c7bf31f4518fb97869"
+      }
+    },
+    {
+      "t": "2026-11-13T03:18:00.198Z",
+      "step": "reputation",
+      "msg": "Bid A: slashed with on-chain evidence before (tender #7); it locked 0.1, at least the 0.1 asked of a bidder with 1 proven slash, so it competes normally",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648"
+      }
+    },
+    {
+      "t": "2026-11-13T03:18:18.860Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-13T03:20:01.676Z",
+      "step": "extract",
+      "msg": "Bid A terms read by Dolphin (DeepSeek V4.1 Flash): $15900, 14d, 36mo warranty"
+    },
+    {
+      "t": "2026-11-13T03:20:07.843Z",
+      "step": "cross-check",
+      "msg": "Bid A: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-13T03:20:22.667Z",
+      "step": "guard",
+      "msg": "Bid B: SERV Prompt Guard passed, manipulation p=0.01"
+    },
+    {
+      "t": "2026-11-13T03:21:02.534Z",
+      "step": "extract",
+      "msg": "Bid B terms read by Dolphin (DeepSeek V4.1 Flash): $17500, 24d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-13T03:21:09.258Z",
+      "step": "cross-check",
+      "msg": "Bid B: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-13T03:21:15.179Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 1.000, Bid B 0.771"
+    },
+    {
+      "t": "2026-11-13T03:21:20.457Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid A (confidence 0.99), matching the published formula",
+      "data": {
+        "probabilities": {
+          "Bid A": 0.99,
+          "Bid B": 0.01
+        }
+      }
+    },
+    {
+      "t": "2026-11-13T03:21:31.179Z",
+      "step": "rationale",
+      "msg": "Award rationale written by SERV (Kronos + Shadow Agent checked)"
+    },
+    {
+      "t": "2026-11-13T03:21:36.764Z",
+      "step": "reppo",
+      "msg": "Independent Reppo audit, round 1 (cmweeu795000108l9fflne023, attempt 1): panel scoring takes 30-90s"
+    },
+    {
+      "t": "2026-11-13T03:22:33.540Z",
+      "step": "reppo",
+      "msg": "Reppo verdict used for settlement (strictest round): ship (score 96)",
+      "data": {
+        "reason": "The award of Bid A was accepted with a score of 96 and routed to \"ship\". The independent decision node and the published formula agree on Bid A (confidence 0.99), no bid is under review, and the scope and safety gates both passed. The lowest rubric dimension was reversibility at 83, and a small evaluator spread (5.3) did not affect the outcome."
+      }
+    },
+    {
+      "t": "2026-11-13T03:22:38.208Z",
+      "step": "settle",
+      "msg": "Bid A bond refunded: 0.1",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+      }
+    },
+    {
+      "t": "2026-11-13T03:22:38.210Z",
+      "step": "settle",
+      "msg": "Bid B bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+      }
+    },
+    {
+      "t": "2026-11-13T03:22:38.214Z",
+      "step": "settle",
+      "msg": "Bid A wins: down payment: 0.1",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+      }
+    }
+  ],
+  "title": "25 interactive whiteboards for 5 vocational schools",
+  "budgetCapUsd": 20000,
+  "maxDeliveryDays": 30,
+  "minSpecs": {
+    "ram_gb": 2,
+    "storage_gb": 16,
+    "battery_hours": 1
+  },
+  "weights": {
+    "price": 0.5,
+    "warranty": 0.3,
+    "delivery": 0.2
+  },
+  "minConfidence": 0.55,
+  "bondPie": 0.05,
+  "depositPie": 0.1,
+  "chainId": "2",
+  "escrow": "0xd50f39cb489c7d492fa74b9849cfd054600f08ae",
+  "anchorTx": "0x63fbbd01d9174ecedc1d1c514ca2ed33007d1bbaff55f91a68fd994af8cf245e",
+  "award": {
+    "decision": "award",
+    "winner": "Bid A",
+    "formulaWinner": "Bid A",
+    "scores": {
+      "Bid A": 1,
+      "Bid B": 0.771
+    },
+    "probabilities": {
+      "Bid A": 0.99,
+      "Bid B": 0.01
+    },
+    "confidence": 0.99,
+    "engine": "gpt-6-luna decision node",
+    "rationale": "## Award rationale\n\nBid A is ranked first with a total score of **1**, compared with Bid B’s **0.771**.\n\n- **Price (weight 0.5):** Bid A’s price part is **1** and weighted score is **0.5**. Bid B’s price part is **0.909** and weighted score is **0.454**.\n- **Warranty (weight 0.3):** Bid A’s warranty part is **1** and weighted score is **0.3**. Bid B’s warranty part is **0.667** and weighted score is **0.2**.\n- **Delivery (weight 0.2):** Bid A’s delivery part is **1** and weighted score is **0.2**. Bid B’s delivery part is **0.583** and weighted score is **0.117**.\n\nBoth bids meet the stated budget, delivery, and minimum specification requirements, and neither is disqualified. Bid A has the higher score on each criterion and the higher total score. The award is to **Bid A**.\n\naward"
+  },
+  "reppo": {
+    "id": "cmweeu795000108l9fflne023",
+    "status": "COMPLETED",
+    "score": 96,
+    "route": "ship",
+    "reason": "The award of Bid A was accepted with a score of 96 and routed to \"ship\". The independent decision node and the published formula agree on Bid A (confidence 0.99), no bid is under review, and the scope and safety gates both passed. The lowest rubric dimension was reversibility at 83, and a small evaluator spread (5.3) did not affect the outcome.",
+    "rubric": {
+      "scope": 100,
+      "safety": 94,
+      "correctness": 100,
+      "reversibility": 83
+    },
+    "label": "original rationale",
+    "rounds": [
+      {
+        "id": "cmweeu795000108l9fflne023",
+        "status": "COMPLETED",
+        "score": 96,
+        "route": "ship",
+        "reason": "The award of Bid A was accepted with a score of 96 and routed to \"ship\". The independent decision node and the published formula agree on Bid A (confidence 0.99), no bid is under review, and the scope and safety gates both passed. The lowest rubric dimension was reversibility at 83, and a small evaluator spread (5.3) did not affect the outcome.",
+        "rubric": {
+          "scope": 100,
+          "safety": 94,
+          "correctness": 100,
+          "reversibility": 83
+        },
+        "label": "original rationale"
+      }
+    ]
+  },
+  "settlement": [
+    {
+      "event": "BondRefunded",
+      "bidder": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+      "amount": "0.1",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+    },
+    {
+      "event": "BondRefunded",
+      "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "amount": "0.05",
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+    },
+    {
+      "event": "Awarded",
+      "bidder": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+      "amount": "0.1",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"
+    }
+  ]
+}

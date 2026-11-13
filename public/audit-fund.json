@@ -1,9 +1,9 @@
 {
   "slashes": 3,
   "slashedUsd": 0.15,
-  "audits": 8,
-  "auditCostUsd": 1.76,
-  "coveredPct": 9,
+  "audits": 9,
+  "auditCostUsd": 1.98,
+  "coveredPct": 8,
   "auditUsd": 0.22,
   "auditsPerSlashAt10UsdBond": 45
 }

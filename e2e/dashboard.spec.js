@@ -110,3 +110,15 @@ test('proof page shows the appeal outcome and who paid for the audits', async ({
   await expect(page.locator('#view')).toContainText({ upheld: 'Slash upheld', overturned: 'Slash overturned', human: 'a named approver decides' }[a.outcome]);
   await expect(page.locator('#fund')).toContainText('% paid by attackers');
 });
+
+// A repeat offender that locked the quoted (higher) bond is shown competing normally, with what it locked.
+test('escalated bond: a repeat offender that paid for its second chance is shown competing normally', async ({ page }) => {
+  const t = index.find((x) => Object.values(JSON.parse(readFileSync(`public/tenders/${x.id}.json`, 'utf8')).bids)
+    .some((b) => b.priorSlashes?.length && b.bondPie >= b.bondRequired));
+  test.skip(!t, 'no published tender with an escalated bond');
+  const bid = Object.values(JSON.parse(readFileSync(`public/tenders/${t.id}.json`, 'utf8')).bids).find((b) => b.priorSlashes?.length);
+  await page.goto('/');
+  await page.locator(`#tenders button[data-id="${t.id}"]`).click();
+  await expect.poll(() => shown(page)).toBe(t.id);
+  await expect(page.locator('.bid', { hasText: bid.label })).toContainText(`bond locked ${bid.bondPie} of ${bid.bondRequired} required · competes normally`);
+});

@@ -9,7 +9,8 @@ import { kiteTestnet, explorerTx } from '../src/kite.js';
 const OUT = 'deployments/kite-testnet.json';
 const art = JSON.parse(readFileSync('hh-artifacts/contracts/LelangEscrow.sol/LelangEscrow.json', 'utf8'));
 const buildInfo = readdirSync('hh-artifacts/build-info').map((f) => JSON.parse(readFileSync(`hh-artifacts/build-info/${f}`, 'utf8')))
-  .find((b) => b.output.contracts['contracts/LelangEscrow.sol']?.LelangEscrow);
+  // stale build-info files survive recompiles: take the one that produced the artifact we deploy
+  .find((b) => '0x' + b.output.contracts['contracts/LelangEscrow.sol']?.LelangEscrow?.evm.bytecode.object === art.bytecode);
 
 let deployment = existsSync(OUT) ? JSON.parse(readFileSync(OUT, 'utf8')) : null;
 if (!process.argv.includes('--verify-only')) {
@@ -26,6 +27,8 @@ if (!process.argv.includes('--verify-only')) {
     escrow: { address: rcpt.contractAddress, deployTx: hash, block: Number(rcpt.blockNumber), deployer: account.address },
     compiler: `v${buildInfo.solcLongVersion}`,
     abi: art.abi,
+    // older escrows keep their tenders, slashes and proofs: reputation and the verifier still read them
+    previous: deployment ? [{ escrow: deployment.escrow, abi: deployment.abi, verified: deployment.verified }, ...(deployment.previous ?? [])] : [],
   };
   mkdirSync('deployments', { recursive: true });
   writeFileSync(OUT, JSON.stringify(deployment, null, 2));

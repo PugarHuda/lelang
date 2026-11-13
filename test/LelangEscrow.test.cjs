@@ -21,9 +21,10 @@ async function deploy(tokenName = 'TestToken') {
 const fixture = () => deploy();
 const salt = (n) => ethers.zeroPadValue(ethers.toBeHex(n), 32);
 
-async function commitAs(escrow, signer, id, doc, s) {
+async function commitAs(escrow, signer, id, doc, s, amount) {
+  amount ??= (await escrow.tenders(id)).bond;
   const commitment = await escrow.commitmentOf(H(doc), s, signer.address, id);
-  await escrow.connect(signer).commit(id, commitment);
+  await escrow.connect(signer).commit(id, commitment, amount);
   return commitment;
 }
 
@@ -58,12 +59,41 @@ describe('LelangEscrow', () => {
     it('reverts on double commit, buyer bidding, unknown tender and after the deadline', async () => {
       const { escrow, a, buyer, id } = await loadFixture(fixture);
       await commitAs(escrow, a, id, 'bid a', salt(1));
-      await expect(escrow.connect(a).commit(id, H('x'))).to.be.revertedWithCustomError(escrow, 'AlreadyCommitted');
-      await expect(escrow.connect(buyer).commit(id, H('x'))).to.be.revertedWithCustomError(escrow, 'NotBidder');
-      await expect(escrow.connect(a).commit(99, H('x'))).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+      await expect(escrow.connect(a).commit(id, H('x'), BOND)).to.be.revertedWithCustomError(escrow, 'AlreadyCommitted');
+      await expect(escrow.connect(buyer).commit(id, H('x'), BOND)).to.be.revertedWithCustomError(escrow, 'NotBidder');
+      await expect(escrow.connect(a).commit(99, H('x'), BOND)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
       await time.increase(COMMIT);
       const [, , b] = await ethers.getSigners();
-      await expect(escrow.connect(b).commit(id, H('x'))).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+      await expect(escrow.connect(b).commit(id, H('x'), BOND)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+    });
+    it('rejects a bond below the tender minimum', async () => {
+      const { escrow, a, id } = await loadFixture(fixture);
+      await expect(escrow.connect(a).commit(id, H('x'), BOND - 1n)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+    });
+    it('a higher bond is locked, slashed and refunded at the amount the bidder posted', async () => {
+      const { escrow, token, buyer, a, b, id } = await loadFixture(fixture);
+      const big = BOND * 4n;
+      const [a0, b0, buyer0] = await Promise.all([token.balanceOf(a.address), token.balanceOf(b.address), token.balanceOf(buyer.address)]);
+      await commitAs(escrow, a, id, 'bid a', salt(1), big);
+      await commitAs(escrow, b, id, 'bid b', salt(2), big);
+      expect((await escrow.bids(id, a.address)).bond).to.equal(big);
+      await time.increase(COMMIT);
+      await escrow.connect(a).reveal(id, H('bid a'), salt(1));
+      await escrow.connect(b).reveal(id, H('bid b'), salt(2));
+      await expect(escrow.settle(id, a.address, [b.address], [H('evidence')], 0))
+        .to.emit(escrow, 'BondSlashed').withArgs(id, b.address, big, H('evidence'))
+        .and.to.emit(escrow, 'BondRefunded').withArgs(id, a.address, big);
+      expect(await token.balanceOf(a.address)).to.equal(a0);
+      expect(await token.balanceOf(b.address)).to.equal(b0 - big);
+      expect(await token.balanceOf(buyer.address)).to.equal(buyer0 + big);
+    });
+    it('withdraw returns the full posted bond', async () => {
+      const { escrow, token, a, id } = await loadFixture(fixture);
+      const a0 = await token.balanceOf(a.address);
+      await commitAs(escrow, a, id, 'bid a', salt(1), BOND * 3n);
+      await time.increase(COMMIT + REVEAL + SETTLE);
+      await expect(escrow.connect(a).withdraw(id)).to.emit(escrow, 'BondWithdrawn').withArgs(id, a.address, BOND * 3n);
+      expect(await token.balanceOf(a.address)).to.equal(a0);
     });
     it('matches the JS commitment used by the agents', async () => {
       const { escrow, a } = await loadFixture(fixture);
@@ -219,7 +249,7 @@ describe('LelangEscrow', () => {
   });
 
   // Fuzz + invariant: random bonds, bidder counts, reveal subsets and slash choices. Invariants:
-  // (1) while open, escrow balance == bond * open bids; (2) after settle, escrow holds nothing for this tender;
+  // (1) while open, escrow balance == sum of the bonds posted (each at least the tender bond); (2) after settle, escrow holds nothing for this tender;
   // (3) tokens are conserved across all parties.
   it('fuzz: conserves tokens and empties the escrow on settle (200 random tenders)', async () => {
     const signers = await ethers.getSigners();
@@ -242,8 +272,13 @@ describe('LelangEscrow', () => {
       await escrow.open(await token.getAddress(), bond, COMMIT, REVEAL, SETTLE);
       const id = await escrow.tenderCount();
       const bidders = pool.slice(0, 1 + rnd(pool.length));
-      for (const [i, s] of bidders.entries()) await commitAs(escrow, s, id, `doc ${round} ${i}`, salt(round * 100 + i));
-      expect(await token.balanceOf(addr)).to.equal(bond * BigInt(bidders.length)); // invariant 1
+      let posted = 0n;
+      for (const [i, s] of bidders.entries()) {
+        const amount = bond * BigInt(1 + rnd(3)); // repeat offenders post more
+        posted += amount;
+        await commitAs(escrow, s, id, `doc ${round} ${i}`, salt(round * 100 + i), amount);
+      }
+      expect(await token.balanceOf(addr)).to.equal(posted); // invariant 1
       await escrow.closeCommits(id);
       const revealed = bidders.filter(() => rnd(4) !== 0);
       for (const s of revealed) { const i = bidders.indexOf(s); await escrow.connect(s).reveal(id, H(`doc ${round} ${i}`), salt(round * 100 + i)); }

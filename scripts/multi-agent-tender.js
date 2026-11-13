@@ -56,7 +56,8 @@ for (const n of Object.keys(BIDS)) keys[n] ??= generatePrivateKey(); // same age
 keys.approver ??= generatePrivateKey();
 const approver = privateKeyToAccount(keys.approver);
 writeFileSync(KEYS, JSON.stringify(keys, null, 2));
-const BOND = 0.05;
+// the repeat offender (one proven slash) is quoted 2x the 0.05 base; unused funds stay with the agent
+const BOND = process.argv.includes('repeat-offender') ? 0.1 : 0.05;
 for (const name of Object.keys(BIDS)) {
   const a = privateKeyToAccount(keys[name]).address;
   const bal = await balances(a);

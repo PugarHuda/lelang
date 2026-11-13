@@ -6,11 +6,13 @@ import { readFileSync } from 'node:fs';
 import { createPublicClient, http, parseEventLogs, keccak256, toHex } from 'viem';
 import { kiteTestnet } from '../src/kite.js';
 
-const { abi } = JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8'));
+const dep = JSON.parse(readFileSync(new URL('../deployments/kite-testnet.json', import.meta.url), 'utf8'));
 const rfq = JSON.parse(readFileSync(process.argv[2] ?? 'public/tender.json', 'utf8'));
 const chain = createPublicClient({ chain: kiteTestnet, transport: http() });
 const settleTx = rfq.settlement?.find((s) => s.tx)?.tx?.split('/tx/')[1];
 assert.ok(rfq.escrow && settleTx, 'tender has no on-chain escrow settlement');
+// a tender opened before a contract upgrade is read with its own escrow's ABI
+const { abi } = (dep.previous ?? []).find((p) => p.escrow.address.toLowerCase() === rfq.escrow.toLowerCase()) ?? dep;
 
 const logs = parseEventLogs({ abi, logs: (await chain.getTransactionReceipt({ hash: settleTx })).logs });
 // same normalization the server used to verify the quote (src/ai.js findManipulation)

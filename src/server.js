@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
 import { serveStatic } from './static.js';
@@ -40,6 +40,8 @@ createServer(async (req, res) => {
       const rfq = getRfq(m[1]);
       return rfq ? json(res, 200, publicView(rfq)) : json(res, 404, { error: 'not found' });
     }
+    const bq = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/bond$/);
+    if (bq && req.method === 'GET') return json(res, 200, await bondQuote(bq[1], url.searchParams.get('supplier')));
     // Actions spend credits or move testnet money, so a public deploy gates them with DEMO_TOKEN.
     const authorized = !process.env.DEMO_TOKEN || url.searchParams.get('token') === process.env.DEMO_TOKEN;
     const a = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/approve$/);

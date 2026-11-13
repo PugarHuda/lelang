@@ -9,8 +9,13 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&am
 // Same normalization the server used to verify the quote (src/ai.js findManipulation), so zero-width or
 // compatibility-character attacks verify here exactly as they did there.
 const norm = (x) => x.normalize('NFKC').replace(/[\p{Cf}\p{Mn}]/gu, '').replace(/\s+/g, ' ').trim().toLowerCase();
-let abiP;
-const abi = () => (abiP ??= fetch('deployment.json').then((r) => r.json()).then((d) => d.abi));
+let depP;
+// Each tender names its escrow; older escrows (before a contract upgrade) keep their own ABI in deployment.previous.
+const abi = async (escrow) => {
+  const d = await (depP ??= fetch('deployment.json').then((r) => r.json()));
+  const old = (d.previous ?? []).find((p) => p.escrow.address.toLowerCase() === String(escrow).toLowerCase());
+  return (old ?? d).abi;
+};
 
 async function settleLogs(rfq) {
   const settleTx = rfq.settlement.find((s) => s.tx)?.tx.split('/tx/')[1];
@@ -19,7 +24,7 @@ async function settleLogs(rfq) {
     client.getCode({ address: rfq.escrow }),
     client.getBlockNumber(),
   ]);
-  const logs = parseEventLogs({ abi: await abi(), logs: rcpt.logs }).filter((l) => l.args.id === BigInt(rfq.chainId));
+  const logs = parseEventLogs({ abi: await abi(rfq.escrow), logs: rcpt.logs }).filter((l) => l.args.id === BigInt(rfq.chainId));
   return { rcpt, code, block, logs, settleTx };
 }
 const supplierOf = (rfq, a) => Object.values(rfq.bids).find((b) => b.supplier.toLowerCase() === a.toLowerCase());
@@ -28,7 +33,7 @@ const supplierOf = (rfq, a) => Object.values(rfq.bids).find((b) => b.supplier.to
 export async function checkSlash(rfq, bid, pre) {
   const { logs, settleTx, block } = pre ?? (await settleLogs(rfq));
   const ev = logs.find((l) => l.eventName === 'BondSlashed' && l.args.bidder.toLowerCase() === bid.supplier.toLowerCase());
-  const [, docHashOnChain] = await client.readContract({ address: rfq.escrow, abi: await abi(), functionName: 'bids', args: [BigInt(rfq.chainId), bid.supplier] });
+  const [, docHashOnChain] = await client.readContract({ address: rfq.escrow, abi: await abi(rfq.escrow), functionName: 'bids', args: [BigInt(rfq.chainId), bid.supplier] });
   const quote = bid.evidence ?? bid.disqualified;
   const r = {
     settleTx, block, amount: ev?.args.amount,
