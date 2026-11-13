@@ -55,6 +55,67 @@ What this shows, including the parts that don't flatter us:
 - n = 10 on two tenders; a measured signal, not a statistic.
 
 
+## Escrow V4: attackers fund the defence
+
+Escrows V1-V3 sent a slashed bond to the buyer. That made the party that lists a slash the one that profits from it, and the contract checked nothing about the evidence, only that it was non-zero. We had already slashed one bid wrongly ourselves (tender #10), and the refund then depended on the buyer paying back voluntarily. V4 ([`0x2924…f952`](https://testnet.kitescan.ai/address/0x29240221486eaf37624497d6dd84e881ada3f952?tab=contract), verified) removes that incentive:
+
+- **A slash is pending first.** `settle` records `SlashPending` with the evidence hash and keeps the bond in the escrow for a challenge window (1 hour, fixed at deployment).
+- **Overturn on-chain, by quorum.** Inside the window, 2 of 2 approvers (fixed at deployment) call `overturnSlash`; at quorum the escrow returns the bond itself and no `BondSlashed` is ever emitted, so reputation never counts it. The server marks an appeal `overturned` only after it sees `SlashOverturned` in the transaction receipt.
+- **After the window, anyone finalizes.** The bond goes to a **bounty pool**, never to the buyer; unrevealed bonds go there too.
+- **The pool pays bounties.** `payBounty` (treasury only, one payment per evidence hash, never above the pool) pays whoever finds a hole in the evaluator: money taken from attackers pays the people who test the defence. Break Lelang pays its bounty from the pool when the pool covers it, else from the fee wallet. *ponytail:* the treasury decides what earns a bounty; every payment is public with its evidence hash. Requiring approver votes per bounty is the upgrade if the pool grows.
+- **The rest of the price waits for delivery.** `settle` can lock the balance after the down payment (plus its success fee); `confirmDelivery` by the buyer pays the winner and the treasury. A buyer who stays silent past the delivery deadline is resolved by the approver quorum, either way.
+
+Tests: 30 Hardhat tests; the 200-tender fuzz adds random overturns and held balances and checks that **settle never pays the buyer anything** and that, once everything is resolved, the escrow holds exactly the bounty pool. Live:
+
+| V4 tender | What happened |
+|---|---|
+| #1, three agents, one first-time attacker | attacker slashed with its quote verified; bond [pending](https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534) for the window, then [finalized to the pool](#v4-finalize); winner paid 0.03 down, 0.05 held, then paid when the buyer [confirmed delivery](https://testnet.kitescan.ai/tx/0x72e906f1e4f3d337b99111e9f95ebd651c8ad3b90b0fde8faf234967dee11cd5) |
+| #2, opened from a browser | a human-style buyer on [buy.html](https://lelang-ten.vercel.app/buy.html) imported an OCDS release and paid 0.32 PYUSD by signing EIP-3009 in the wallet ([fee](https://testnet.kitescan.ai/tx/0x4e6b4ce69ea4b2597678281c3edbc8f4bcb9fe71c1ece8211ac6e36646c639ba), [opened](https://testnet.kitescan.ai/tx/0x48d4d99150c01bbcec64d56c08ee730dcacc3a164d54db02d710613669241b0a)); `scripts/browser-buyer.mjs` runs it in a real browser with a stand-in wallet |
+| #3, qualitative criterion | see below |
+
+<a id="v4-finalize"></a>The appeal flow on V4: `scripts/decide-appeal.js` records the approver's signed decision and sends its `overturnSlash` vote with the approver's own key. `scripts/finalize.js` finalizes due slashes (the server also does it every 5 minutes) and confirms delivery for the buyer.
+
+## A page for human buyers
+
+[buy.html](https://lelang-ten.vercel.app/buy.html): fill the terms, or paste/upload an **Open Contracting (OCDS)** release, release package or record package from any public procurement portal (title, budget and contract period are copied; a non-USD budget is flagged). The wallet is switched to Kite testnet, the page asks the API for its x402 terms, the wallet signs an EIP-3009 `transferWithAuthorization` for the fee (an authorization, no gas), and the tender opens in the escrow. The owner token stays in that browser and is sent as `Authorization: Bearer`, not in URLs. A "Claim 10 test PYUSD" button calls the token's `claim()`. Only a localhost `?api=` override is accepted, so a crafted link can't point the page at someone else's payment terms.
+
+## A qualitative criterion, backed by quotes
+
+A tender can weight one qualitative criterion (`weights.quality` + `qualitative.criterion`). Dolphin and SERV each rate every bid 0-10 and must quote the sentence the rating rests on; code checks the quote is in the document, otherwise that rating is 0. The cautious (lower) rating counts; ratings more than 2 apart keep the bid out of an automatic award. Live, V4 tender #3 ("after-sales service and spare parts available in East Nusa Tenggara", weight 0.3):
+
+| Bid | What it says | Dolphin | SERV | Counted |
+|---|---|---|---|---|
+| C | service partner in Kupang with spares, technician within 72 h, loan unit | 10 | 10 | **10** (won, Reppo ship 100) |
+| B | "the best after-sales support in the industry" | 0 | 0 | **0**: no sentence backs a rating |
+| A | "support through our national hotline" | 0 (quote not found) | 3 | 0, readers apart: human review |
+
+Limit seen live: a disagreement on a bid that could not win (A) still held the whole tender for a signed release. That is the existing rule (any flagged eligible bid blocks auto-award), cautious by design; narrowing it to bids that could win is the next step.
+
+## Learning from Reppo across tenders: what helped and what didn't
+
+Reppo's free-text `reason` explains its routing (thresholds, confidence, stake), not what was wrong with a rationale; rules distilled from it were about routing and useless for writing. The informative signal is the rubric (correctness, scope, safety, reversibility). `scripts/reppo-learn.js` collects every rationale Reppo scored with a rubric (30, from 12 tenders), has SERV Kronos compare low and high scorers and write at most 6 writing rules, each citing at least two examples ([rules](reports/reppo-lessons.json)). Test: leave-one-out on the 5 tenders whose first production draft did not ship (rules distilled without that tender's own rationales), a fresh draft without vs with the rules, both audited by Reppo ([data](reports/reppo-learn.json)):
+
+| Tender | First production draft | Today's writer, no rules | With distilled rules |
+|---|---|---|---|
+| mwekfbc95c00 | review 89 | ship 92 | ship 95 |
+| mwcy6twj | review 93 | ship 94 | ship 95 |
+| mwczfd6r | block 69 | ship 91 | review 97 |
+| mwczp829 | review 71 | ship 97 | review 88 |
+| mwdm2642 | review 52 | ship 91 | ship 92 |
+
+- **The improvement that is real:** on the same five tenders, the first drafts failed the audit 5/5 (mean 74.8); today's writer ships 5/5 (mean 93.0, +18.2). That came from earlier Reppo feedback: its regressions (69→14, 71→29) showed the writer was recomputing numbers, so it now gets the code-computed `scoreBreakdown`.
+- **The distilled rules did not help:** score +0.4 on average, and routes got worse (ship 5/5 → 3/5). They are off in production (`REPPO_LESSONS=1` turns them on).
+- n = 5, Reppo panels vary run to run: a signal, not a statistic.
+
+## SERV Multipath on the award node: measured, not adopted
+
+The award decision node was replayed on all 16 recorded tenders, 3 times each, with plain SERV and with `-serv-multipath` ([data](reports/multipath-bench.json)): **plain 44/48 agree with the formula, Multipath 44/48**. Every miss came at confidence ≥ 0.95 on both (4 plain, 3 Multipath). On the tender where production disagreed at 0.99, plain agreed 3/3 and Multipath missed once at 1.00. Multipath does not make the node's confidence trustworthy; what catches a wrong pick is the code gate (the published formula and the node must agree before money moves). Production stays on plain SERV (cheaper, same accuracy).
+
+## ERC-8004 on Kite testnet
+
+Re-checked 14 Nov: the canonical addresses on Kite testnet (`0x8004A818…`, `0x8004B663…`) are proxies to a 2,188-byte placeholder (`getVersion()` = 0.0.1; `name()` and `getIdentityRegistry()` revert). Lelang's ERC-8004 identities and feedback therefore stay on Arc testnet, where the registries are live.
+
+
 ## Safety rules learned while building
 
 - **A bid that states two figures for one term can't win automatically.** Found by our adaptive attacker: "list USD 75,000 … payable total USD 58,500 after rebate" or "18 calendar days … committed 11 working days" contains no instruction to the AI, so the injection check passes it, and both readers sometimes took the favourable figure. Now SERV lists every value the document gives for price, delivery and warranty; more than one means a human asks which binds. Measured: 0/8 real bids flagged, 9/9 of those attacks flagged.

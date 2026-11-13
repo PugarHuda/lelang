@@ -4,7 +4,7 @@
   "scoredRationales": 30,
   "lessons": [
     {
-      "rule": "Check that criterion scores support the total and that the stated ranking matches the totals; explain material trade-offs..",
+      "rule": "Check that criterion scores support the total and that the stated ranking matches the totals; explain material trade-offs.",
       "from": [
         {
           "tender": "rfq-mwdqcnnx",
@@ -33,7 +33,7 @@
       ]
     },
     {
-      "rule": "Give enough criterion-level evidence to make the comparison auditable, rather than relying on a bare value claim..",
+      "rule": "Give enough criterion-level evidence to make the comparison auditable, rather than relying on a bare value claim.",
       "from": [
         {
           "tender": "rfq-mwdqcnnx",
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "rule": "Use the supplied eligibility and disqualification reasons accurately, and compare only eligible submissions..",
+      "rule": "Use the supplied eligibility and disqualification reasons accurately, and compare only eligible submissions.",
       "from": [
         {
           "tender": "rfq-mwdm2642",
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "rule": "Do not add facts, actions, or procedures that the input does not provide..",
+      "rule": "Do not add facts, actions, or procedures that the input does not provide.",
       "from": [
         {
           "tender": "rfq-mwdqcnnx",
@@ -102,7 +102,7 @@
       ]
     },
     {
-      "rule": "Keep the final action consistent with any stated review or escalation gate; do not present an award when the input requires a human decision..",
+      "rule": "Keep the final action consistent with any stated review or escalation gate; do not present an award when the input requires a human decision.",
       "from": [
         {
           "tender": "rfq-mwdqcnnx",
@@ -125,7 +125,7 @@
       ]
     },
     {
-      "rule": "Avoid unsupported uncertainty or hedging while still making a definitive decision..",
+      "rule": "Avoid unsupported uncertainty or hedging while still making a definitive decision.",
       "from": [
         {
           "tender": "rfq-mwdqcnnx",

@@ -27,7 +27,8 @@ for (const r of Object.values(db.rfqs)) {
 
 // Writing rules SERV Kronos distilled from the independent panel's past critiques (scripts/reppo-learn.js).
 const LESSONS = new URL('../docs/reports/reppo-lessons.json', import.meta.url);
-export const lessons = () => (existsSync(LESSONS) ? JSON.parse(readFileSync(LESSONS, 'utf8')).lessons ?? [] : []);
+// Off by default: on 5 held-out tenders they did not help (score +0.4, ship 5/5 -> 3/5; docs/reports/reppo-learn.json).
+export const lessons = () => (process.env.REPPO_LESSONS === '1' && existsSync(LESSONS) ? JSON.parse(readFileSync(LESSONS, 'utf8')).lessons ?? [] : []);
 
 // A tender is on a V4 escrow only if it was opened on one: no chainId or no recorded escrow means off-chain or older.
 const onV4 = (rfq) => Boolean(rfq?.chainId && rfq.escrow) && escrowV4(escrowFor(rfq.escrow)?.abi ?? []);
