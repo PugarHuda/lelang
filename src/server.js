@@ -9,6 +9,8 @@ import { runDemo, DEMO_RFQ } from './demo.js';
 
 let running = null;
 // Tender fee in PYUSD over x402; 0 turns paid tenders off (then only DEMO_TOKEN opens tenders).
+// ponytail: flat fee per tender; evaluation cost grows with bids (up to the escrow's 100), so a per-bid fee or a bid cap
+// for paid tenders is the upgrade once strangers open large tenders.
 const TENDER_FEE = Number(process.env.TENDER_FEE ?? 0.5);
 const tokenHash = (t) => createHash('sha256').update(String(t)).digest('hex');
 
