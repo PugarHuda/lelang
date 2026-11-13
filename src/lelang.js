@@ -301,7 +301,7 @@ export async function evaluate(rfqId) {
       const ext = await outsideReputation(bid.supplier, bid.agentId);
       // fail closed, like the escrow history above: with trusted marketplaces configured, an unreadable record
       // (RPC down, or a claimed agentId that doesn't exist) must not let the bid win on its own
-      if (ext.error && process.env.EXTERNAL_REPUTATION_CLIENTS && !ext.error.startsWith('this agentId is not owned')) {
+      if (ext.error && process.env.EXTERNAL_REPUTATION_CLIENTS) {
         bid.review ??= `ERC-8004 reputation check failed (${ext.error}): a human should look`;
         log(rfq, 'reputation', `${bid.label}: couldn't read its ERC-8004 reputation on Arc; flagged for review`);
       }

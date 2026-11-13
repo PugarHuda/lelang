@@ -22,7 +22,8 @@ const published = () => (existsSync('deployments/erc8004-arc.json') ? JSON.parse
 
 export async function externalReputation(supplier, claimedAgentId, ownClients = []) {
   const addr = supplier.toLowerCase();
-  const agentId = claimedAgentId ?? published()[addr]?.agentId;
+  // a known identity always wins: a supplier must not dodge its record by naming someone else's agent
+  const agentId = published()[addr]?.agentId ?? claimedAgentId;
   if (!agentId || !/^\d+$/.test(String(agentId))) return { agentId: null, externalSlashes: 0 };
   // throws on an RPC error or an id that doesn't exist: the caller fails closed (a human looks)
   const owner = await pub.readContract({ address: IDENTITY, abi: ABI, functionName: 'ownerOf', args: [BigInt(agentId)] });
