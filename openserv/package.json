@@ -1,0 +1,11 @@
+{
+  "name": "lelang-openserv-agent",
+  "private": true,
+  "type": "module",
+  "description": "Lelang Bid Integrity Check on the OpenServ x402 Agent Market. Kept apart from the root package: the OpenServ SDK pins openai@5 as a peer.",
+  "dependencies": {
+    "@openserv-labs/client": "2.5.3",
+    "@openserv-labs/sdk": "2.4.1",
+    "zod": "^4.1.0"
+  }
+}
