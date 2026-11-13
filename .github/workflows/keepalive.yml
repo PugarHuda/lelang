@@ -1,0 +1,11 @@
+# Keeps the public API (Render free plan) awake so a judge or an agent doesn't wait a minute for a cold start.
+name: keepalive
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: curl -fsS -m 90 -o /dev/null -w '%{http_code}\n' https://lelang-6k05.onrender.com/api/rfqs

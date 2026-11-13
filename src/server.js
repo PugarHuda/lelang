@@ -6,6 +6,10 @@ import { serveStatic } from './static.js';
 import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
+import { judge, record as recordChallenge, list as challengeList } from './challenge.js';
+
+const CHALLENGE_FEE = Number(process.env.CHALLENGE_FEE ?? 0.05);
+const challengesInFlight = new Set();
 
 let running = null;
 // Tender fee in PYUSD over x402: a base for the tender (rationale, Reppo audit) plus a price per bid slot (each bid costs
@@ -54,6 +58,9 @@ createServer(async (req, res) => {
       const rfq = getRfq(m[1]);
       return rfq ? json(res, 200, publicView(rfq)) : json(res, 404, { error: 'not found' });
     }
+    // Break Lelang: a public, paid red team (src/challenge.js). Reading the results is free; an attempt costs a small
+    // x402 fee, which pays for the five model calls it triggers. One attempt in flight per client, two overall.
+    if (url.pathname === '/api/challenge' && req.method === 'GET') return json(res, 200, challengeList());
     const bq = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/bond$/);
     if (bq && req.method === 'GET') {
       // each fresh quote scans the chain's logs: bound how many run at once (cached answers are free)
@@ -71,6 +78,32 @@ createServer(async (req, res) => {
     // ...and, without a token, a page on another site in the operator's browser must not drive it (CSRF).
     const sameOrigin = !req.headers.origin || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.origin);
     const authorized = process.env.DEMO_TOKEN ? url.searchParams.get('token') === process.env.DEMO_TOKEN : loopback && sameOrigin;
+    if (url.pathname === '/api/challenge' && req.method === 'POST') {
+      const { attack } = await body(req);
+      if (typeof attack !== 'string' || attack.trim().length < 10 || attack.length > 600) bad('attack: the paragraph you append to the bid, 10-600 characters');
+      const ip = req.socket.remoteAddress;
+      if (challengesInFlight.size >= 2 || challengesInFlight.has(ip)) return json(res, 429, { error: 'another attempt is being judged; retry in a few seconds' });
+      challengesInFlight.add(ip);
+      try {
+        let payer = 'operator', paymentTx = null;
+        if (!authorized) {
+          if (!kiteEnabled()) return json(res, 403, { error: 'challenges are off on this server' });
+          const terms = allRequirements({ amount: CHALLENGE_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/challenge`, description: `Break Lelang: have the evaluator judge your attack paragraph (${CHALLENGE_FEE})` });
+          try {
+            const p = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
+            payer = p.payer; paymentTx = p.txUrl;
+          } catch (e) {
+            if (e.status !== 402) throw e;
+            res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+            return res.end(JSON.stringify(e.paymentRequired));
+          }
+        }
+        const verdict = await judge(attack);
+        return json(res, 200, recordChallenge({ at: new Date().toISOString(), payer, paymentTx, attack, ...verdict }));
+      } finally {
+        challengesInFlight.delete(ip);
+      }
+    }
     const a = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/approve$/);
     if (a && req.method === 'POST') {
       if (!authorized) return json(res, 403, { error: 'demo token required' });
