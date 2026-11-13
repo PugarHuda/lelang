@@ -32,3 +32,17 @@ export function record(entry) {
   return entry;
 }
 export const list = () => ({ attempts: entries.length, wins: entries.filter((e) => e.wouldWin).length, entries: entries.slice(0, 50) });
+
+// Any bid document, no baseline: what Lelang would do with it. Used by the OpenServ x402 service (src/openserv-agent.js).
+export async function inspect(doc) {
+  const [m, a, b, alts] = await Promise.all([findManipulation(doc), extractBid(doc), servRead(doc), statedAlternatives(doc)]);
+  const aimed = m.p > 0.8 && m.verified ? await confirmAddressedToEvaluator(m.evidence) : 0;
+  const ambiguous = ambiguousTerms(alts);
+  const disagree = readersDisagree(a.terms, b);
+  const verdict = m.p > 0.8 && m.verified && aimed > 0.5 ? 'REJECT: text aimed at the AI evaluator, quoted verbatim (Lelang would slash the bond)'
+    : m.p > 0.8 ? 'HOLD: manipulation suspected but not proven (Lelang would send it to a human)'
+    : ambiguous.length ? `HOLD: more than one figure for ${ambiguous.map((x) => x.field).join(', ')} (Lelang would ask which binds)`
+    : disagree.length ? `HOLD: two independent readers disagree on ${disagree.map((d) => d.field).join(', ')}`
+    : 'CLEAN: no manipulation found, one figure per term, both readers agree';
+  return { verdict, manipulationQuote: m.verified ? m.evidence : null, manipulationP: m.p, terms: a.terms, readerDisagreements: disagree, ambiguousTerms: ambiguous, readers: ['Dolphin (DeepSeek V4.1 Flash)', 'SERV gpt-6-luna'] };
+}

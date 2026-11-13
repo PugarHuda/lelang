@@ -30,6 +30,8 @@
   "type": "module",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
+    "@openserv-labs/client": "^2.5.3",
+    "@openserv-labs/sdk": "^2.4.1",
     "openai": "^7.55.0",
     "viem": "^2.57.18",
     "zod": "^4.6.7"

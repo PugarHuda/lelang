@@ -266,3 +266,6 @@ createServer(async (req, res) => {
     json(res, e.status ?? 500, { error: e.message });
   }
 }).listen(process.env.PORT || 3000, () => console.log(`Lelang on http://localhost:${process.env.PORT || 3000}`));
+
+// Lelang Bid Integrity Check on the OpenServ x402 Agent Market (opt-in; see src/openserv-agent.js)
+if (process.env.OPENSERV_AGENT === '1') import('./openserv-agent.js').then((m) => m.startOpenServAgent()).catch((e) => console.error('OpenServ agent failed to start:', e.message));
