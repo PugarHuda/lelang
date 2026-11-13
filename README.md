@@ -29,6 +29,17 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 | Security review of the payment paths | independent review found 7 issues, then 4 more in our fixes (incl. a replayable payment we introduced), and an automated review 3 more; all fixed, listed below |
 | Public pages (CI, desktop + mobile) | a doctored quote or document is caught on the proof page |
 
+### Judge path (5 minutes, no install)
+
+1. **Watch** the [78 s demo](https://lelang-ten.vercel.app/demo.mp4).
+2. **Check a slash yourself:** open the [proof page](https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&b=Bid%20E) and press *Verify against Kite testnet*. Your browser hashes the quote and the document and reads the escrow; nothing comes from our server.
+3. **See the market discipline:** the [repeat offender's reputation](https://lelang-ten.vercel.app/rep.html?a=0x5d6674Ce278747115d8031e34d9FAe6B42cA214E). It was slashed three times on three escrow versions, and its next bond is 8×.
+4. **See the money:** on the [dashboard](https://lelang-ten.vercel.app), tab *#3 (escrow V3)* was opened by an agent that paid over x402 on Arc. Tab *#2 (escrow V3)* sends a 2% success fee to the treasury in the same settle transaction as the winner's payment.
+5. **Try to break it:** the [attack gallery](https://lelang-ten.vercel.app/attacks.html) lists what we threw at it, including the gap an adaptive attacker found and how it was closed.
+6. **Run it** (optional): `npm install && npm test` runs the protocol, the MCP supplier tools and the safety rules offline in about a minute.
+
+![Lelang architecture: supplier agents commit sealed bids and bonds to LelangEscrow on Kite; the server checks each revealed bid with SERV and Dolphin, decides with a published formula and an independent decision node, has Reppo audit the award, and settles in one escrow transaction; reputation and proofs are read back from the chain](docs/architecture.svg)
+
 ## How it works
 
 ```
@@ -146,6 +157,17 @@ An independent reviewer read the x402 payments, paid tenders, escrow V3 and repu
 ## Bring your own supplier agent
 
 Any agent can bid with its own key; the server never holds supplier keys.
+
+**From any MCP client** (Claude Desktop, Claude Code, an agent framework): `src/mcp.js` is an MCP server with seven tools: `list_tenders`, `get_tender`, `bond_quote`, `wallet`, `submit_bid`, `reveal_bid`, `my_bids`. The agent decides what to bid; the tools seal it, lock the quoted bond from its own wallet, and reveal it later. The key stays in that process, and salts are written to disk before anything is sent.
+
+```json
+{ "mcpServers": { "lelang": { "command": "node", "args": ["<repo>/src/mcp.js"],
+  "env": { "LELANG_URL": "https://<lelang server>", "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
+```
+
+`npm test` drives it with a real MCP client against a server process: list, read, bid, reveal, and the refusals (duplicate bid, reveal before commits close, reveal without a stored bid).
+
+**From a script:**
 
 ```bash
 SUPPLIER_PRIVATE_KEY=0x… node scripts/supplier-agent.js http://localhost:3000 <rfq id> my-bid.txt

@@ -35,10 +35,8 @@ function log(rfq, step, msg, data) {
 
 // The commitment binds document, salt, bidder and tender, exactly as LelangEscrow.commitmentOf does,
 // so a bidder can neither change its document nor copy someone else's commitment.
-export const docHashOf = (doc) => keccak256(toHex(doc));
-export const commitHash = (doc, salt, bidder, chainId = 0) =>
-  keccak256(encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256'), [docHashOf(doc), salt, bidder, BigInt(chainId)]));
-export const commitMessage = (rfqId, hash) => `LELANG commit ${rfqId} ${hash}`;
+import { docHashOf, commitHash, commitMessage } from './commitment.js';
+export { docHashOf, commitHash, commitMessage };
 
 // Caller mistakes (wrong phase, bad proof) carry status 400 so the API doesn't report them as server faults.
 const fail = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };

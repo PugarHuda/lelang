@@ -5,7 +5,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { privateKeyToAccount } from 'viem/accounts';
-import { commitHash, commitMessage, docHashOf } from '../src/lelang.js'; // same commitment as LelangEscrow.commitmentOf
+import { commitHash, commitMessage, docHashOf } from '../src/commitment.js'; // same commitment as LelangEscrow.commitmentOf (no tender state loaded)
 import { escrowCommit, escrowReveal } from '../src/kite.js';
 
 const [server, rfqId, docFile] = process.argv.slice(2);

@@ -4,7 +4,7 @@
   "description": "Sealed-bid procurement run by agents: SERV + Jev decide, Dolphin reads, Reppo audits, Kite settles",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/selftest.js && node scripts/api-test.js",
+    "test": "node scripts/selftest.js && node scripts/api-test.js && node scripts/mcp-test.js",
     "start": "node --env-file-if-exists=.env src/server.js",
     "demo": "node --env-file-if-exists=.env scripts/demo.js",
     "probe": "node --env-file-if-exists=.env scripts/probe.js",
@@ -21,15 +21,18 @@
     "test:contracts": "hardhat test",
     "test:e2e": "playwright test",
     "coverage": "hardhat coverage",
-    "slither": "hardhat compile && slither . --hardhat-ignore-compile --hardhat-artifacts-directory hh-artifacts --filter-paths \"node_modules|contracts/test\""
+    "slither": "hardhat compile && slither . --hardhat-ignore-compile --hardhat-artifacts-directory hh-artifacts --filter-paths \"node_modules|contracts/test\"",
+    "mcp": "node src/mcp.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "openai": "^7.55.0",
-    "viem": "^2.57.18"
+    "viem": "^2.57.18",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
