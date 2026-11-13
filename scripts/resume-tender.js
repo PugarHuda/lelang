@@ -4,7 +4,7 @@
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { privateKeyToAccount } from 'viem/accounts';
-import { approvalMessage } from '../src/lelang.js';
+import { approvalMessage, releaseChoice } from '../src/lelang.js';
 
 const id = process.argv[2];
 const approver = privateKeyToAccount(JSON.parse(readFileSync('data/agents/keys.json', 'utf8')).approver);
@@ -26,8 +26,7 @@ try {
     await new Promise((r) => setTimeout(r, 5000));
   }
   if (rfq.phase === 'held') {
-    const note = 'checked: clean bid, best on every criterion; the earlier slash was in another tender';
-    const winner = rfq.award.winner;
+    const { winner, note } = releaseChoice(rfq);
     const signature = await approver.signMessage({ message: approvalMessage(id, winner, note) });
     rfq = await api(`/api/rfqs/${id}/approve?${new URLSearchParams({ token: TOKEN, approver: approver.address, note, winner, signature })}`, 'POST');
   }

@@ -122,3 +122,32 @@ test('escalated bond: a repeat offender that paid for its second chance is shown
   await expect.poll(() => shown(page)).toBe(t.id);
   await expect(page.locator('.bid', { hasText: bid.label })).toContainText(`bond locked ${bid.bondPie} of ${bid.bondRequired} required · competes normally`);
 });
+
+// Reputation page: recomputed in the browser from both escrows; counts only proven, trusted, non-overturned slashes.
+test('reputation page counts proven slashes and ignores one overturned on appeal', async ({ page }) => {
+  const all = index.map((t) => JSON.parse(readFileSync(`public/tenders/${t.id}.json`, 'utf8')));
+  const slashed = all.flatMap((r) => Object.values(r.bids).filter((b) => b.slash && b.evidence));
+  const overturned = slashed.find((b) => b.appeal?.outcome === 'overturned');
+  const offender = slashed.find((b) => !b.appeal || b.appeal.outcome !== 'overturned');
+  for (const [bid, expected] of [[overturned, 0], [offender, slashed.filter((b) => b.supplier === offender.supplier && b.appeal?.outcome !== 'overturned').length]]) {
+    await page.goto(`/rep.html?a=${bid.supplier}`);
+    await expect.poll(() => page.evaluate(() => window.__repDone?.addr), { timeout: 60_000 }).toBe(bid.supplier);
+    const done = await page.evaluate(() => window.__repDone);
+    if (done.error) { await expect(page.locator('#result')).toContainText("Couldn't reach Kite testnet"); continue; }
+    expect(done.n).toBe(expected);
+    await expect(page.locator('#result')).toContainText(`${2 ** Math.min(expected, 4)}× the tender bond`);
+    if (!expected) await expect(page.locator('#result')).toContainText('overturned on appeal and refunded');
+  }
+});
+
+// A tender opened by a paying agent says so, with the fee transaction.
+test('a tender paid for over x402 shows who paid and links the fee transaction', async ({ page }) => {
+  const t = index.find((x) => JSON.parse(readFileSync(`public/tenders/${x.id}.json`, 'utf8')).paidBy);
+  test.skip(!t, 'no paid tender published');
+  const { paidBy } = JSON.parse(readFileSync(`public/tenders/${t.id}.json`, 'utf8'));
+  await page.goto('/');
+  await page.locator(`#tenders button[data-id="${t.id}"]`).click();
+  await expect.poll(() => shown(page)).toBe(t.id);
+  await expect(page.locator('#x402')).toHaveAttribute('href', `https://testnet.kitescan.ai/tx/${paidBy.tx}`);
+  await expect(page.locator('#view')).toContainText(`paid the ${paidBy.fee} PYUSD tender fee`);
+});

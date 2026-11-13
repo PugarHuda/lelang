@@ -103,6 +103,7 @@ export async function createRfq(spec) {
   const id = `rfq-${Date.now().toString(36)}`;
   const rfq = { id, createdAt: new Date().toISOString(), phase: 'commit', bids: {}, events: [], ...spec };
   db.rfqs[id] = rfq;
+  if (spec.paidBy) log(rfq, 'fee', `Tender fee paid over x402 by ${spec.paidBy.payer}: ${spec.paidBy.fee} ${spec.paidBy.asset}, settled on Kite by the ${spec.paidBy.settledBy}`, { tx: explorerTx(spec.paidBy.tx) });
   if (escrowEnabled()) {
     const { chainId, tx } = await escrowOpen(spec.bondPie);
     Object.assign(rfq, { chainId, escrow: escrowAddress() });
@@ -245,9 +246,14 @@ const disqualify = (rfq, bid, reason, slash) => {
   log(rfq, 'disqualify', `${bid.label} disqualified: ${reason}${slash ? ' (bond will be slashed)' : ''}`);
 };
 
+export const wasEscalated = (events) => events.some((e) => e.step === 'award' && e.msg.includes('escalated to a human'));
+
 export async function evaluate(rfqId) {
   const rfq = getRfq(rfqId);
   if (rfq.phase !== 'reveal') fail(`tender is in ${rfq.phase}, not reveal`);
+  // An escalation sticks: re-running an interrupted evaluation must not re-roll a human hold into an automatic award.
+  // (Found live: a paid tender escalated, the process stopped, and the re-run's decision node happened to agree.)
+  rfq.escalatedBefore ||= wasEscalated(rfq.events);
   rfq.phase = 'evaluating';
   const bids = Object.values(rfq.bids);
 
@@ -366,7 +372,7 @@ export async function evaluate(rfqId) {
   const flagged = eligible.filter((b) => b.review).map((b) => b.label);
   const sane = Object.values(scores).every(Number.isFinite);
   // Any open review flag (e.g. a Prompt Guard block without verified evidence) keeps the tender out of auto-award.
-  const decision = agree && sane && !flagged.length && confidence >= rfq.minConfidence ? 'award' : 'escalate';
+  const decision = agree && sane && !flagged.length && confidence >= rfq.minConfidence && !rfq.escalatedBefore ? 'award' : 'escalate';
   if (flagged.length) log(rfq, 'review', `${flagged.join(', ')} still under review: no automatic award`);
   rfq.award = { decision, winner: w.choice, formulaWinner, scores, probabilities: w.probabilities, confidence, engine: w.engine };
   log(rfq, 'award', decision === 'award'
@@ -444,7 +450,7 @@ export function rationaleContextOf(rfq) {
     bids: Object.values(rfq.bids).map((b) => ({ label: b.label, terms: b.terms ?? null, disqualified: b.disqualified ?? null })),
     decision: a.decision, winner: a.winner, probabilities: a.probabilities,
     escalationReasons: a.decision === 'escalate'
-      ? [!agree && `decision node chose ${a.winner} but formula ranks ${a.formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, a.confidence < rfq.minConfidence && `confidence ${a.confidence.toFixed(2)} below ${rfq.minConfidence}`].filter(Boolean)
+      ? [!agree && `decision node chose ${a.winner} but formula ranks ${a.formulaWinner} first`, !sane && 'non-finite score', flagged.length && `${flagged.join(', ')} under human review`, a.confidence < rfq.minConfidence && `confidence ${a.confidence.toFixed(2)} below ${rfq.minConfidence}`, rfq.escalatedBefore && 'an earlier evaluation of this tender escalated, and a re-run cannot undo that'].filter(Boolean)
       : [],
   };
 }
@@ -624,3 +630,17 @@ export async function approve(rfqId, { approver, winner, note, signature }) {
 }
 
 export const buyerAddress = () => (kiteEnabled() ? buyerAccount().address : null);
+
+// What a scripted approver releases a held tender to, and the note it signs: the first bid on the published formula
+// that states one value per term, with the actual hold reasons. (The note goes into a signed, public trace, so it must
+// describe this tender, not a template.)
+export function releaseChoice(rfq) {
+  const ranked = Object.entries(rfq.award.scores).sort((a, b) => b[1] - a[1]);
+  const [winner, score] = ranked.find(([l]) => !rfq.bids[l].ambiguous) ?? ranked[0];
+  const reasons = rationaleContextOf(rfq).escalationReasons;
+  if (!reasons.length) reasons.push(...Object.values(rfq.bids).filter((b) => b.review && !b.disqualified).map((b) => `${b.label} under review`));
+  const skipped = ranked.filter(([l]) => rfq.bids[l].ambiguous).map(([l]) => l);
+  const note = `held because ${reasons.join('; ') || 'of a review flag'}; released to ${winner}, first on the published formula (${score})`
+    + (skipped.length ? `; skipped ${skipped.join(', ')}: two figures for one term` : '');
+  return { winner, note: note.slice(0, 200) };
+}

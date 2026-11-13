@@ -1,14 +1,15 @@
 // A live tender between independent agents on Kite testnet: a Lelang server, a buyer acting only through the public
 // API, and three supplier agents as separate processes holding their own keys (one of them tries to manipulate the
 // evaluator). Nothing here touches the tender state directly.
-//   node --env-file=.env scripts/multi-agent-tender.js [--scenario attacker|repeat-offender]
+//   node --env-file=.env scripts/multi-agent-tender.js [attacker|repeat-offender|ambiguous] [--paid]
 // repeat-offender: the agent slashed in an earlier tender comes back with a clean, best bid. On-chain reputation keeps
 // it from winning automatically, so the tender is held, and a named approver releases it with a signature.
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { balances, sendGas, transferPie } from '../src/kite.js';
-import { approvalMessage } from '../src/lelang.js';
+import { approvalMessage, releaseChoice } from '../src/lelang.js';
+import { fetchPaying } from '../src/x402.js';
 
 const PORT = 3200;
 const BASE = `http://localhost:${PORT}`;
@@ -45,6 +46,7 @@ const SCENARIOS = {
     },
   },
 };
+const PAID = process.argv.includes('--paid');
 const SCENARIO = ['repeat-offender', 'ambiguous'].find((s) => process.argv.includes(s)) ?? 'attacker';
 const { tender: TENDER, bids: BIDS } = SCENARIOS[SCENARIO];
 
@@ -79,7 +81,18 @@ const api = async (path, method = 'GET', body) => {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 try {
-  const { id } = await api(`/api/rfqs?token=${TOKEN}`, 'POST', TENDER);
+  // --paid: the buyer is an outside agent with no DEMO_TOKEN. It pays the tender fee over x402 (what a Kite Passport
+  // agent does) and gets an owner token that lets it close and evaluate its own tender.
+  let buyerToken = TOKEN, id;
+  if (PAID) {
+    const payer = privateKeyToAccount(keys['x402-buyer-agent']);
+    const res = await fetchPaying(`${BASE}/api/rfqs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(TENDER) }, payer, 1);
+    const out = await res.json();
+    if (res.status !== 201) throw new Error(`paid open failed: ${res.status} ${out.error}`);
+    ({ id } = out);
+    buyerToken = out.ownerToken;
+    console.log(`buyer agent ${payer.address} paid the tender fee over x402: ${out.payment.tx}`);
+  } else ({ id } = await api(`/api/rfqs?token=${TOKEN}`, 'POST', TENDER));
   console.log(`buyer opened ${id}`);
   const agents = Object.entries(BIDS).map(([name, body]) => {
     const file = `data/agents/${id}-${name.replaceAll(' ', '_')}.txt`;
@@ -97,11 +110,11 @@ try {
     await sleep(3000);
   }
   console.log('buyer: all sealed bids in, closing commits');
-  await api(`/api/rfqs/${id}/close?token=${TOKEN}`, 'POST');
+  await api(`/api/rfqs/${id}/close?token=${buyerToken}`, 'POST');
   const done = await Promise.all(agents);
   for (const a of done.filter((x) => x.code !== 0)) console.log(`agent ${a.name} failed:\n${a.log.slice(-600)}`);
 
-  await api(`/api/rfqs/${id}/evaluate?token=${TOKEN}`, 'POST');
+  await api(`/api/rfqs/${id}/evaluate?token=${buyerToken}`, 'POST');
   let rfq;
   for (;;) {
     rfq = await api(`/api/rfqs/${id}`);
@@ -112,11 +125,7 @@ try {
   if (rfq.phase === 'held') {
     // a named human (here: the approver key) reads the hold reason and releases it with a signature
     // An ambiguous bid isn't released: the approver awards the best formula-ranked bid that states one value per term.
-    const ranked = Object.entries(rfq.award.scores).sort((a, b) => b[1] - a[1]).map(([label]) => label);
-    const winner = ranked.find((l) => !rfq.bids[l].ambiguous) ?? rfq.award.winner;
-    const note = rfq.bids[rfq.award.winner].ambiguous
-      ? `${rfq.award.winner} states two figures per term, so it can't be held to one; awarding the best unambiguous bid`
-      : 'checked: clean bid, best on every criterion; the earlier slash was in another tender';
+    const { winner, note } = releaseChoice(rfq);
     const signature = await approver.signMessage({ message: approvalMessage(id, winner, note) });
     console.log(`approver ${approver.address} signs the release of ${winner}`);
     const q = new URLSearchParams({ token: TOKEN, approver: approver.address, note, winner, signature });

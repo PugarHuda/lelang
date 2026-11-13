@@ -65,3 +65,19 @@ export async function checkTender(rfq) {
   add(award && supplierOf(rfq, award.args.winner)?.label === rfq.award.winner, `Awarded event pays ${rfq.award.winner}`);
   return { rows, block };
 }
+
+// Reputation straight from Kite: every BondSlashed event for `bidder` on every escrow Lelang deployed, with the buyer
+// that opened each tender (only slashes by a trusted buyer count; anyone can open a tender on the permissionless escrow).
+export async function slashEvents(bidder) {
+  const d = await (depP ??= fetch('deployment.json').then((r) => r.json()));
+  const out = [];
+  for (const e of [d, ...(d.previous ?? [])]) {
+    const logs = await client.getContractEvents({ address: e.escrow.address, abi: e.abi, eventName: 'BondSlashed', args: { bidder }, fromBlock: BigInt(e.escrow.block) });
+    for (const l of logs) {
+      const [buyer, token] = await client.readContract({ address: e.escrow.address, abi: e.abi, functionName: 'tenders', args: [l.args.id] });
+      const decimals = await client.readContract({ address: token, abi: [{ type: 'function', name: 'decimals', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint8' }] }], functionName: 'decimals' });
+      out.push({ escrow: e.escrow.address, tender: String(l.args.id), buyer, evidenceHash: l.args.evidenceHash, amount: Number(l.args.amount) / 10 ** decimals, tx: l.transactionHash });
+    }
+  }
+  return { events: out, trustedBuyer: d.escrow.deployer };
+}

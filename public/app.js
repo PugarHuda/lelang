@@ -18,9 +18,9 @@ function bidCard(b, rfq) {
     ${b.slash && staticMode && rfq.phase === 'settled' ? `<div class="kv"><a href="slash.html?t=${encodeURIComponent(rfq.id)}&b=${encodeURIComponent(b.label)}">proof page: verify this slash yourself →</a></div>` : ''}
     ${b.evidence ? `<details class="kv"><summary>evidence</summary><pre>${esc(b.evidence)}</pre>${b.evidenceHash ? `keccak256 on-chain: <code>${esc(b.evidenceHash.slice(0, 18))}…</code>` : ''}</details>` : ''}
     ${b.review ? `<div class="kv warn">review: ${esc(b.review)}</div>` : ''}
-    ${b.priorSlashes?.length ? `<div class="kv ${b.bondPie >= b.bondRequired ? '' : 'warn'}">history: ${b.priorSlashes.length} proven slash${b.priorSlashes.length > 1 ? 'es' : ''} · bond locked ${esc(b.bondPie ?? rfq.bondPie)} of ${esc(b.bondRequired)} required${b.bondPie >= b.bondRequired ? ' · competes normally' : ''}</div>` : ''}
+    ${b.priorSlashes?.length && b.bondRequired ? `<div class="kv ${b.bondPie >= b.bondRequired ? '' : 'warn'}">history: ${b.priorSlashes.length} proven slash${b.priorSlashes.length > 1 ? 'es' : ''} · bond locked ${esc(b.bondPie ?? rfq.bondPie)} of ${esc(b.bondRequired)} required${b.bondPie >= b.bondRequired ? ' · competes normally' : ''}</div>` : ''}
     ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
-    <div class="kv">${b.bondTx ? `<a href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
+    <div class="kv"><a href="rep.html?a=${esc(b.supplier)}">reputation</a>${b.bondTx ? ` · < href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
       ${b.revealTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(b.revealTx)}" target="_blank">reveal tx</a>` : ''}</div>
   </div>`;
 }
@@ -34,6 +34,7 @@ function render(rfq) {
       <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
       ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(rfq.anchorTx)}" target="_blank">${rfq.chainId ? 'commits closed on-chain' : 'sealed commits on Kite'}</a>` : ''}
       ${rfq.escrow ? ` · bonds held by <a href="https://testnet.kitescan.ai/address/${esc(rfq.escrow)}" target="_blank">escrow contract</a> (tender #${esc(rfq.chainId)})` : ''}
+      ${rfq.paidBy ? `<br>Opened by agent <a href="https://testnet.kitescan.ai/address/${esc(rfq.paidBy.payer)}" target="_blank">${esc(rfq.paidBy.payer.slice(0, 10))}…</a>, which paid the ${esc(rfq.paidBy.fee)} ${esc(rfq.paidBy.asset)} tender fee over <a id="x402" href="https://testnet.kitescan.ai/tx/${esc(rfq.paidBy.tx)}" target="_blank">x402</a> (settled by the ${esc(rfq.paidBy.settledBy)})` : ''}
       · <a id="ocds" href="${staticMode ? `tenders/${esc(rfq.id)}.ocds.json` : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
     <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
     ${rfq.award ? `<h2>Decision</h2><div class="card">

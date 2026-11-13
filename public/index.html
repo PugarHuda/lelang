@@ -20,6 +20,7 @@
   .stack { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
   .pill { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:2px 10px; color:var(--mute); }
   .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
+  .grid > * { min-width:0; overflow-wrap:anywhere; }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
   .bid h3 { margin:0 0 6px; font-size:15px; }
   .bid .st { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }

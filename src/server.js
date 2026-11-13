@@ -3,9 +3,14 @@ import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, close
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled } from './kite.js';
 import { serveStatic } from './static.js';
+import { requirements, collect } from './x402.js';
+import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
 
 let running = null;
+// Tender fee in PYUSD over x402; 0 turns paid tenders off (then only DEMO_TOKEN opens tenders).
+const TENDER_FEE = Number(process.env.TENDER_FEE ?? 0.5);
+const tokenHash = (t) => createHash('sha256').update(String(t)).digest('hex');
 
 const HEX32 = /^0x[0-9a-fA-F]{64}$/;
 const ADDR = /^0x[0-9a-fA-F]{40}$/;
@@ -64,17 +69,37 @@ createServer(async (req, res) => {
     // --- protocol for external agents --------------------------------------------------------------
     // Suppliers need no token: on-chain their own escrow transaction proves who they are; off-chain an
     // EIP-191 signature over the commitment does. Buyer actions (open, close, evaluate) need DEMO_TOKEN.
+    // Opening a tender: with DEMO_TOKEN (our own runs), or by paying the tender fee over x402 (any agent, Kite Passport
+    // agents included). The fee covers the SERV, Dolphin and Reppo calls the tender will make.
     if (url.pathname === '/api/rfqs' && req.method === 'POST') {
-      if (!authorized) return json(res, 403, { error: 'demo token required' });
+      const paid = !authorized;
+      if (paid && !(TENDER_FEE > 0 && kiteEnabled())) return json(res, 403, { error: 'demo token required' });
       const b = await body(req);
       const allowed = ['title', 'budgetCapUsd', 'maxDeliveryDays', 'minSpecs', 'weights', 'minConfidence', 'bondPie', 'depositPie'];
       const spec = { ...DEMO_RFQ, ...Object.fromEntries(allowed.filter((k) => k in b).map((k) => [k, b[k]])) };
+      // A paying stranger runs the tender through our buyer wallet, so it can't make that wallet pay a down payment.
+      if (paid) spec.depositPie = 0;
       if (typeof spec.title !== 'string' || !spec.title.trim() || spec.title.length > 200) bad('title required (max 200 chars)');
-      for (const k of ['budgetCapUsd', 'maxDeliveryDays', 'bondPie', 'depositPie']) if (!(Number(spec[k]) > 0)) bad(`${k} must be > 0`);
+      for (const k of ['budgetCapUsd', 'maxDeliveryDays', 'bondPie', ...(paid ? [] : ['depositPie'])]) if (!(Number(spec[k]) > 0)) bad(`${k} must be > 0`);
       const w = spec.weights ?? {};
       if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery must sum to 1');
+      // Validated before charging: a malformed request never costs the payer anything.
+      let payment, ownerToken;
+      if (paid) {
+        const terms = requirements({ amount: TENDER_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/rfqs`, description: 'Lelang: open a sealed-bid tender (fee covers AI evaluation and the Reppo audit)' });
+        try {
+          payment = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
+        } catch (e) {
+          if (e.status !== 402) throw e;
+          res.writeHead(402, { 'content-type': 'application/json', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+          return res.end(JSON.stringify(e.paymentRequired));
+        }
+        ownerToken = randomBytes(24).toString('hex'); // lets the payer close and evaluate this tender; only its hash is stored
+        spec.paidBy = { payer: payment.payer, fee: payment.amount, asset: 'PYUSD', tx: payment.tx, settledBy: payment.settledBy, ownerTokenHash: tokenHash(ownerToken) };
+        res.setHeader('payment-response', payment.receipt);
+      }
       const rfq = await createRfq(spec);
-      return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase });
+      return json(res, 201, { id: rfq.id, chainId: rfq.chainId ?? null, escrow: rfq.escrow ?? null, bond: rfq.bondPie, phase: rfq.phase, ...(paid && { ownerToken, payment: { payer: payment.payer, tx: payment.tx } }) });
     }
     // A slashed supplier appeals with its own signature: no token, one appeal per slashed bid.
     const ap = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/appeal$/);
@@ -117,7 +142,8 @@ createServer(async (req, res) => {
         const ok = await reveal(id, bid.label, { doc, salt, revealTx });
         return json(res, ok ? 200 : 400, ok ? { label: bid.label, matches: true } : { error: 'document does not match the sealed commitment' });
       }
-      if (!authorized) return json(res, 403, { error: 'demo token required' });
+      const owner = rfq.paidBy && tokenHash(url.searchParams.get('token') ?? '') === rfq.paidBy.ownerTokenHash;
+      if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
       if (action === 'close') {
         await closeCommits(id);
         return json(res, 200, { phase: getRfq(id).phase, bids: Object.keys(getRfq(id).bids).length });

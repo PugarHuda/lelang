@@ -6,7 +6,7 @@ import { verifyMessage } from 'viem';
 
 process.env.LELANG_STATE = 'data/selftest.json'; // never touch the real tender history
 delete process.env.BUYER_PRIVATE_KEY; // offline: no chain, no escrow
-const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms, decideAppeal, appealDecisionMessage, overturnedSlashes, slashKey, requiredBond } = await import('../src/lelang.js');
+const { commitHash, commitMessage, createRfq, submitCommit, reveal, getRfq, ruleCheck, weightedScores, approve, strictestRound, scoreBreakdown, endsWithDecision, bidLabel, provenPriors, readersDisagree, approvalMessage, publicView, appeal, appealMessage, ambiguousTerms, decideAppeal, appealDecisionMessage, overturnedSlashes, slashKey, requiredBond, wasEscalated } = await import('../src/lelang.js');
 const { DEMO_RFQ } = await import('../src/demo.js');
 
 const salt = () => `0x${randomBytes(32).toString('hex')}`;
@@ -198,4 +198,20 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
 assert.deepEqual(ambiguousTerms({ total_usd: [75000, 75000.0], delivery_days: [18], warranty_months: [] }), []);
 assert.deepEqual(ambiguousTerms({ total_usd: [75000, 58500], delivery_days: [18], warranty_months: [24, 36] }).map((x) => x.field), ['total_usd', 'warranty_months']);
 assert.deepEqual(ambiguousTerms(undefined), []);
+// x402: the seller checks a payment against ITS terms before asking the facilitator (wrong payee or amount never settles)
+{
+  const x = await import('../src/x402.js');
+  const payer = privateKeyToAccount(generatePrivateKey());
+  const terms = x.requirements({ amount: 0.5, payTo: '0x1111111111111111111111111111111111111111', resource: 'http://t/api/rfqs', description: 't' });
+  assert.equal(terms.amount, '500000000000000000');
+  await assert.rejects(x.collect(undefined, terms), (e) => e.status === 402 && e.paymentRequired.accepts[0].payTo === terms.payTo);
+  await assert.rejects(x.collect('not base64 json', terms), /base64/);
+  const elsewhere = await x.pay(payer, { ...terms, payTo: '0x2222222222222222222222222222222222222222' });
+  await assert.rejects(x.collect(elsewhere, terms), /does not match/);
+  const cheap = await x.pay(payer, { ...terms, amount: '1' });
+  await assert.rejects(x.collect(cheap, terms), /does not match/);
+}
+// a re-run can't re-roll an escalation: the trace of the earlier run keeps the tender out of auto-award
+assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid A (confidence 0.99), formula says Bid B: escalated to a human because …' }]), true);
+assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confidence 0.95), matching the published formula' }, { step: 'review', msg: 'escalated to a human' }]), false);
 console.log('selftest OK');
