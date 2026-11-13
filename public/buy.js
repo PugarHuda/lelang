@@ -126,7 +126,7 @@ const KEY = 'lelang.mine';
 const mine = () => { try { return JSON.parse(localStorage.getItem(KEY) ?? '[]'); } catch { return []; } };
 const remember = (t) => { try { localStorage.setItem(KEY, JSON.stringify([t, ...mine()].slice(0, 20))); } catch {} };
 async function act(id, token, action) {
-  const res = await fetch(`${API}/api/rfqs/${id}/${action}?token=${encodeURIComponent(token)}`, { method: 'POST' });
+  const res = await fetch(`${API}/api/rfqs/${encodeURIComponent(id)}/${action}`, { method: 'POST', headers: { authorization: `Bearer ${token}` } });
   const out = await res.json();
   if (!res.ok) throw new Error(out.error ?? res.status);
   return out;

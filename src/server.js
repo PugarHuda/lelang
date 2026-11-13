@@ -45,10 +45,12 @@ const bad = (msg) => { throw Object.assign(new Error(msg), { status: 400 }); };
 // authorized by a payment or a token in the request, so any origin may ask.
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'content-type, payment-signature, x-payment',
+  'access-control-allow-headers': 'content-type, payment-signature, x-payment, authorization',
   'access-control-allow-methods': 'GET, POST',
   'access-control-expose-headers': 'payment-required, payment-response',
 };
+// Prefer `Authorization: Bearer <token>` (it stays out of URLs and logs); `?token=` still works for older clients.
+const tokenOf = (req, url) => (/^Bearer (.+)$/i.exec(req.headers.authorization ?? '')?.[1] ?? url.searchParams.get('token'));
 const json = (res, code, body) => {
   // public reads are open to any origin (the static dashboard shows what runs here); actions need a token or payment
   res.writeHead(code, { 'content-type': 'application/json', ...CORS });
@@ -90,7 +92,7 @@ createServer(async (req, res) => {
       && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host ?? '') && !Object.keys(req.headers).some((h) => h.startsWith('x-forwarded') || h === 'forwarded');
     // ...and, without a token, a page on another site in the operator's browser must not drive it (CSRF).
     const sameOrigin = !req.headers.origin || /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.origin);
-    const authorized = process.env.DEMO_TOKEN ? url.searchParams.get('token') === process.env.DEMO_TOKEN : loopback && sameOrigin;
+    const authorized = process.env.DEMO_TOKEN ? tokenOf(req, url) === process.env.DEMO_TOKEN : loopback && sameOrigin;
     if (url.pathname === '/api/challenge' && req.method === 'POST') {
       const { attack } = await body(req);
       if (typeof attack !== 'string' || attack.trim().length < 10 || attack.length > 600) bad('attack: the paragraph you append to the bid, 10-600 characters');
@@ -280,7 +282,7 @@ createServer(async (req, res) => {
     if (cd && req.method === 'POST') {
       const rfq = getRfq(cd[1]);
       if (!rfq) return json(res, 404, { error: 'not found' });
-      const owner = rfq.paidBy && tokenHash(url.searchParams.get('token') ?? '') === rfq.paidBy.ownerTokenHash;
+      const owner = rfq.paidBy && tokenHash(tokenOf(req, url) ?? '') === rfq.paidBy.ownerTokenHash;
       if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
       return json(res, 200, await confirmDelivery(cd[1]));
     }
@@ -326,7 +328,7 @@ createServer(async (req, res) => {
         const ok = await reveal(id, bid.label, { doc, salt, revealTx });
         return json(res, ok ? 200 : 400, ok ? { label: bid.label, matches: true } : { error: 'document does not match the sealed commitment' });
       }
-      const owner = rfq.paidBy && tokenHash(url.searchParams.get('token') ?? '') === rfq.paidBy.ownerTokenHash;
+      const owner = rfq.paidBy && tokenHash(tokenOf(req, url) ?? '') === rfq.paidBy.ownerTokenHash;
       if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
       if (action === 'close') {
         await closeCommits(id);
