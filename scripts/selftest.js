@@ -187,7 +187,16 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   await assert.rejects(decideAppeal(r.id, l, { approver: boss.address, overturn: true }), /signed/);
   await assert.rejects(decideAppeal(r.id, l, await decide(k, true)), /APPROVERS/);
   await assert.rejects(decideAppeal(r.id, l, { ...(await decide(boss, false)), overturn: true }), /signed/); // signed "uphold", claims overturn
-  assert.equal((await decideAppeal(r.id, l, await decide(boss, true))).outcome, 'overturned');
+  // with APPEAL_QUORUM=2 one signature is not enough, the same approver can't sign twice, a second one decides
+  const boss2 = privateKeyToAccount(generatePrivateKey());
+  process.env.APPROVERS = `${boss.address},${boss2.address}`;
+  process.env.APPEAL_QUORUM = '2';
+  assert.equal((await decideAppeal(r.id, l, await decide(boss, true))).outcome, 'human');
+  await assert.rejects(decideAppeal(r.id, l, await decide(boss, true)), /already signed/);
+  const done = await decideAppeal(r.id, l, await decide(boss2, true));
+  assert.equal(done.outcome, 'overturned');
+  assert.deepEqual(done.signedBy, [boss.address, boss2.address]);
+  delete process.env.APPEAL_QUORUM;
   await assert.rejects(decideAppeal(r.id, l, await decide(boss, false)), /waiting for a human/);
   assert.ok(overturnedSlashes().has(slashKey(undefined, 42, k.address)));
   delete process.env.APPROVERS;

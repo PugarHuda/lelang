@@ -1,14 +1,17 @@
 import { createServer } from 'node:http';
 import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment, kiteEnabled, balances } from './kite.js';
+import { deployment, kiteEnabled, balances, transferPie } from './kite.js';
 import { serveStatic } from './static.js';
 import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
-import { judge, record as recordChallenge, list as challengeList } from './challenge.js';
+import { judge, inspect, record as recordChallenge, list as challengeList, bountyAllowed, saveChallenges } from './challenge.js';
 
 const CHALLENGE_FEE = Number(process.env.CHALLENGE_FEE ?? 0.05);
+// A paid attack that would have won earns a bounty in PYUSD on Kite, paid by the wallet that collects Lelang's fees.
+const BOUNTY = Number(process.env.CHALLENGE_BOUNTY ?? 1);
+const INSPECT_FEE = Number(process.env.INSPECT_FEE ?? 0.05);
 const challengesInFlight = new Set();
 
 let running = null;
@@ -66,7 +69,7 @@ createServer(async (req, res) => {
       // each fresh quote scans the chain's logs: bound how many run at once (cached answers are free)
       if (bondLookups >= 4) return json(res, 429, { error: 'too many bond lookups right now; retry in a few seconds' });
       bondLookups += 1;
-      try { return json(res, 200, await bondQuote(bq[1], url.searchParams.get('supplier'))); } finally { bondLookups -= 1; }
+      try { return json(res, 200, await bondQuote(bq[1], url.searchParams.get('supplier'), url.searchParams.get('agentId') ?? undefined)); } finally { bondLookups -= 1; }
     }
     // Actions spend credits or move testnet money, so a public deploy gates them with DEMO_TOKEN.
     // Fail closed: without DEMO_TOKEN only a caller on this machine is the operator (local `npm start`); an unset
@@ -99,7 +102,46 @@ createServer(async (req, res) => {
           }
         }
         const verdict = await judge(attack);
-        return json(res, 200, recordChallenge({ at: new Date().toISOString(), payer, paymentTx, attack, ...verdict }));
+        const entry = recordChallenge({ at: new Date().toISOString(), payer, paymentTx, attack, ...verdict });
+        if (entry.wouldWin && payer !== 'operator' && BOUNTY > 0 && kiteEnabled() && bountyAllowed(payer)) {
+          // sent at most once: the state is saved before the transfer and a failure is never retried automatically
+          entry.bounty = { status: 'sending', amount: BOUNTY, asset: 'PYUSD on Kite testnet' };
+          saveChallenges();
+          try {
+            entry.bounty = { ...entry.bounty, status: 'sent', tx: `https://testnet.kitescan.ai/tx/${await transferPie(process.env.BUYER_PRIVATE_KEY, payer, BOUNTY)}` };
+          } catch (e) {
+            entry.bounty = { ...entry.bounty, status: 'unknown', error: e.shortMessage ?? e.message };
+          }
+          saveChallenges();
+        }
+        return json(res, 200, entry);
+      } finally {
+        challengesInFlight.delete(ip);
+      }
+    }
+    // Lelang as a guard for any agent: before acting on a document someone else wrote (a bid, an email, a tool result),
+    // pay 0.05 and get the verdict a tender would reach. The same checks as the OpenServ listing, without OpenServ.
+    if (url.pathname === '/api/inspect' && req.method === 'POST') {
+      const { document } = await body(req);
+      if (typeof document !== 'string' || document.trim().length < 20 || document.length > 20000) bad('document: the text to check, 20-20000 characters');
+      const ip = req.socket.remoteAddress;
+      if (challengesInFlight.size >= 2 || challengesInFlight.has(ip)) return json(res, 429, { error: 'another check is running; retry in a few seconds' });
+      challengesInFlight.add(ip);
+      try {
+        let paidBy = 'operator';
+        if (!authorized) {
+          if (!kiteEnabled()) return json(res, 403, { error: 'inspection is off on this server' });
+          const terms = allRequirements({ amount: INSPECT_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}/api/inspect`, description: `Lelang integrity check of one document (${INSPECT_FEE})` });
+          try {
+            const p = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms);
+            paidBy = { payer: p.payer, tx: p.txUrl };
+          } catch (e) {
+            if (e.status !== 402) throw e;
+            res.writeHead(402, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'payment-required': Buffer.from(JSON.stringify(e.paymentRequired)).toString('base64') });
+            return res.end(JSON.stringify(e.paymentRequired));
+          }
+        }
+        return json(res, 200, { ...(await inspect(document)), paidBy });
       } finally {
         challengesInFlight.delete(ip);
       }
@@ -220,13 +262,13 @@ createServer(async (req, res) => {
       const rfq = getRfq(id);
       if (!rfq) return json(res, 404, { error: 'not found' });
       if (action === 'commit') {
-        const { supplier, hash, signature, bondTx } = await body(req);
+        const { supplier, hash, signature, bondTx, agentId } = await body(req);
         if (!ADDR.test(supplier ?? '') || !HEX32.test(hash ?? '')) bad('supplier (address) and hash (bytes32) required');
         if (bondTx != null && !HEX32.test(bondTx)) bad('bondTx must be a tx hash');
         // Without the escrow, bonds are plain transfers we can't verify here, yet settle refunds every compliant bid
         // from the buyer's wallet. So money-moving tenders take public bids only through the escrow contract.
         if (!rfq.chainId && kiteEnabled()) bad('public bidding requires an escrow tender');
-        return json(res, 201, { label: await submitCommit(id, { supplier, hash, signature, bondTx }) });
+        return json(res, 201, { label: await submitCommit(id, { supplier, hash, signature, bondTx, agentId }) });
       }
       if (action === 'reveal') {
         const { supplier, doc, salt, revealTx } = await body(req);

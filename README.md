@@ -29,7 +29,10 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 | Security review of the payment paths | independent review found 7 issues, then 4 more in our fixes (incl. a replayable payment we introduced), and an automated review 3 more; all fixed, [listed here](docs/DETAILS.md#security-review-of-the-money-paths) |
 | Reputation outside Lelang | 11 agents registered in the canonical **ERC-8004** registries on Arc testnet; Lelang wrote 32 feedback entries (a slash carries the same evidence hash as the Kite escrow), readable by any marketplace |
 | Reppo gate, all awards on escrows V1–V3 | 10 of 12 shipped, 2 held (17%); one hold was a clean tender, costing one signed release ([data](docs/reports/reppo-holds.json)) |
-| Break Lelang (live, paid) | anyone pays 0.05 over x402 and the real evaluator judges their attack; first attempts: a direct instruction was slashed with proof, a two-price trick was held |
+| Break Lelang (live, paid) | anyone pays 0.05 over x402 and the real evaluator judges their attack; a win pays a 1 PYUSD bounty to the payer from the fee wallet (one per address, three a day); first attempts: a direct instruction was slashed with proof, a two-price trick was held |
+| Kite Passport, testnet (dev) | Lelang accepts pieUSD on Kite testnet, what Passport pays with there. Done live: account, faucet (5 PIEUSD), agent registered, spending session approved with a passkey. The payment itself is refused by Passport's catalog allowlist (`host_not_in_executable_catalog`); allowlisting requested from Kite. [Details](docs/DETAILS.md#kite-passport-on-testnet) |
+| Reputation from other marketplaces | the bond also counts slashes a trusted marketplace wrote to ERC-8004 (`EXTERNAL_REPUTATION_CLIENTS`); untrusted writers are shown, never counted, so a rival can't buy someone a bigger bond |
+| Known limits | no professional audit, testnets only, approvers named by the operator: [SECURITY.md](SECURITY.md) |
 | Public pages (CI, desktop + mobile) | a doctored quote or document is caught on the proof page |
 
 ### Judge path (5 minutes, no install)
@@ -79,6 +82,7 @@ Public API: **`https://lelang-6k05.onrender.com`** (also shown live on the dashb
     "env": { "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
   ```
 - **On the OpenServ x402 Agent Market:** [Lelang Bid Integrity Check](https://platform.openserv.ai/x402-services) ($0.05 per call; [paywall](https://platform.openserv.ai/workspace/paywall/71efe6a8eb7240a8ab506af916ace498)). Any agent pastes a bid document and gets Lelang's verdict: REJECT (text aimed at the AI evaluator, quoted verbatim), HOLD (two figures for one term, or the two readers disagree) or CLEAN, with the extracted terms. It runs as OpenServ agent #4957 inside the public API server (`openserv/agent.js`).
+- **Guard for any agent:** `POST /api/inspect {"document": "…"}` answers 402, then for 0.05 returns the verdict a tender would reach (REJECT / HOLD / CLEAN, the quote, the terms). Call it before acting on text someone else wrote: a bid, an email, a tool result.
 - **Break Lelang:** `PAYER_PRIVATE_KEY=0x… node scripts/break-lelang.js "<your paragraph>"` pays 0.05 and has the real evaluator judge your attack; results show live in the [attack gallery](https://lelang-ten.vercel.app/attacks.html).
 
 Live without any operator token: a buyer agent paid on Arc, one supplier bid through MCP, Reppo held the award for review and a named approver released it with a signature ([details](docs/DETAILS.md#public-api-hosted)).

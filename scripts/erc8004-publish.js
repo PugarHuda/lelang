@@ -17,6 +17,7 @@ const OUT = 'deployments/erc8004-arc.json';
 const ABI = [
   { type: 'function', name: 'register', stateMutability: 'nonpayable', inputs: [{ type: 'string', name: 'agentURI' }], outputs: [{ type: 'uint256' }] },
   { type: 'event', name: 'Registered', inputs: [{ type: 'uint256', name: 'agentId', indexed: true }, { type: 'string', name: 'agentURI' }, { type: 'address', name: 'owner', indexed: true }] },
+  { type: 'function', name: 'revokeFeedback', stateMutability: 'nonpayable', outputs: [], inputs: [{ type: 'uint256', name: 'agentId' }, { type: 'uint64', name: 'feedbackIndex' }] },
   { type: 'function', name: 'giveFeedback', stateMutability: 'nonpayable', outputs: [], inputs: [{ type: 'uint256', name: 'agentId' }, { type: 'int128', name: 'value' }, { type: 'uint8', name: 'valueDecimals' }, { type: 'string', name: 'tag1' }, { type: 'string', name: 'tag2' }, { type: 'string', name: 'endpoint' }, { type: 'string', name: 'feedbackURI' }, { type: 'bytes32', name: 'feedbackHash' }] },
 ];
 const pub = createPublicClient({ chain: arc.chain, transport: http() });
@@ -72,8 +73,19 @@ for (const a of suppliers) {
 // one feedback entry per published bid, from Lelang's operator
 for (const r of tenders) for (const b of Object.values(r.bids)) {
   const a = b.supplier.toLowerCase(), fk = `${r.escrow}:${r.chainId}:${a}`.toLowerCase();
-  if (state.feedback[fk] || !state.agents[a]) continue;
   const overturned = b.appeal?.outcome === 'overturned';
+  const prev = state.feedback[fk];
+  // A slash overturned on appeal after its -100 was published: revoke that entry on-chain, then record the overturn.
+  if (prev && prev.value < 0 && overturned && !prev.revokedTx) {
+    // the registry's feedback index is the first word of the NewFeedback event's data
+    const log = (await pub.getTransactionReceipt({ hash: prev.tx.split('/tx/')[1] })).logs.find((l) => l.address.toLowerCase() === REPUTATION.toLowerCase());
+    const { hash } = await send(operator, { address: REPUTATION, abi: ABI, functionName: 'revokeFeedback', args: [BigInt(prev.agentId), BigInt(log.data.slice(0, 66))] });
+    state.feedback[`${fk}:revoked`] = { ...prev, revokedTx: `${arc.explorer}/tx/${hash}` };
+    delete state.feedback[fk];
+    save();
+    console.log(`revoked the slash feedback for agent #${prev.agentId} (overturned on appeal)`);
+  }
+  if (state.feedback[fk] || !state.agents[a]) continue;
   const won = r.phase === 'settled' && r.award?.winner === b.label;
   const [value, tag1, tag2] = b.slash && b.evidence && !overturned ? [-100, 'slashed', 'manipulation'] : overturned ? [0, 'slash-overturned', 'appeal'] : won ? [100, 'won', 'award'] : b.slash ? [-25, 'slashed', 'not-revealed'] : [50, 'clean-bid', 'refunded'];
   const proof = b.slash && b.evidence ? `${SITE}/slash.html?t=${encodeURIComponent(r.id)}&b=${encodeURIComponent(b.label)}` : `${SITE}/tenders/${r.id}.json`;

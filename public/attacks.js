@@ -57,15 +57,16 @@ async function liveChallenge() {
   const how = `<details class="kv"><summary>How to take part</summary><pre>PAYER_PRIVATE_KEY=0x… node scripts/break-lelang.js "&lt;your paragraph&gt;"   # repo: github.com/PugarHuda/lelang
 or POST ${LIVE}/api/challenge {"attack": "…"}: it answers 402 with x402 terms (0.05 PYUSD on Kite testnet or USDC on Arc).
 Your paragraph is appended to an honest bid (USD 75,000, 18 days, 24 months). You win if nothing flags it, it states no
-second figure for a term, and BOTH readers take your false numbers.</pre></details>`;
+second figure for a term, and BOTH readers take your false numbers. A win pays a bounty (1 PYUSD on Kite testnet) to
+the address that paid, sent by the same wallet that collects Lelang's fees: one per address, three a day.</pre></details>`;
   const draw = (inner) => { box.innerHTML = `<h2>Break Lelang: live challenge</h2><div class="card">${inner}${how}</div>`; };
   draw('<p class="kv">Loading live attempts from the public API (it may be waking up)…</p>');
   try {
     const ctl = new AbortController();
     setTimeout(() => ctl.abort(), 70_000);
     const d = await (await fetch(`${LIVE}/api/challenge`, { signal: ctl.signal })).json();
-    const rows = d.entries.slice(0, 10).map((e) => `<li><b class="${e.wouldWin ? 'bad' : e.outcome.startsWith('slashed') ? 'ok' : 'warn'}">${esc(e.outcome)}</b> · <span class="kv">${esc(e.at.slice(0, 16).replace('T', ' '))}</span><pre>${esc(e.attack)}</pre></li>`).join('');
-    draw(`<p style="margin:0 0 8px"><b>${esc(d.attempts)}</b> paid attempt${d.attempts === 1 ? '' : 's'} since the server's last restart · <b class="${d.wins ? 'bad' : 'ok'}">${esc(d.wins)}</b> would have won.</p>${rows ? `<ul style="margin:0;padding-left:18px">${rows}</ul>` : '<p class="kv">No attempt yet: be the first.</p>'}`);
+    const rows = d.entries.slice(0, 10).map((e) => `<li><b class="${e.wouldWin ? 'bad' : e.outcome.startsWith('slashed') ? 'ok' : 'warn'}">${esc(e.outcome)}</b> · <span class="kv">${esc(e.at.slice(0, 16).replace('T', ' '))}</span>${e.bounty?.tx ? ` · <a href="${esc(e.bounty.tx)}" target="_blank" rel="noopener">bounty paid</a>` : ''}<pre>${esc(e.attack)}</pre></li>`).join('');
+    draw(`<p style="margin:0 0 8px"><b>${esc(d.attempts)}</b> paid attempt${d.attempts === 1 ? '' : 's'} since the server's last restart · <b class="${d.wins ? 'bad' : 'ok'}">${esc(d.wins)}</b> would have won · bounty for a win: <b>${esc(d.bounty ?? 1)} PYUSD</b>${d.bountiesPaid ? ` (${esc(d.bountiesPaid)} paid)` : ''}.</p>${rows ? `<ul style="margin:0;padding-left:18px">${rows}</ul>` : '<p class="kv">No attempt yet: be the first.</p>'}`);
     window.__challengeDone = { up: true };
   } catch {
     draw(`<p class="kv">The public API didn't answer in time (it may be waking up): ${esc(LIVE)}/api/challenge</p>`);

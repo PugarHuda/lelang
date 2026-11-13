@@ -25,13 +25,20 @@ export async function judge(attack) {
   return { outcome, manipulationP: m.p, quote: m.verified ? m.evidence : null, ambiguous, dolphinWrong: wrongA, servWrong: wrongB, wouldWin: outcome.startsWith('WOULD WIN') };
 }
 
+export const saveChallenges = () => { try { writeFileSync(FILE, JSON.stringify(entries, null, 2)); } catch {} };
 export function record(entry) {
   entries.unshift(entry);
   entries.length = Math.min(entries.length, 500);
-  try { writeFileSync(FILE, JSON.stringify(entries, null, 2)); } catch {}
+  saveChallenges();
   return entry;
 }
-export const list = () => ({ attempts: entries.length, wins: entries.filter((e) => e.wouldWin).length, entries: entries.slice(0, 50) });
+// One bounty per payer, at most BOUNTY_PER_DAY a day: a real gap gets paid, a farm of near-duplicates doesn't.
+export const bountyAllowed = (payer) => {
+  const paid = entries.filter((e) => e.bounty);
+  return !paid.some((e) => e.payer.toLowerCase() === payer.toLowerCase())
+    && paid.filter((e) => Date.now() - Date.parse(e.at) < 86_400_000).length < Number(process.env.BOUNTY_PER_DAY ?? 3);
+};
+export const list = () => ({ attempts: entries.length, wins: entries.filter((e) => e.wouldWin).length, bounty: Number(process.env.CHALLENGE_BOUNTY ?? 1), bountiesPaid: entries.filter((e) => e.bounty?.status === 'sent').length, entries: entries.slice(0, 50) });
 
 // Any bid document, no baseline: what Lelang would do with it. A building block for a paid inspection service.
 export async function inspect(doc) {
