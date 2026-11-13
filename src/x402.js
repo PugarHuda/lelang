@@ -93,6 +93,10 @@ export async function collect(header, reqs, deliver) {
   const o = optionOf(req);
   const a = payload?.payload?.authorization;
   if (!a || a.to?.toLowerCase() !== req.payTo.toLowerCase() || BigInt(a.value ?? 0) < BigInt(req.amount)) fail('payment does not match the requirements');
+  // ponytail: with deliver() the work runs before the money moves, so a payer can drain its balance (or race several
+  // authorizations over one balance) in between. It then gets a 402, never the result: the loss is our model calls,
+  // bounded by the server's in-flight limit. Escrowed funds (receiveWithAuthorization into a hold) if that ever matters.
+  if (deliver && Number(a.validBefore) < Date.now() / 1000 + 120) fail('the authorization must stay valid for at least 120 seconds');
   // A payment header buys one thing, once. The nonce is reserved before any await (two parallel requests with the same
   // header can't both pass) and released only if this payment fails. A spent nonce is never taken as proof of payment:
   // a replayed or cancelled authorization also reads as spent on-chain.

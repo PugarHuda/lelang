@@ -132,6 +132,8 @@ createServer(async (req, res) => {
         if (authorized) return json(res, 200, { ...(await inspect(document)), paidBy: 'operator' });
         if (!kiteEnabled()) return json(res, 403, { error: 'inspection is off on this server' });
         const terms = allRequirements({ amount: INSPECT_FEE, payTo: buyerAddress(), resource: `${url.protocol}//${req.headers.host}${url.pathname}`, description: `Lelang integrity check of one document (${INSPECT_FEE})` });
+        // Kite's catalog reads accepts[0]: on its testnet that is pieUSD, what Kite Passport pays with there
+        if (url.pathname.startsWith('/v1/')) terms.sort((x, y) => (y.extra?.name === 'pieUSD') - (x.extra?.name === 'pieUSD'));
         try {
           // charge only on success: the check runs between verifying the payment and settling it
           const p = await collect(req.headers['payment-signature'] ?? req.headers['x-payment'], terms, () => inspect(document));
