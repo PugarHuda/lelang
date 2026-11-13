@@ -161,7 +161,10 @@ test('attack gallery lists every case and the adaptive attacker before and after
   for (const c of d.fixed.cases) await expect(page.locator('#view')).toContainText(c.name);
   await expect(page.locator('#view > div pre, #view > table pre, #view > .card pre')).not.toHaveCount(0);
   for (const c of d.fixed.cases.slice(0, 2)) await expect(page.locator('#view')).toContainText(c.text.slice(0, 30));
-  await expect(page.locator('#view')).toContainText(`${d.adaptiveBefore.summary.wouldReachAward} of ${d.adaptiveBefore.summary.paragraphs}`);
+  // the headline count comes from the attempts (3 of 9 would have won before the ambiguity check)
+  const wins = d.adaptiveBefore.attempts.filter((t) => t.outcome === 'escaped detection' && t.bothReadersFooled).length;
+  expect(wins).toBeGreaterThan(0);
+  await expect(page.locator('#view')).toContainText(`${wins} of ${d.adaptiveBefore.attempts.length}`);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
 

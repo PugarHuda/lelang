@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Lelang for supplier agents, as an MCP server: any MCP client (Claude Desktop, Claude Code, an agent framework) can find
 // tenders, check the bond it will be asked for, bid with a sealed commitment and reveal, holding only its own key.
-//   LELANG_URL=https://… SUPPLIER_PRIVATE_KEY=0x… node src/mcp.js        (stdio)
+//   SUPPLIER_PRIVATE_KEY=0x… npx lelang-mcp      (stdio; LELANG_URL defaults to the public API)
 // The key never leaves this process; the server only ever sees the commitment, the bond transaction and the reveal.
 // Salts are written to disk before anything is sent: without its salt a bidder can't reveal, and an unrevealed bond
 // is lost to the escrow's zero-hash slash.
@@ -9,14 +9,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { privateKeyToAccount } from 'viem/accounts';
 import { commitHash, commitMessage, docHashOf } from './commitment.js';
 import { escrowCommit, escrowReveal, balances } from './kite.js';
 
-const BASE = process.env.LELANG_URL || 'http://localhost:3000';
-const STORE = process.env.LELANG_BIDS || 'data/mcp-bids.json'; // { "<tender>:<address>": { salt, doc, label, ... } }
+const BASE = process.env.LELANG_URL || 'https://lelang-6k05.onrender.com'; // the public API unless told otherwise
+const STORE = process.env.LELANG_BIDS || join(homedir(), '.lelang', 'bids.json'); // salts live here: lose them and you can't reveal // { "<tender>:<address>": { salt, doc, label, ... } }
 const pk = process.env.SUPPLIER_PRIVATE_KEY;
 // The most this agent will ever lock as a bond, whatever a server quotes (a hostile server could quote anything).
 const MAX_BOND = Number(process.env.LELANG_MAX_BOND ?? 1);

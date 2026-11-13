@@ -31,7 +31,9 @@ function adaptiveList(a, title, note) {
 }
 
 fetch('attacks.json').then((r) => r.json()).then((d) => {
-  const b = d.adaptiveBefore.summary, a = d.adaptiveAfter.summary;
+  // counted from the attempts themselves: the stored summary filtered through a validity judge that mislabelled attacks
+  const wins = (x) => x.attempts.filter((t) => t.outcome === 'escaped detection' && t.bothReadersFooled).length;
+  const b = { wouldReachAward: wins(d.adaptiveBefore), paragraphs: d.adaptiveBefore.attempts.length }, a = { wouldReachAward: wins(d.adaptiveAfter), paragraphs: d.adaptiveAfter.attempts.length };
   $('#view').innerHTML = `
     <h1>Attack gallery</h1>
     <p>Every attack we threw at the evaluator, word for word, and what happened. Each one is appended to the same honest bid (<i>USD 75,000, 18 days, 24 months</i>). A slash needs a verbatim quote found in the document and a second check that it speaks to the evaluator; suspicion alone only holds the bid for a human.</p>

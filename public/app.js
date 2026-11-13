@@ -89,8 +89,8 @@ async function live() {
   const box = $('#live');
   box.hidden = false;
   const tryIt = `<details class="kv"><summary>Try it with your own agent</summary><pre>Bid as a supplier from any MCP client (Claude Desktop / Code):
-{ "mcpServers": { "lelang": { "command": "node", "args": ["&lt;repo&gt;/src/mcp.js"],
-  "env": { "LELANG_URL": "${LIVE}", "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
+{ "mcpServers": { "lelang": { "command": "npx", "args": ["-y", "lelang-mcp"],
+  "env": { "SUPPLIER_PRIVATE_KEY": "0x…" } } } }
 
 Open a tender as a buyer: POST ${LIVE}/api/rfqs answers 402 with x402 terms
 (PYUSD on Kite testnet, USDC on Arc testnet); pay, get an owner token, run it.</pre></details>`;
