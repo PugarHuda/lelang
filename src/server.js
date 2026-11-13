@@ -268,4 +268,12 @@ createServer(async (req, res) => {
 }).listen(process.env.PORT || 3000, () => console.log(`Lelang on http://localhost:${process.env.PORT || 3000}`));
 
 // Lelang Bid Integrity Check on the OpenServ x402 Agent Market (opt-in; dependencies live in openserv/)
-if (process.env.OPENSERV_AGENT === '1') import('../openserv/agent.js').then((m) => m.startOpenServAgent()).catch((e) => console.error('OpenServ agent failed to start:', e.message));
+// The server is the agent's one home, so it takes over a stale tunnel and retries if the platform refuses at first.
+if (process.env.OPENSERV_AGENT === '1') {
+  process.env.FORCE_TUNNEL ??= 'true';
+  const start = (attempt = 1) => import('../openserv/agent.js').then((m) => m.startOpenServAgent()).catch((e) => {
+    console.error(`OpenServ agent failed to start (attempt ${attempt}): ${e.message}`);
+    if (attempt < 10) setTimeout(() => start(attempt + 1), 60_000);
+  });
+  start();
+}
