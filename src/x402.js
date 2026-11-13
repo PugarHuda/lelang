@@ -20,6 +20,11 @@ export const OPTIONS = [
   { network: 'eip155:2368', chain: chain(2368, 'KiteAI Testnet', 'https://rpc-testnet.gokite.ai', { name: 'KITE', symbol: 'KITE', decimals: 18 }),
     asset: process.env.X402_ASSET || '0x8E04D099b1a8Dd20E6caD4b2Ab2B405B98242ec9', name: 'PYUSD', version: '1', decimals: 18, facilitator: true,
     label: 'Kite testnet', explorer: 'https://testnet.kitescan.ai' },
+  // Kite testnet pieUSD: what a Kite Passport pays with on its testnet (dev) environment; its own test merchant
+  // (passport.dev.gokite.ai/x402/test) asks for exactly this. EIP-3009 with a bytes signature instead of v,r,s.
+  { network: 'eip155:2368', chain: chain(2368, 'KiteAI Testnet', 'https://rpc-testnet.gokite.ai', { name: 'KITE', symbol: 'KITE', decimals: 18 }),
+    asset: '0x38129cf4CE5E183eFF248F42A7D345Bb1B47621A', name: 'pieUSD', version: '1', decimals: 18, facilitator: true, sigBytes: true,
+    label: 'Kite testnet', explorer: 'https://testnet.kitescan.ai' },
   // Arc testnet USDC (Circle FiatToken v2, EIP-3009). Gas on Arc is paid in USDC, so the seller wallet needs some.
   { network: 'eip155:5042002', chain: chain(5042002, 'Arc Testnet', 'https://rpc.testnet.arc.network', { name: 'USDC', symbol: 'USDC', decimals: 18 }),
     asset: '0x3600000000000000000000000000000000000000', name: 'USDC', version: '2', decimals: 6, facilitator: false,
@@ -129,12 +134,14 @@ async function settleOnce(payload, req, o, a, reqs) {
   }
 }
 
-const TWA_ABI = [{ type: 'function', name: 'transferWithAuthorization', stateMutability: 'nonpayable', outputs: [], inputs: [
-  { type: 'address', name: 'from' }, { type: 'address', name: 'to' }, { type: 'uint256', name: 'value' }, { type: 'uint256', name: 'validAfter' },
-  { type: 'uint256', name: 'validBefore' }, { type: 'bytes32', name: 'nonce' }, { type: 'uint8', name: 'v' }, { type: 'bytes32', name: 'r' }, { type: 'bytes32', name: 's' }] }];
+const AUTH_FIELDS = [{ type: 'address', name: 'from' }, { type: 'address', name: 'to' }, { type: 'uint256', name: 'value' }, { type: 'uint256', name: 'validAfter' },
+  { type: 'uint256', name: 'validBefore' }, { type: 'bytes32', name: 'nonce' }];
+const TWA_ABI = [{ type: 'function', name: 'transferWithAuthorization', stateMutability: 'nonpayable', outputs: [], inputs: [...AUTH_FIELDS, { type: 'uint8', name: 'v' }, { type: 'bytes32', name: 'r' }, { type: 'bytes32', name: 's' }] }];
+// the other EIP-3009 form (pieUSD): one bytes signature instead of v, r, s
+const TWA_BYTES_ABI = [{ type: 'function', name: 'transferWithAuthorization', stateMutability: 'nonpayable', outputs: [], inputs: [...AUTH_FIELDS, { type: 'bytes', name: 'signature' }] }];
 // #2 in the review: if we took a payment and then couldn't deliver (e.g. the escrow tx failed), send it back.
 export async function refund(payment) {
-  const o = OPTIONS.find((x) => x.label === payment.network);
+  const o = OPTIONS.find((x) => x.label === payment.network && x.name === payment.asset); // two tokens share Kite testnet
   const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
   const hash = await createWalletClient({ account, chain: o.chain, transport: http() }).writeContract({ address: o.asset, functionName: 'transfer', args: [payment.payer, parseUnits(payment.amount, o.decimals)],
     abi: [{ type: 'function', name: 'transfer', stateMutability: 'nonpayable', inputs: [{ type: 'address' }, { type: 'uint256' }], outputs: [{ type: 'bool' }] }] });
@@ -145,9 +152,11 @@ export async function refund(payment) {
 async function selfSettle(a, signature, o) {
   const account = privateKeyToAccount(process.env.BUYER_PRIVATE_KEY);
   const pub = createPublicClient({ chain: o.chain, transport: http() });
+  const auth = [a.from, a.to, BigInt(a.value), BigInt(a.validAfter), BigInt(a.validBefore), a.nonce];
   const { r, s, v } = parseSignature(signature);
-  const { request } = await pub.simulateContract({ account, address: o.asset, abi: TWA_ABI, functionName: 'transferWithAuthorization',
-    args: [a.from, a.to, BigInt(a.value), BigInt(a.validAfter), BigInt(a.validBefore), a.nonce, Number(v), r, s] });
+  const { request } = await pub.simulateContract(o.sigBytes
+    ? { account, address: o.asset, abi: TWA_BYTES_ABI, functionName: 'transferWithAuthorization', args: [...auth, signature] }
+    : { account, address: o.asset, abi: TWA_ABI, functionName: 'transferWithAuthorization', args: [...auth, Number(v), r, s] });
   const hash = await createWalletClient({ account, chain: o.chain, transport: http() }).writeContract(request);
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error(`transferWithAuthorization reverted: ${hash}`);
