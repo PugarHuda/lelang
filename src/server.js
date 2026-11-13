@@ -110,7 +110,7 @@ createServer(async (req, res) => {
       if (Math.abs((w.price ?? 0) + (w.warranty ?? 0) + (w.delivery ?? 0) - 1) > 1e-6) bad('weights.price + warranty + delivery must sum to 1');
       // Validated before charging: a malformed request never costs the payer anything. Amounts must be plain decimals
       // (1e-7 passes `> 0` but can't be turned into token units, so the escrow call would fail after payment).
-      for (const k of ['bondPie', 'depositPie']) if (!/^\d+(\.\d{1,6})?$/.test(String(spec[k]))) bad(`${k} must be a plain decimal with at most 6 places`);
+      for (const k of ['bondPie', 'depositPie']) if (!/^\d+(\.\d{1,6})?$/.test(String(spec[k])) || Number(spec[k]) > 100) bad(`${k} must be a plain decimal with at most 6 places, at most 100`);
       let payment, ownerToken, slot;
       try {
       if (paid) {

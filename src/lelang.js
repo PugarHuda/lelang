@@ -115,7 +115,9 @@ export async function createRfq(spec) {
   db.rfqs[id] = rfq;
   if (spec.paidBy) log(rfq, 'fee', `Tender fee paid over x402 by ${spec.paidBy.payer}: ${spec.paidBy.fee} ${spec.paidBy.asset}, settled on ${spec.paidBy.network ?? 'Kite testnet'} by the ${spec.paidBy.settledBy}`, { tx: spec.paidBy.txUrl ?? explorerTx(spec.paidBy.tx) });
   if (escrowEnabled()) {
-    const { chainId, tx } = await escrowOpen(spec.bondPie);
+    // a tender whose escrow never opened must not linger (it would count against the paid-tender caps forever)
+    const opened = await escrowOpen(spec.bondPie).catch((e) => { delete db.rfqs[id]; save(); throw e; });
+    const { chainId, tx } = opened;
     Object.assign(rfq, { chainId, escrow: escrowAddress() });
     log(rfq, 'rfq', `Tender opened: ${spec.title} (escrow tender #${chainId} on Kite)`, { tx: explorerTx(tx) });
   } else {
@@ -265,7 +267,7 @@ export async function evaluate(rfqId) {
   if (rfq.phase !== 'reveal') fail(`tender is in ${rfq.phase}, not reveal`);
   // Evaluating early would shut out bidders still revealing (whoever opened the tender, a paying stranger included).
   if (rfq.chainId && Object.values(rfq.bids).some((b) => !b.revealOk)) {
-    const { revealDeadline, now } = await escrowTimes(rfq.chainId);
+    const { revealDeadline, now } = await escrowTimes(rfq.chainId, rfq.escrow);
     if (now < revealDeadline) fail(`not every bid has revealed; the reveal window closes at ${new Date(Number(revealDeadline) * 1000).toISOString()}`);
   }
   // An escalation sticks: re-running an interrupted evaluation must not re-roll a human hold into an automatic award.
@@ -616,24 +618,24 @@ export async function decideAppeal(rfqId, label, { approver, signature, overturn
   const message = appealDecisionMessage(rfqId, label, overturn);
   if (!signature || !(await verifyMessage({ address: approver, message, signature }).catch(() => false))) fail('the decision must be signed by the approver');
   if (!approvers().includes(String(approver).toLowerCase())) fail('approver is not on the APPROVERS list');
-  if (bid.appeal.outcome !== 'human' || bid.appeal.deciding) fail('this appeal was already decided'); // re-check after the await
-  // Refund first, then record the decision: if the transfer fails the appeal is still waiting and the decision can be
-  // signed again; `deciding` stops a second decision from paying twice meanwhile.
-  bid.appeal.deciding = true;
-  let refund;
-  try {
-    if (overturn && kiteEnabled()) {
-      const amount = bid.bondPie ?? rfq.bondPie; // what this bidder actually lost
-      refund = { amount, tx: await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, amount) };
-    }
-  } finally {
-    delete bid.appeal.deciding;
-  }
+  if (bid.appeal.outcome !== 'human') fail('this appeal was already decided'); // re-check after the await
+  // The signed decision is recorded first (it is what counts for reputation), then the refund is sent at most once:
+  // its state is saved before the transfer, and a failure is never retried automatically, because a transfer can be
+  // broadcast and still throw (e.g. a receipt timeout). The operator checks the wallet and settles it by hand.
   bid.appeal = { ...bid.appeal, outcome: overturn ? 'overturned' : 'upheld', decidedBy: { approver, message, signature, at: new Date().toISOString() } };
   log(rfq, 'appeal', `${approver} signed: ${overturn ? 'overturn' : 'uphold'} ${bid.label}'s slash`);
-  if (refund) {
-    bid.appeal.refundTx = explorerTx(refund.tx);
-    log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${refund.amount}`, { tx: explorerTx(refund.tx) });
+  if (overturn && kiteEnabled()) {
+    const amount = bid.bondPie ?? rfq.bondPie; // what this bidder actually lost
+    bid.appeal.refund = { status: 'sending', amount };
+    save();
+    try {
+      const tx = await transferPie(process.env.BUYER_PRIVATE_KEY, bid.supplier, amount);
+      Object.assign(bid.appeal, { refund: { status: 'sent', amount }, refundTx: explorerTx(tx) });
+      log(rfq, 'appeal', `${bid.label} bond refunded after the overturned slash: ${amount}`, { tx: explorerTx(tx) });
+    } catch (e) {
+      bid.appeal.refund = { status: 'unknown', amount, error: e.shortMessage ?? e.message };
+      log(rfq, 'appeal', `${bid.label} refund of ${amount} did not confirm (${bid.appeal.refund.error}); not retried automatically, the operator checks the buyer wallet`);
+    }
   }
   save();
   return bid.appeal;

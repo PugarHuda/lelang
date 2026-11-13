@@ -115,8 +115,12 @@ export const escrowReveal = async (pk, chainId, docHash, salt) => (await send(pk
 export const escrowWithdraw = async (pk, chainId, escrow) => (await send(pk, 'withdraw', [BigInt(chainId)], escrowFor(escrow))).hash;
 
 // Reveal deadline of a tender and the chain's current time (the contract's clock, not ours).
-export async function escrowTimes(chainId) {
-  const [t, block] = await Promise.all([pub.readContract({ address: ESCROW(), abi: ESCROW_ABI, functionName: 'tenders', args: [BigInt(chainId)] }), pub.getBlock()]);
+// Read from the escrow that holds the tender (it may predate an upgrade); an unknown tender fails closed.
+export async function escrowTimes(chainId, escrow) {
+  const e = escrowFor(escrow);
+  if (!e) throw new Error(`unknown escrow ${escrow}`);
+  const [t, block] = await Promise.all([pub.readContract({ address: e.address, abi: e.abi, functionName: 'tenders', args: [BigInt(chainId)] }), pub.getBlock()]);
+  if (!t[4]) throw new Error(`tender #${chainId} not found on escrow ${e.address}`);
   return { revealDeadline: t[4], now: block.timestamp };
 }
 

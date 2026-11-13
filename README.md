@@ -26,7 +26,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 | Cost of a bid, measured (real pipeline, 1 vs 5 bids) | 4 SERV calls = $0.0005 and ~560 Dolphin tokens per bid; the tender itself costs one Reppo audit ($0.22). So the fee's 0.2 base covers the audit, and the 0.06 per bid is ~100× the AI cost, mostly margin ([data](docs/reports/cost-per-bid.json)) |
 | Reppo feedback loop on 10 flawed rationales, 2 tenders | audit route improved in 6/7 scored pairs, never worse (score mean +9.7); failures published too |
 | Escrow contract (V3) | 23 tests incl. a 200-tender fuzz, 100% line coverage, Slither clean, source verified on Kitescan |
-| Security review of the payment paths | independent review found 7 issues, then 4 more in our fixes (incl. a replayable payment we introduced); all fixed, listed below |
+| Security review of the payment paths | independent review found 7 issues, then 4 more in our fixes (incl. a replayable payment we introduced), and an automated review 3 more; all fixed, listed below |
 | Public pages (CI, desktop + mobile) | a doctored quote or document is caught on the proof page |
 
 ## How it works
@@ -139,7 +139,8 @@ An independent reviewer read the x402 payments, paid tenders, escrow V3 and repu
 | Without `DEMO_TOKEN`, every caller was the operator | a public deploy with one missing variable hands out the buyer wallet | fail closed: without a token only a direct local request (localhost Host, no proxy headers, no foreign Origin) is the operator; releasing held money needs a non-empty `APPROVERS` list |
 | Testnet fee tokens are free to mint | gas and AI credits drained through endless paid tenders | at most 5 paid tenders open, 2 per payer, slots reserved before any await, a bare request takes no slot, abandoned tenders expire after 6 h |
 | **Introduced by our first fix**: a spent authorization was accepted as payment if the facilitator had "failed" | free tenders by replaying an old payment or cancelling one | removed; each payment nonce is accepted once (reserved before any await, persisted) |
-| Appeal overturn recorded before the refund transfer | a failed transfer left a supplier unrefunded with no retry | refund first under a lock, decision recorded after |
+| Appeal refund could be paid twice: a transfer can be broadcast and still throw (receipt timeout), and a retry would send it again | double payout from the buyer wallet | the signed decision is recorded first; the refund is sent at most once, its state saved before the transfer, and a failure is left for the operator to check, never retried automatically |
+| A tender whose escrow failed to open stayed in the state (and counted against the paid caps); the reveal-deadline check read the newest escrow, not the tender's own | caps exhausted by failed opens; wrong deadline after an upgrade | a failed open is removed; deadlines are read from the tender's own escrow and an unknown tender fails closed; bonds and payments capped at 100 |
 | `/bond` scans chain logs per request | RPC amplification | cached per tender and supplier, at most 4 fresh lookups at once |
 
 ## Bring your own supplier agent
