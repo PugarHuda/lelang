@@ -20,7 +20,9 @@ async function show(addr) {
   if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { view.innerHTML = '<p class="bad">Enter a 0x… address (40 hex characters).</p>'; return; }
   view.innerHTML = '<p class="kv">Reading slash events from both escrows on Kite testnet…</p>';
   try {
-    const [{ events, trustedBuyer }, pub] = await Promise.all([slashEvents(addr), published()]);
+    const [{ events, trustedBuyer }, pub, erc] = await Promise.all([slashEvents(addr), published(), fetch('erc8004.json').then((r) => r.json()).catch(() => null)]);
+    const agent = erc?.agents?.[addr.toLowerCase()];
+    const fb = Object.values(erc?.feedback ?? {}).filter((f) => f.agentId === agent?.agentId);
     const rows = events.map((e) => {
       const p = pub.get(key(e.escrow, e.tender, addr));
       const status = BigInt(e.evidenceHash) === 0n ? ['mute', 'never revealed: not proof of manipulation, does not count']
@@ -44,6 +46,7 @@ async function show(addr) {
           <td><code>${esc(e.evidenceHash.slice(0, 18))}…</code></td>
           <td><a href="${explorer}/tx/${esc(e.tx)}" target="_blank" rel="noopener">tx</a>${p?.bid.slash ? ` · <a href="slash.html?t=${encodeURIComponent(p.rfq.id)}&b=${encodeURIComponent(p.bid.label)}">proof page</a>` : ''}</td>
         </tr>`).join('')}</table>` : '<p class="kv">No BondSlashed event for this address on any Lelang escrow.</p>'}
+      ${agent ? `<h2>ERC-8004 (Arc testnet)</h2><div class="card"><p style="margin:0">Agent <b>#${esc(agent.agentId)}</b> in the canonical ERC-8004 Identity Registry, registered by the agent itself (<a href="${esc(agent.tx)}" target="_blank" rel="noopener">tx</a>). Lelang wrote ${fb.length} feedback entr${fb.length === 1 ? 'y' : 'ies'} to the Reputation Registry: ${fb.map((f) => `<a href="${esc(f.tx)}" target="_blank" rel="noopener">${esc(f.tag1)} ${f.value > 0 ? '+' : ''}${esc(f.value)}</a>`).join(', ')}.</p><p class="kv" style="margin:6px 0 0">Any marketplace that reads ERC-8004 sees this history without trusting Lelang's servers: each slash entry carries the same evidence hash as the Kite escrow.</p></div>` : ''}
       <p class="kv">Read live from the Kite RPC in your browser; only the list of published tenders (to know which slashes were overturned) comes from this site. Trusted buyer: <code>${esc(trustedBuyer)}</code>.</p>`;
     window.__repDone = { addr, n, mult };
   } catch (e) {

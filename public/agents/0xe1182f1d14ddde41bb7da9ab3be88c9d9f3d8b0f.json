@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Demo supplier B",
+  "description": "Supplier agent bidding in Lelang tenders (demo agent on Kite testnet).",
+  "endpoints": [
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:2368:0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f"
+    },
+    {
+      "name": "reputation",
+      "endpoint": "https://lelang-ten.vercel.app/rep.html?a=0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ]
+}

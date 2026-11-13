@@ -1,0 +1,145 @@
+{
+  "ranAt": "2026-11-13T06:14:40.862Z",
+  "awardsAudited": 12,
+  "shipped": 10,
+  "held": 2,
+  "holdRatePct": 17,
+  "heldWhileAllBidsClean": 1,
+  "earlierDevelopmentTenders": {
+    "count": 2,
+    "heldOrBlocked": 2,
+    "note": "run on escrows before V1, with an earlier rationale writer; excluded from the rate"
+  },
+  "rows": [
+    {
+      "tender": "rfq-mwdm2642",
+      "escrowTender": "2",
+      "route": "block",
+      "rounds": [
+        "review:52",
+        "block:42"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwdqcnnx",
+      "escrowTender": "4",
+      "route": "ship",
+      "rounds": [
+        "ship:95"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwdrcmbl",
+      "escrowTender": "6",
+      "route": "ship",
+      "rounds": [
+        "ship:91"
+      ],
+      "allBidsClean": true,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwdsz7vo",
+      "escrowTender": "7",
+      "route": "ship",
+      "rounds": [
+        "ship:93"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwdt4xm3",
+      "escrowTender": "8",
+      "route": "ship",
+      "rounds": [
+        "ship:95"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwdx3myt",
+      "escrowTender": "9",
+      "route": "ship",
+      "rounds": [
+        "ship:100"
+      ],
+      "allBidsClean": false,
+      "released": {
+        "by": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+        "note": "checked: clean bid, best on every criterion; the earlier slash was in another tender"
+      }
+    },
+    {
+      "tender": "rfq-mwdydhws",
+      "escrowTender": "10",
+      "route": "ship",
+      "rounds": [
+        "ship:96"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mweep1w6",
+      "escrowTender": "2",
+      "route": "ship",
+      "rounds": [
+        "ship:96"
+      ],
+      "allBidsClean": true,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwefdu6g",
+      "escrowTender": "3",
+      "route": "ship",
+      "rounds": [
+        "ship:91"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mweguzqa",
+      "escrowTender": "2",
+      "route": "ship",
+      "rounds": [
+        "ship:100"
+      ],
+      "allBidsClean": false,
+      "released": {
+        "by": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+        "note": "held because Bid A under human review; released to Bid C, first on the published formula (0.949)"
+      }
+    },
+    {
+      "tender": "rfq-mwegzyl1",
+      "escrowTender": "3",
+      "route": "ship",
+      "rounds": [
+        "ship:97"
+      ],
+      "allBidsClean": false,
+      "released": null
+    },
+    {
+      "tender": "rfq-mwekfbc95c00",
+      "escrowTender": "6",
+      "route": "review",
+      "rounds": [
+        "review:89"
+      ],
+      "allBidsClean": true,
+      "released": {
+        "by": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+        "note": "held by Reppo review (89; safety 75, reversibility 68). Checked: both bids clean, readers agree, decision node matches formula; releasing Bid B"
+      }
+    }
+  ]
+}

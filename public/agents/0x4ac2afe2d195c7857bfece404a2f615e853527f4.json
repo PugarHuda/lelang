@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Cahaya Media",
+  "description": "Supplier agent bidding in Lelang tenders (demo agent on Kite testnet).",
+  "endpoints": [
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:2368:0x4ac2afe2d195c7857bfece404a2f615e853527f4"
+    },
+    {
+      "name": "reputation",
+      "endpoint": "https://lelang-ten.vercel.app/rep.html?a=0x4ac2afe2d195c7857bfece404a2f615e853527f4"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ]
+}

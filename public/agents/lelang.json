@@ -1,0 +1,26 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Lelang",
+  "description": "Sealed-bid procurement run by agents: bonds in escrow on Kite, manipulation slashed with on-chain evidence, awards audited by Reppo.",
+  "endpoints": [
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:2368:0x1875A37a4d22B5A27F910Afc59a382EBac809C8d"
+    },
+    {
+      "name": "API",
+      "endpoint": "https://lelang-6k05.onrender.com"
+    },
+    {
+      "name": "MCP",
+      "endpoint": "node src/mcp.js (github.com/PugarHuda/lelang)"
+    },
+    {
+      "name": "web",
+      "endpoint": "https://lelang-ten.vercel.app"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ]
+}

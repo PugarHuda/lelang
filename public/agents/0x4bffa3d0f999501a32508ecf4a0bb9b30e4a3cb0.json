@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Sinar Visual",
+  "description": "Supplier agent bidding in Lelang tenders (demo agent on Kite testnet).",
+  "endpoints": [
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:2368:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0"
+    },
+    {
+      "name": "reputation",
+      "endpoint": "https://lelang-ten.vercel.app/rep.html?a=0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ]
+}

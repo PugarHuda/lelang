@@ -1,0 +1,395 @@
+{
+  "chain": "eip155:5042002",
+  "identityRegistry": "0x8004A818BFB912233c491871b3d84c89A494BD9e",
+  "reputationRegistry": "0x8004B663056A597Dffe9eCcC1965A193B7388713",
+  "agents": {
+    "lelang": {
+      "agentId": "897869",
+      "owner": "0x1875A37a4d22B5A27F910Afc59a382EBac809C8d",
+      "agentURI": "https://lelang-ten.vercel.app/agents/lelang.json",
+      "tx": "https://testnet.arcscan.app/tx/0x485b7a38ff971d189006b36f99274db1ef5976726ae5a2f2cfa1b904329679a4"
+    },
+    "0xe20f333f08f63db9dfc01622554d5c69db05ffba": {
+      "agentId": "897870",
+      "owner": "0xE20F333F08f63dB9DFc01622554d5c69DB05FFba",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0xe20f333f08f63db9dfc01622554d5c69db05ffba.json",
+      "tx": "https://testnet.arcscan.app/tx/0x78e002b8f5938d350906b6080539b7dac535a2358a5a50b43a4e4764225cc4f0"
+    },
+    "0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f": {
+      "agentId": "897871",
+      "owner": "0xe1182f1d14DDde41bB7Da9Ab3BE88c9D9F3D8B0F",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f.json",
+      "tx": "https://testnet.arcscan.app/tx/0x8de43f8be2f1a13ecc57051f982ea1c6d55c777e2eb49ef2f925a7d1ecc5e46f"
+    },
+    "0xab5a84e37b84e1c87ad538790996eb33dd6afd4f": {
+      "agentId": "897872",
+      "owner": "0xAB5a84E37B84E1C87ad538790996Eb33dD6afd4F",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0xab5a84e37b84e1c87ad538790996eb33dd6afd4f.json",
+      "tx": "https://testnet.arcscan.app/tx/0x103f40a71ff0fbbad9cd164100cca6909246881cc7ca890250669eb21bc33174"
+    },
+    "0x6b870bf20129ea757cb4f4e3aed54ca76d875b07": {
+      "agentId": "897873",
+      "owner": "0x6B870bF20129ea757cB4f4E3aed54cA76D875b07",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0x6b870bf20129ea757cb4f4e3aed54ca76d875b07.json",
+      "tx": "https://testnet.arcscan.app/tx/0x6bfeab1fd5ead340f9544942340b2003340747451bb78369df08608f82e63954"
+    },
+    "0xda039f110e3370b494f24539800bfade299b38ae": {
+      "agentId": "897874",
+      "owner": "0xDa039f110e3370b494f24539800bFadE299b38AE",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0xda039f110e3370b494f24539800bfade299b38ae.json",
+      "tx": "https://testnet.arcscan.app/tx/0xb39bade22c1bd9439f175e6aa9ddfdebd73c8f25aa50972b2560a63e675d8b70"
+    },
+    "0x1d0a0dfd1aca1dbad37f8859de7f5636902c0f97": {
+      "agentId": "897875",
+      "owner": "0x1D0a0dFd1acA1dbAD37f8859dE7F5636902C0f97",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0x1d0a0dfd1aca1dbad37f8859de7f5636902c0f97.json",
+      "tx": "https://testnet.arcscan.app/tx/0x3774ba80dda2a26b5c1baf8501723faf3431a463e3c05a82043aba32c136a3bd"
+    },
+    "0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "owner": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0xd1328285abbc550c220766a2d4e5d2280a0ba3a4.json",
+      "tx": "https://testnet.arcscan.app/tx/0xdf7ff93ef57253a426880859052641b9670b5ad95f49987f15e4f2e159ef4ea5"
+    },
+    "0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "owner": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0.json",
+      "tx": "https://testnet.arcscan.app/tx/0xb260fb639ddd74d86caa2b4068e57f4d04cf0361475f8bc5867cb8756e80533e"
+    },
+    "0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "owner": "0x5d6674Ce278747115d8031e34d9FAe6B42cA214E",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0x5d6674ce278747115d8031e34d9fae6b42ca214e.json",
+      "tx": "https://testnet.arcscan.app/tx/0x247e853526d77989498484dc0fa68c3923435ea95ff9fc0153296f06ee2f45f5"
+    },
+    "0x4ac2afe2d195c7857bfece404a2f615e853527f4": {
+      "agentId": "897879",
+      "owner": "0x4Ac2afe2d195c7857BfEcE404A2F615e853527f4",
+      "agentURI": "https://lelang-ten.vercel.app/agents/0x4ac2afe2d195c7857bfece404a2f615e853527f4.json",
+      "tx": "https://testnet.arcscan.app/tx/0x435cac4af303153429b76c84c048a310a4f0fcd6204a701390ff7fff8658e07a"
+    }
+  },
+  "feedback": {
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:4:0xe20f333f08f63db9dfc01622554d5c69db05ffba": {
+      "agentId": "897870",
+      "tender": "0x11f5f49e…#4",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json",
+      "feedbackHash": "0xa448be922e4b872980c02c6d7410617d6b432ef3b7a9eb80bbdf9eed90068197",
+      "tx": "https://testnet.arcscan.app/tx/0x0c2e69a9cc1ecc442ac9d75802e125b23a094dafcc4c1e667ae9784780b8cab8"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:4:0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f": {
+      "agentId": "897871",
+      "tender": "0x11f5f49e…#4",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json",
+      "feedbackHash": "0xa6f48b8b9181e1fa67e3fd45af82220a1427cfc0612b9dcdc44b6c18c663d7cc",
+      "tx": "https://testnet.arcscan.app/tx/0x60059759d3a9b7497951a03c89d6a3fc03a9ce0053511626ece8a7a0d1abca8f"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:4:0xab5a84e37b84e1c87ad538790996eb33dd6afd4f": {
+      "agentId": "897872",
+      "tender": "0x11f5f49e…#4",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json",
+      "feedbackHash": "0xef1bb04ef72ded75b62e7559fee970099cf472d26a5fbd3215899ab14c49c3b5",
+      "tx": "https://testnet.arcscan.app/tx/0xa1ed639b9c0a5e2d9eecee0cf9733cccdd13de0d49874dfca65d95d70af6382c"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:4:0x6b870bf20129ea757cb4f4e3aed54ca76d875b07": {
+      "agentId": "897873",
+      "tender": "0x11f5f49e…#4",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json",
+      "feedbackHash": "0xaedb6708b4c25ef0ac51edb675a2774a61f8ae5346cbbe002e2d5e9a56072d17",
+      "tx": "https://testnet.arcscan.app/tx/0x48d34c96cf98ee640bdc22b4ec154d8e5a2d246a540ee5f7e7ef3d4fa48f98fc"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:4:0xda039f110e3370b494f24539800bfade299b38ae": {
+      "agentId": "897874",
+      "tender": "0x11f5f49e…#4",
+      "value": -100,
+      "tag1": "slashed",
+      "tag2": "manipulation",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mwdqcnnx&b=Bid%20E",
+      "feedbackHash": "0xad1dd8ef8236090f7804800b5bae95f714ba101091e0f83aa39277af36b830ce",
+      "tx": "https://testnet.arcscan.app/tx/0xdf5698cf46170a7ce7ae07de4b601791c32183e959ae0ed2a5059ea47d53b760"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:6:0x1d0a0dfd1aca1dbad37f8859de7f5636902c0f97": {
+      "agentId": "897875",
+      "tender": "0x11f5f49e…#6",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.json",
+      "feedbackHash": "0x4e1d05026486d7dfefd3de4858135f84694cb8ae6579e69097bfb6c906d6b7bb",
+      "tx": "https://testnet.arcscan.app/tx/0x504ad9eb492f1090992fadab12e4529c8c2ea06bdbfe458c1df3352467bbcaff"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:7:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x11f5f49e…#7",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json",
+      "feedbackHash": "0xc0590d7b7394c08b952b23faa1d2b80ad4b8293f10a5ee739a20372f94c1a1f0",
+      "tx": "https://testnet.arcscan.app/tx/0xd4352bb5744f2fd2d2872c86b5bd931690affdcb0e1108a38df2f0cbe66d1167"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:7:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0x11f5f49e…#7",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json",
+      "feedbackHash": "0x3e029e7f0df91f8d836dc56c5813e0c768c93c0578ce42abf103db7f2ff37735",
+      "tx": "https://testnet.arcscan.app/tx/0x54a329ce57698df2906c271b4d509f1d1bd3db5cf1d2fadd52f794b70ecdc357"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:7:0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "tender": "0x11f5f49e…#7",
+      "value": -100,
+      "tag1": "slashed",
+      "tag2": "manipulation",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mwdsz7vo&b=Bid%20C",
+      "feedbackHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+      "tx": "https://testnet.arcscan.app/tx/0x7694393f10246879b8fe6199b5c013549f879a832ef8fe2ace7822903d2e8245"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:8:0xe20f333f08f63db9dfc01622554d5c69db05ffba": {
+      "agentId": "897870",
+      "tender": "0x11f5f49e…#8",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json",
+      "feedbackHash": "0x2a05373df88eb6a9d976cf42043e02225521e7fba7a6f2d7f898a61773169964",
+      "tx": "https://testnet.arcscan.app/tx/0x5b779d4014edb5a301e829715c546e3e1c60ce2dc0431491aa85fc4f955c546d"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:8:0xe1182f1d14ddde41bb7da9ab3be88c9d9f3d8b0f": {
+      "agentId": "897871",
+      "tender": "0x11f5f49e…#8",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json",
+      "feedbackHash": "0x9350ce238f651b2294d644d522ef2c0de549e3f68d97b4f489ddcbe7d6b53e73",
+      "tx": "https://testnet.arcscan.app/tx/0xab090bfbefdc964967ea802cc317bb7ea21003ffad42bfb81099f578beab700b"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:8:0xab5a84e37b84e1c87ad538790996eb33dd6afd4f": {
+      "agentId": "897872",
+      "tender": "0x11f5f49e…#8",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json",
+      "feedbackHash": "0xf86860ac435c5fb0f6a3bd9e4fab2fb3d0ad4b7042755b3b63622a42ea7c9b5b",
+      "tx": "https://testnet.arcscan.app/tx/0xfc3cf28bd60965b517b945400ed84f58d94f5e144582ed19a201293c2874f1c9"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:8:0x6b870bf20129ea757cb4f4e3aed54ca76d875b07": {
+      "agentId": "897873",
+      "tender": "0x11f5f49e…#8",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json",
+      "feedbackHash": "0x08bb631382be0926f66713be3177bae29e4f9ac0889ac9f5bf9d931e0ed5c200",
+      "tx": "https://testnet.arcscan.app/tx/0x6ded37a6cc9157f96d21215b9958939904da428365abfa8686f6be13b89647b0"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:8:0xda039f110e3370b494f24539800bfade299b38ae": {
+      "agentId": "897874",
+      "tender": "0x11f5f49e…#8",
+      "value": -100,
+      "tag1": "slashed",
+      "tag2": "manipulation",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&b=Bid%20E",
+      "feedbackHash": "0x6fbbe4dfc288c91569a30202ba2059e49f56fcb1176382cf1a88aa665509febf",
+      "tx": "https://testnet.arcscan.app/tx/0x578cc59be872d2d4ce9fde719bafb4d39f3a7e81d28268db6960f26de623fd86"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:9:0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "tender": "0x11f5f49e…#9",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json",
+      "feedbackHash": "0x79555eaae1b003c5c24926f24bb23a15c1b0ada509aad4edc82c4faf1589bc15",
+      "tx": "https://testnet.arcscan.app/tx/0xf575efa3ca1ec608c87e03c99360068f8bacc396a3b3fcc0973612add305703e"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:9:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x11f5f49e…#9",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json",
+      "feedbackHash": "0x196cff315d4f197e51ecc50a3462176b1151f7a582747c15ecdb0404ea8ef7dd",
+      "tx": "https://testnet.arcscan.app/tx/0xd869f5c4bddbec9c771270c9fd9d86a2bf8a578549c45eaeb19862b55051ceab"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:10:0x4ac2afe2d195c7857bfece404a2f615e853527f4": {
+      "agentId": "897879",
+      "tender": "0x11f5f49e…#10",
+      "value": 0,
+      "tag1": "slash-overturned",
+      "tag2": "appeal",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mwdydhws&b=Bid%20A",
+      "feedbackHash": "0x0ae5736e7c454d7810960555e7d8bfa35b900d25f0e4edde6a5bae0ec0446fc6",
+      "tx": "https://testnet.arcscan.app/tx/0x9259bafe6e3f2ba98bf2e3cd218c74e604437cdc713f4a74272654a2343fde52"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:10:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0x11f5f49e…#10",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json",
+      "feedbackHash": "0x6e4e969bb04d68c3850c93185015f304bd62a872bc289f094c96edb30ac848e6",
+      "tx": "https://testnet.arcscan.app/tx/0x251cd7521c2364b7e4f31ab5d33bd3e3174d05d0c3491a1bad4c9f4f478af0e0"
+    },
+    "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b:10:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x11f5f49e…#10",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json",
+      "feedbackHash": "0xbb793a399bc281e9b979c89e7b2e071db4b3e0876b3e894dc9388f1c1ffe7f17",
+      "tx": "https://testnet.arcscan.app/tx/0xcd598b5af2149359d4d91faeaca5b4dcaced727e546aa6ce6f00be1258eca1aa"
+    },
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae:2:0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "tender": "0xd50f39cb…#2",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.json",
+      "feedbackHash": "0x49ba537fc1c602844566b9d3d0a1f8b1ccf47ec8673e09e681700a1a4da92d75",
+      "tx": "https://testnet.arcscan.app/tx/0xefc7fa1dd9feebb66f4e8b878104dc51848d53020c4e4f1cb73156a79a8a2926"
+    },
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae:2:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0xd50f39cb…#2",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.json",
+      "feedbackHash": "0x2760e1c4c7558264de76673a4ac79554d929b1df80d2523edb96ebc64d1aa1b6",
+      "tx": "https://testnet.arcscan.app/tx/0x48393cc32eebd52b9c99fad1806f9b1893842fb05911b94927deb1e159394c06"
+    },
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae:3:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0xd50f39cb…#3",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json",
+      "feedbackHash": "0xde52901aebd499ce489a49a8789d00ab2380ac7d2f67163b53a87dc6bc4f2eda",
+      "tx": "https://testnet.arcscan.app/tx/0xeb914177c5b58a69825e163d7fa409984e88ced76afcf429ff4198018a4cb3fb"
+    },
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae:3:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0xd50f39cb…#3",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json",
+      "feedbackHash": "0x32f478150aeebe80392975dbb526d773405f7bdee45484e7ee4915c1eef05c69",
+      "tx": "https://testnet.arcscan.app/tx/0xe6a5c2d35463597190ebc1c46bf194b017bd1ef7a038cae2e87d6ddf9c8c0f92"
+    },
+    "0xd50f39cb489c7d492fa74b9849cfd054600f08ae:3:0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "tender": "0xd50f39cb…#3",
+      "value": -100,
+      "tag1": "slashed",
+      "tag2": "manipulation",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mwefdu6g&b=Bid%20C",
+      "feedbackHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+      "tx": "https://testnet.arcscan.app/tx/0xf4de89543322ddf9fb104532599ea4d3ecc1536a3474135f7100193912c72e72"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:2:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x68a4cd1f…#2",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json",
+      "feedbackHash": "0xa1c2ca75fc4e253e328bcf1f38f5d3a7d04c55eb4ba34695dc393b7bc9a5152b",
+      "tx": "https://testnet.arcscan.app/tx/0xd2d6264366177f0ed05ef9be1cf11cb7f817c7ed7ddf20a4fa9ffac92e6e00cd"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:2:0x5d6674ce278747115d8031e34d9fae6b42ca214e": {
+      "agentId": "897878",
+      "tender": "0x68a4cd1f…#2",
+      "value": -100,
+      "tag1": "slashed",
+      "tag2": "manipulation",
+      "feedbackURI": "https://lelang-ten.vercel.app/slash.html?t=rfq-mweguzqa&b=Bid%20B",
+      "feedbackHash": "0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423",
+      "tx": "https://testnet.arcscan.app/tx/0x6971c09121c604d0b6a824d80a5b252e42713233e6d779bb71010551a9ff675a"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:2:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0x68a4cd1f…#2",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json",
+      "feedbackHash": "0x1def98b3d5cfa4657a6efd2c4240c6e6ef9482bc84e2e732ef9dacce332e2605",
+      "tx": "https://testnet.arcscan.app/tx/0x9385c4a3a994684dc6fe252476f8435f3c288e2f833157f42e534928f0e42c29"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:3:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x68a4cd1f…#3",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json",
+      "feedbackHash": "0x55a03e0b4c9b0bb7aa44bba7195ce9829740aa47dc84be3a8aa7da3d023e8fc7",
+      "tx": "https://testnet.arcscan.app/tx/0x449438105ea630c97bd2d634757a774ef89d433cf22fe3fb1794f1bc96a37490"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:3:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0x68a4cd1f…#3",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json",
+      "feedbackHash": "0x7e0651de0e77b994d11758b7d06863af56045b2e404fac08e4399ba838a7d0ae",
+      "tx": "https://testnet.arcscan.app/tx/0x0c4b465612e37f994acfd5fa76f2808236e53629f653e8a4d969acd1a3323743"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:3:0x4ac2afe2d195c7857bfece404a2f615e853527f4": {
+      "agentId": "897879",
+      "tender": "0x68a4cd1f…#3",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json",
+      "feedbackHash": "0xf30e751b798a5942db050320fcef38646f1c46819fd4c5dc579181b313993217",
+      "tx": "https://testnet.arcscan.app/tx/0x5c4d8c3839615f7e06bf86764f6d75db731f06b85d6f3b8e84759f89a70cda9d"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:6:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4": {
+      "agentId": "897876",
+      "tender": "0x68a4cd1f…#6",
+      "value": 50,
+      "tag1": "clean-bid",
+      "tag2": "refunded",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json",
+      "feedbackHash": "0xa1341b0f5b0999097015aaa505abb561b6cb293aa1eee5eb5866f8ef0f0eab5f",
+      "tx": "https://testnet.arcscan.app/tx/0xe925c54633de198f114aa3d193eebd1fee81f1669216c04a497d7f4aee1eb04d"
+    },
+    "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67:6:0x4bffa3d0f999501a32508ecf4a0bb9b30e4a3cb0": {
+      "agentId": "897877",
+      "tender": "0x68a4cd1f…#6",
+      "value": 100,
+      "tag1": "won",
+      "tag2": "award",
+      "feedbackURI": "https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json",
+      "feedbackHash": "0x6cb7462ab282b07842ba45831fbb7beb32d2a98db8002c577ca7e570a040c7f5",
+      "tx": "https://testnet.arcscan.app/tx/0xf4c34e5a220d1ebe01979aa0e125b730852048cf703fea9a4609b3e0d7f06805"
+    }
+  }
+}

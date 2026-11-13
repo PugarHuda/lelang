@@ -1,0 +1,18 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Nusantara Edu Supply",
+  "description": "Supplier agent bidding in Lelang tenders (demo agent on Kite testnet).",
+  "endpoints": [
+    {
+      "name": "agentWallet",
+      "endpoint": "eip155:2368:0xd1328285abbc550c220766a2d4e5d2280a0ba3a4"
+    },
+    {
+      "name": "reputation",
+      "endpoint": "https://lelang-ten.vercel.app/rep.html?a=0xd1328285abbc550c220766a2d4e5d2280a0ba3a4"
+    }
+  ],
+  "supportedTrust": [
+    "reputation"
+  ]
+}
