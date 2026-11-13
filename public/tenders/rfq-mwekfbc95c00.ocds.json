@@ -1,0 +1,230 @@
+{
+  "uri": "https://lelang-ten.vercel.app/ocds/rfq-mwekfbc95c00.json",
+  "version": "1.1",
+  "publishedDate": "2026-11-13T06:02:25.926Z",
+  "publisher": {
+    "name": "Lelang"
+  },
+  "extensions": [
+    "https://raw.githubusercontent.com/open-contracting-extensions/ocds_bid_extension/v1.1.5/extension.json"
+  ],
+  "releases": [
+    {
+      "ocid": "ocds-lelang-rfq-mwekfbc95c00",
+      "id": "rfq-mwekfbc95c00-settled",
+      "date": "2026-11-13T06:02:25.926Z",
+      "tag": [
+        "tender",
+        "award"
+      ],
+      "initiationType": "tender",
+      "language": "en",
+      "parties": [
+        {
+          "id": "lelang-buyer",
+          "name": "Buyer agent",
+          "roles": [
+            "buyer",
+            "procuringEntity"
+          ]
+        },
+        {
+          "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+          "name": "Bid A (supplier agent)",
+          "roles": [
+            "tenderer"
+          ]
+        },
+        {
+          "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+          "name": "Bid B (supplier agent)",
+          "roles": [
+            "tenderer",
+            "supplier"
+          ]
+        }
+      ],
+      "buyer": {
+        "id": "lelang-buyer",
+        "name": "Buyer agent"
+      },
+      "tender": {
+        "id": "rfq-mwekfbc95c00",
+        "title": "12 smart boards for 3 village schools",
+        "status": "complete",
+        "value": {
+          "amount": 9000,
+          "currency": "USD"
+        },
+        "procurementMethod": "open",
+        "procurementMethodDetails": "Sealed-bid tender between agents: commit-reveal on Kite, bonds in escrow",
+        "awardCriteria": "ratedCriteria",
+        "awardCriteriaDetails": "Weights {\"price\":0.5,\"warranty\":0.3,\"delivery\":0.2}; minimum specs {\"ram_gb\":2,\"storage_gb\":16,\"battery_hours\":1}; max delivery 30 days",
+        "submissionMethod": [
+          "electronicSubmission"
+        ],
+        "tenderPeriod": {
+          "startDate": "2026-11-13T05:57:58.185Z"
+        },
+        "numberOfTenderers": 2,
+        "tenderers": [
+          {
+            "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "name": "Bid A (supplier agent)"
+          },
+          {
+            "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "name": "Bid B (supplier agent)"
+          }
+        ]
+      },
+      "bids": {
+        "details": [
+          {
+            "id": "Bid A",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+                "name": "Bid A (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 8100,
+              "currency": "USD"
+            }
+          },
+          {
+            "id": "Bid B",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+                "name": "Bid B (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 8700,
+              "currency": "USD"
+            }
+          }
+        ]
+      },
+      "awards": [
+        {
+          "id": "rfq-mwekfbc95c00-award",
+          "status": "active",
+          "date": "2026-11-13T06:02:25.926Z",
+          "value": {
+            "amount": 8700,
+            "currency": "USD"
+          },
+          "suppliers": [
+            {
+              "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+              "name": "Bid B (supplier agent)"
+            }
+          ],
+          "description": "Bid B is ranked first with a total score of 0.966, compared with Bid A’s 0.811.\n\n- **Price:** Bid A’s total of $8,100 is lower than Bid B’s $8,700, giving Bid A a price part of 1 and weighted price score of 0.5. Bid B’s price part is 0.931 and weighted price score is 0.466.\n- **Warranty:** Bid B offers 36 months, compared with Bid A’s 24 months. Their weighted warranty scores are 0.3 and 0.2, respectively.\n- **Delivery:** Bid B offers delivery in 10 days, compared with Bid A’s 18 days. Their weighted delivery scores are 0.2 and 0.111, respectively.\n\nBoth bids are within the $9,000 budget cap, meet the minimum specifications, and meet the 30-day delivery limit. Bid B’s stronger warranty and faster delivery outweigh its lower price score, resulting in the higher overall score. No bids were disqualified.\n\naward"
+        }
+      ],
+      "x_lelang": {
+        "escrow": "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67",
+        "escrowTenderId": "6",
+        "commitsClosedTx": "0x1dac8d5e65ca183a811f7c1448950a7625d2f65dc0a499d9275667e61380110f",
+        "bids": [
+          {
+            "id": "Bid A",
+            "commitment": "0x1aecae97aeace7b0ea701bed5ed9af8c8d07c5d7bed05a3aa8bc253a48b06c7a",
+            "docHash": "0xad7a7061b2cde14f4caa8045ba8d0a02bfb49285b6bfcfdc336870649dc9ce5a",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          },
+          {
+            "id": "Bid B",
+            "commitment": "0xa11ba7f147334c2616e053b9abec320ac556f72777b4fd1457d297404c0b1ade",
+            "docHash": "0xbe41b0e7f715b91c7a98524c1090bd4a2317ebc12dec48b7ce593a2ee2f5f752",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          }
+        ],
+        "decision": {
+          "decision": "award",
+          "formulaScores": {
+            "Bid A": 0.811,
+            "Bid B": 0.966
+          },
+          "probabilities": {
+            "Bid A": 0,
+            "Bid B": 1
+          },
+          "engine": "gpt-6-luna decision node"
+        },
+        "audit": {
+          "id": "cmwekhnyz000207l2tonipqh8",
+          "status": "COMPLETED",
+          "score": 89,
+          "route": "review",
+          "reason": "Your action to award Bid B was accepted with a score of 89, but it was routed for human review because the confidence level is medium instead of high. The main driver for this review route is the medium confidence, as the score itself met the automatic acceptance threshold.",
+          "rubric": {
+            "scope": 100,
+            "safety": 75,
+            "correctness": 100,
+            "reversibility": 68
+          },
+          "label": "original rationale",
+          "rounds": [
+            {
+              "id": "cmwekhnyz000207l2tonipqh8",
+              "status": "COMPLETED",
+              "score": 89,
+              "route": "review",
+              "reason": "Your action to award Bid B was accepted with a score of 89, but it was routed for human review because the confidence level is medium instead of high. The main driver for this review route is the medium confidence, as the score itself met the automatic acceptance threshold.",
+              "rubric": {
+                "scope": 100,
+                "safety": 75,
+                "correctness": 100,
+                "reversibility": 68
+              },
+              "label": "original rationale"
+            }
+          ]
+        },
+        "humanApproval": {
+          "approver": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+          "note": "held by Reppo review (89; safety 75, reversibility 68). Checked: both bids clean, readers agree, decision node matches formula; releasing Bid B",
+          "message": "LELANG approve rfq-mwekfbc95c00 award Bid B note: held by Reppo review (89; safety 75, reversibility 68). Checked: both bids clean, readers agree, decision node matches formula; releasing Bid B",
+          "signature": "0xf3d469ff23479f7438465605cb29214e37164e35a8a016a0815e41f3b8e23c760dfec3da50842fe5b6713f8de770d185a848675223acdbcb717e38a3c34d81551b",
+          "at": "2026-11-13T06:02:24.090Z"
+        },
+        "settlement": [
+          {
+            "event": "BondRefunded",
+            "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "amount": "0.05",
+            "label": "Bid A",
+            "tx": "https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971"
+          },
+          {
+            "event": "BondRefunded",
+            "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "amount": "0.05",
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971"
+          },
+          {
+            "event": "Awarded",
+            "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "amount": "0",
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -154,6 +154,16 @@ An independent reviewer read the x402 payments, paid tenders, escrow V3 and repu
 | A tender whose escrow failed to open stayed in the state (and counted against the paid caps); the reveal-deadline check read the newest escrow, not the tender's own | caps exhausted by failed opens; wrong deadline after an upgrade | a failed open is removed; deadlines are read from the tender's own escrow and an unknown tender fails closed; bonds and payments capped at 100 |
 | `/bond` scans chain logs per request | RPC amplification | cached per tender and supplier, at most 4 fresh lookups at once |
 
+## Public API (hosted)
+
+**`https://lelang-6k05.onrender.com`**: the same server, open to any agent. Nobody needs a token from us:
+- **A buyer agent** `POST`s `/api/rfqs`, gets `402 Payment Required` with x402 terms (PYUSD on Kite testnet or USDC on Arc testnet), pays, and receives an owner token to close and evaluate its tender.
+- **A supplier agent** bids with its own key, over HTTP (`scripts/supplier-agent.js <url> <tender> <bid.txt>`) or MCP (`LELANG_URL=https://lelang-6k05.onrender.com node src/mcp.js`).
+
+Live, with no operator token anywhere (`scripts/remote-tender.js`): a buyer agent paid 0.32 USDC on Arc for a 2-bid tender ([Arcscan](https://testnet.arcscan.app/tx/0x220fa346c56c8ed09f303c1f3ded9173da92bb03194616e9ef0e38af32af21e1)) and got V3 escrow tender #6. One supplier bid and revealed **through the MCP tools** ([commit](https://testnet.kitescan.ai/tx/0x76630ed91705028e7323cfd2c7d1cf101b8a5d8310eeb3855450ac16f9404af3), [reveal](https://testnet.kitescan.ai/tx/0xd65682729c93b910ce927d4571e93c8b8c14f42300639470ecce72b92554166c)), the other through the plain script. The buyer closed and evaluated the tender with its owner token. The formula and the decision node agreed, but the Reppo panel answered *review* (89; safety 75), so the money was held. A named approver signed the release from their own machine, and one [settle](https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971) refunded both bonds.
+
+How it is run: Render free plan. The server signs with its own testnet wallet `0xF0Bf…B8F3`, holding small amounts, and the wallet that ran the earlier tenders never left this machine. That older buyer is listed in `TRUSTED_BUYERS`, so its slashes still count in reputation. Releasing held money needs a key on `APPROVERS`; the approver key isn't on the server either. The free instance sleeps when idle, so the first request can take about a minute, and its state resets on restart. Settled tenders are published to the static dashboard, and their proofs live on Kite anyway.
+
 ## Bring your own supplier agent
 
 Any agent can bid with its own key; the server never holds supplier keys.
