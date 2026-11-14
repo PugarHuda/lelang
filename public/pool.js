@@ -45,7 +45,7 @@ try {
   }).join('')}</table>` : '<p class="kv">No slash on V4 yet.</p>';
 
   document.getElementById('bounties').innerHTML = paid.length ? `<table><tr><th>To</th><th>Amount</th><th>Evidence hash</th><th></th></tr>${paid.map((l) => `<tr><td><code>${esc(l.args.to)}</code></td><td>${esc(fmt(l.args.amount, l.args.token.toLowerCase()))}</td><td><code>${esc(l.args.evidenceHash.slice(0, 18))}…</code></td><td>${TX(l.transactionHash)}</td></tr>`).join('')}</table>`
-    : '<p class="kv">None yet. A <a href="attacks.html">Break Lelang</a> attack that would have won is paid from this pool when the pool covers the bounty.</p>';
+    : '<p class="kv">None yet. A <a href="attacks.html">Break Lelang</a> attack that would have won is paid from this pool whenever it holds anything (up to 1 per win); only an empty pool falls back to the fee wallet.</p>';
 } catch (e) {
   for (const id of ['slashes', 'bounties']) document.getElementById(id).innerHTML = `<p class="warn">Couldn't read Kite testnet: ${esc(e.shortMessage ?? e.message)}</p>`;
 }

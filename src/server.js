@@ -1,16 +1,18 @@
 import { createServer } from 'node:http';
 import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty } from './kite.js';
+import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo } from './kite.js';
+import { privateKeyToAccount } from 'viem/accounts';
 import { keccak256, toHex } from 'viem';
 import { serveStatic } from './static.js';
 import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
-import { judge, inspect, record as recordChallenge, list as challengeList, bountyAllowed, saveChallenges } from './challenge.js';
+import { judge, inspect, record as recordChallenge, list as challengeList, bountyAllowed, saveChallenges, bountyPlan } from './challenge.js';
 
 const CHALLENGE_FEE = Number(process.env.CHALLENGE_FEE ?? 0.05);
-// A paid attack that would have won earns a bounty in PYUSD on Kite, paid by the wallet that collects Lelang's fees.
+// A paid attack that would have won earns a bounty: from the escrow's pool of forfeited bonds when it holds anything
+// (at most POOL_BOUNTY_CAP), else BOUNTY from the wallet that collects Lelang's fees.
 const BOUNTY = Number(process.env.CHALLENGE_BOUNTY ?? 1);
 const INSPECT_FEE = Number(process.env.INSPECT_FEE ?? 0.05);
 const challengesInFlight = new Set();
@@ -75,7 +77,7 @@ createServer(async (req, res) => {
     }
     // Break Lelang: a public, paid red team (src/challenge.js). Reading the results is free; an attempt costs a small
     // x402 fee, which pays for the five model calls it triggers. One attempt in flight per client, two overall.
-    if (url.pathname === '/api/challenge' && req.method === 'GET') return json(res, 200, challengeList());
+    if (url.pathname === '/api/challenge' && req.method === 'GET') return json(res, 200, await challengeList());
     const bq = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/bond$/);
     if (bq && req.method === 'GET') {
       // each fresh quote scans the chain's logs: bound how many run at once (cached answers are free)
@@ -116,19 +118,24 @@ createServer(async (req, res) => {
         const verdict = await judge(attack);
         const entry = recordChallenge({ at: new Date().toISOString(), payer, paymentTx, attack, ...verdict });
         if (entry.wouldWin && payer !== 'operator' && BOUNTY > 0 && kiteEnabled() && bountyAllowed(payer)) {
+          // Attackers fund the defence: on the V4 escrow the bounty comes out of forfeited bonds (treasury-signed,
+          // one per evidence hash, enforced on-chain); only when the pool is empty or unusable does the fee wallet pay.
+          const tk = process.env.TREASURY_PRIVATE_KEY;
+          const [pool, treasuryGas, { symbol }] = await Promise.all([
+            tk ? bountyPool().catch(() => null) : null,
+            tk ? balances(privateKeyToAccount(tk).address).then((b) => Number(b.kite)).catch(() => 0) : 0,
+            tokenInfo().catch(() => ({ symbol: 'tender token' })),
+          ]);
+          const plan = bountyPlan({ pool, cap: Number(process.env.POOL_BOUNTY_CAP ?? 1), hasTreasury: Boolean(tk), treasuryGas, base: BOUNTY });
           // sent at most once: the state is saved before the transfer and a failure is never retried automatically
-          entry.bounty = { status: 'sending', amount: BOUNTY, asset: 'PYUSD on Kite testnet' };
+          // both paths send the tender token (transferPie moves TOKEN too), so the asset is named from the chain
+          entry.bounty = { status: 'sending', amount: plan.amount, asset: `${symbol} on Kite testnet`, source: `${plan.source === 'pool' ? 'bounty pool (forfeited bonds)' : 'fee wallet'}, ${symbol}` };
           saveChallenges();
           try {
-            // Attackers fund the defence: on the V4 escrow the bounty comes out of forfeited bonds (treasury-signed,
-            // one per evidence hash, enforced on-chain); only when the pool can't cover it does the fee wallet pay.
-            const pool = process.env.TREASURY_PRIVATE_KEY ? await bountyPool().catch(() => null) : null;
-            if (pool != null && pool >= BOUNTY) {
-              const { hash } = await escrowPayBounty(process.env.TREASURY_PRIVATE_KEY, payer, BOUNTY, keccak256(toHex(`${payer}:${attack}`)));
-              entry.bounty = { ...entry.bounty, status: 'sent', source: 'bounty pool (forfeited bonds)', tx: `https://testnet.kitescan.ai/tx/${hash}` };
-            } else {
-              entry.bounty = { ...entry.bounty, status: 'sent', source: 'fee wallet', tx: `https://testnet.kitescan.ai/tx/${await transferPie(process.env.BUYER_PRIVATE_KEY, payer, BOUNTY)}` };
-            }
+            const hash = plan.source === 'pool'
+              ? (await escrowPayBounty(tk, payer, plan.amount, keccak256(toHex(`${payer}:${attack}`)))).hash
+              : await transferPie(process.env.BUYER_PRIVATE_KEY, payer, plan.amount);
+            entry.bounty = { ...entry.bounty, status: 'sent', tx: `https://testnet.kitescan.ai/tx/${hash}` };
           } catch (e) {
             entry.bounty = { ...entry.bounty, status: 'unknown', error: e.shortMessage ?? e.message };
           }

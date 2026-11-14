@@ -70,7 +70,7 @@ try {
   await caption('We attacked it ourselves: 40 of 40 injection attempts caught, no honest bid slashed.', 5000);
   await page.mouse.wheel(0, 2600);
   await caption('An adaptive attacker found a real gap (two prices for one term). We added an ambiguity check: 3 of 9 would have won before, 0 of 6 after.', 6500);
-  await caption('Find one we miss and you get paid: a winning attack earns a 1 PYUSD bounty, sent to the address that paid.', 5000);
+  await caption('Find one we miss and you get paid: a winning attack earns a bounty, paid first from the pool of attackers' forfeited bonds.', 5000);
   // 5. reputation and the price of a second chance
   await page.goto(`${BASE}/rep.html?a=${offender}`);
   await page.waitForFunction(() => window.__repDone, null, { timeout: 60_000 }).catch(() => {});

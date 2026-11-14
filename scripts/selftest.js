@@ -268,4 +268,16 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   const tie = { label: 'T', terms: t(100, 10, 24), review: 'readers disagree' };
   assert.deepEqual(blockingFlags(rfq, [win, tie]), ['T']); // a tie at its best reading blocks
 }
+// Break Lelang bounty source: the pool of forfeited bonds first, capped; the fee wallet only when the pool can't pay
+{
+  const { bountyPlan } = await import('../src/challenge.js');
+  const go = { cap: 1, hasTreasury: true, treasuryGas: 0.5, base: 1 };
+  assert.deepEqual(bountyPlan({ ...go, pool: 0 }), { source: 'fee wallet', amount: 1 }); // empty pool
+  assert.deepEqual(bountyPlan({ ...go, pool: null }), { source: 'fee wallet', amount: 1 }); // pool unreadable / not V4
+  assert.deepEqual(bountyPlan({ ...go, pool: 0.05 }), { source: 'pool', amount: 0.05 }); // pays what the pool holds
+  assert.deepEqual(bountyPlan({ ...go, pool: 3 }), { source: 'pool', amount: 1 }); // capped
+  assert.deepEqual(bountyPlan({ ...go, pool: 3, hasTreasury: false }), { source: 'fee wallet', amount: 1 }); // no treasury key
+  assert.deepEqual(bountyPlan({ ...go, pool: 3, treasuryGas: 0 }), { source: 'fee wallet', amount: 1 }); // treasury can't pay gas
+  assert.deepEqual(bountyPlan({ ...go, pool: 1e-9 }), { source: 'fee wallet', amount: 1 }); // dust rounds to nothing
+}
 console.log('selftest OK');
