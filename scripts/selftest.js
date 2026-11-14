@@ -263,6 +263,8 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   const p = { label: 'P', terms: t(100, 30, 36) }, q2 = { label: 'Q', terms: t(120, 10, 12) };
   const shifter = { label: 'S', terms: t(300, 30, 12), review: 'readers disagree', secondRead: { terms: t(50, 30, 12) } };
   assert.deepEqual(blockingFlags({ weights: { price: 0.6, warranty: 0.2, delivery: 0.2 } }, [p, q2, shifter]), ['S']);
+  const many = { ...loser, label: 'M', ambiguous: ['total_usd', 'delivery_days', 'warranty_months'].map((field) => ({ field, values: Array.from({ length: 9 }, (_, i) => 200 + i) })) };
+  assert.deepEqual(blockingFlags(rfq, [win, many]), ['M']); // too many stated figures: blocks without enumerating
   const tie = { label: 'T', terms: t(100, 10, 24), review: 'readers disagree' };
   assert.deepEqual(blockingFlags(rfq, [win, tie]), ['T']); // a tie at its best reading blocks
 }

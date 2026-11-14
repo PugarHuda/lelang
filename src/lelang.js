@@ -273,16 +273,19 @@ export function scoreBreakdown(weights, eligible) {
 // either reader or the document gives for price, warranty and delivery, each quality rating, and the bid left out
 // entirely (it might not be eligible). The flag is dismissed only if the formula winner is the same, unflagged bid in
 // every one of them; any difference, any tie at the top or any non-finite score keeps it blocking.
-export function readingsOf(bid) {
+// Bid text can state many figures; past this many combinations the flag just blocks instead of being enumerated.
+const MAX_READINGS = 256;
+export function* readingsOf(bid) {
   const reads = [bid.terms, bid.secondRead?.terms].filter(Boolean);
   const alt = (field) => (bid.ambiguous ?? []).find((x) => x.field === field)?.values ?? [];
   const vals = (field) => [...new Set([...reads.map((t) => t?.[field]), ...alt(field)].filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0))];
   const q = bid.quality ? [...new Set([bid.quality.score, ...(bid.quality.readers ?? []).map((r) => r.score)])] : [undefined];
-  const out = [];
-  for (const total_usd of vals('total_usd')) for (const warranty_months of vals('warranty_months')) for (const delivery_days of vals('delivery_days')) {
-    for (const score of q) out.push({ ...bid, terms: { ...bid.terms, total_usd, warranty_months, delivery_days }, ...(bid.quality && { quality: { ...bid.quality, score } }) });
+  const [p, w, d] = ['total_usd', 'warranty_months', 'delivery_days'].map(vals);
+  if (!p.length || !w.length || !d.length) return;
+  if (p.length * w.length * d.length * q.length > MAX_READINGS) throw new Error('too many readings');
+  for (const total_usd of p) for (const warranty_months of w) for (const delivery_days of d) {
+    for (const score of q) yield { ...bid, terms: { ...bid.terms, total_usd, warranty_months, delivery_days }, ...(bid.quality && { quality: { ...bid.quality, score } }) };
   }
-  return out;
 }
 export function blockingFlags(rfq, eligible) {
   const flagged = eligible.filter((b) => b.review);
@@ -295,10 +298,15 @@ export function blockingFlags(rfq, eligible) {
   };
   const winner = top(eligible);
   if (!winner || winner === b.label) return [b.label];
-  const versions = readingsOf(b);
-  if (!versions.length) return [b.label];
-  const scenarios = [eligible.filter((x) => x !== b), ...versions.map((v) => eligible.map((x) => (x === b ? v : x)))];
-  return scenarios.every((bids) => top(bids) === winner) ? [] : [b.label];
+  if (top(eligible.filter((x) => x !== b)) !== winner) return [b.label];
+  let n = 0;
+  try {
+    for (const v of readingsOf(b)) { // lazily, stopping at the first reading that changes the winner
+      n++;
+      if (top(eligible.map((x) => (x === b ? v : x))) !== winner) return [b.label];
+    }
+  } catch { return [b.label]; } // too many readings to check: keep blocking
+  return n ? [] : [b.label];
 }
 
 // A rationale whose final line names the other decision contradicts the action; it must never be submitted.

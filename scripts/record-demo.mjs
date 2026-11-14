@@ -78,6 +78,22 @@ try {
   await caption('It can still bid, but a second chance costs more: the next attack would cost it 8x the bond.', 5000);
   await scrollTo('h2:has-text("ERC-8004")');
   await caption('The same history sits in the canonical ERC-8004 registry on Arc. Slashes from trusted marketplaces raise the bond here too.', 5500);
+  // 5a. escrow V4: the buyer never gets a slashed bond; it funds the bounty pool
+  const v4 = index.find((t) => /escrow V4/.test(t.label) && /slashed/.test(t.label));
+  if (v4) {
+    const r = JSON.parse(readFileSync(`public/tenders/${v4.id}.json`, 'utf8'));
+    const b = Object.values(r.bids).find((x) => x.slash && x.evidence);
+    await page.goto(`${BASE}/slash.html?t=${encodeURIComponent(v4.id)}&b=${encodeURIComponent(b.label)}`);
+    await page.locator('#result').filter({ hasText: /match|Couldn't reach/ }).waitFor({ timeout: 45_000 }).catch(() => {});
+    await caption('Escrow V4: the buyer that lists a slash never gets the bond. It waits out a 1-hour window in which two approvers can overturn it on-chain.', 6000);
+    await scrollTo('#result');
+    await caption('After the window it is final, and the bond goes to a bounty pool, not to the buyer. Your browser reads that status from Kite.', 5500);
+    await page.goto(`${BASE}/pool.html`);
+    await page.locator('#slashes').filter({ hasNotText: 'Reading' }).waitFor({ timeout: 45_000 }).catch(() => {});
+    await caption('Attackers fund the defence: the pool pays whoever finds a hole in the evaluator. Read live from the escrow.', 6000);
+    await page.goto(`${BASE}/buy.html`);
+    await caption('A human buyer can start from any public Open Contracting tender and pay the fee from a browser wallet, no gas.', 6000);
+  }
   // 5b. a tender on the public API with no operator token
   if (hosted) {
     await page.goto(`${BASE}/`);
