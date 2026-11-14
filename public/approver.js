@@ -19,7 +19,11 @@ const status = (msg, cls = '') => { $('status').className = `status ${cls}`; $('
 
 // Exactly the keys LelangEscrow._vote counts: keccak256(abi.encode("overturn", id, bidder)) / ("delivery", id, payWinner).
 const overturnKey = (id, bidder) => keccak256(encodeAbiParameters([{ type: 'string' }, { type: 'uint256' }, { type: 'address' }], ['overturn', id, bidder]));
-const deliveryKey = (id, pay) => keccak256(encodeAbiParameters([{ type: 'string' }, { type: 'uint256' }, { type: 'bool' }], ['delivery', id, pay]));
+// Escrows after V4 (timelocked: they have executeDelivery) count delivery votes per round, so the round is in the key.
+const timelocked = () => D.abi.some((f) => f.name === 'executeDelivery');
+const deliveryKey = (id, pay, round) => (round === undefined
+  ? keccak256(encodeAbiParameters([{ type: 'string' }, { type: 'uint256' }, { type: 'bool' }], ['delivery', id, pay]))
+  : keccak256(encodeAbiParameters([{ type: 'string' }, { type: 'uint256' }, { type: 'bool' }, { type: 'uint256' }], ['delivery', id, pay, round])));
 
 let D; // deployment
 let S; // chain snapshot
@@ -64,7 +68,12 @@ async function load() {
       if (rfq && String(rfq.escrow ?? '').toLowerCase() === address.toLowerCase()) rfqs[String(rfq.chainId)] = rfq;
     }));
   } catch { /* labels and evidence links are extras; the chain data stands alone */ }
-  S = { quorum, approvers, slashes, deliveries, tally, fmt, rfqs, now: Number(latest.timestamp), block: latest.number };
+  // timelocked escrow: the current vote round and any decision waiting out the timelock, per held balance
+  const queue = timelocked() ? Object.fromEntries(await Promise.all(deliveries.map(async (l) => [String(l.args.id), {
+    round: await client.readContract({ address, abi, functionName: 'deliveryRound', args: [l.args.id] }),
+    queued: await client.readContract({ address, abi, functionName: 'queuedDelivery', args: [l.args.id] }),
+  }]))) : {};
+  S = { quorum, approvers, slashes, deliveries, tally, fmt, rfqs, queue, now: Number(latest.timestamp), block: latest.number };
 }
 
 const votesHtml = (action) => {
@@ -75,13 +84,21 @@ const votesHtml = (action) => {
 const canVote = (action) => meApprover && !S.tally.get(action)?.voters.includes(me.toLowerCase());
 const btn = (label, fn, args, action, enabled) => `<button type="button" data-fn="${fn}" data-args="${esc(JSON.stringify(args))}" ${enabled && canVote(action) ? '' : 'disabled'}>${label}</button>`;
 
+// The buyer's signed delivery receipt (POST /api/rfqs/:id/receipt), shown next to the readers.
+function receipt(rfq) {
+  const r = rfq?.deliveryReceipt;
+  if (!r) return '';
+  return `<div class="advice"><strong>Buyer's signed receipt:</strong> received <strong>${esc(r.received)}</strong>${r.note ? ` · "${esc(r.note)}"` : ''}
+    <div class="kv">signed by ${ADDR(r.signer)}${r.recommendation ? ` · advice: ${esc(r.recommendation)}` : ''}${r.hash ? ` · hash <code>${esc(String(r.hash).slice(0, 18))}…</code>` : ''}${/^https:\/\/testnet\.kitescan\.ai\/tx\//.test(r.anchorTx ?? '') ? ` · <a href="${esc(r.anchorTx)}" target="_blank" rel="noopener">anchor tx</a>` : ''}</div></div>`;
+}
+
 function advisory(rfq) {
   const d = rfq?.deliveryDispute;
-  if (!d) return '';
+  if (!d) return receipt(rfq);
   const rec = typeof d.recommendation === 'string' ? d.recommendation : JSON.stringify(d.recommendation);
   const readers = Array.isArray(d.readers) ? d.readers.map((r) => (typeof r === 'string' ? r : (r.engine ? `${r.engine}: ${r.met === true ? 'met' : r.met === false ? 'not met' : 'no verified quote'}` : r.model ?? r.name ?? JSON.stringify(r)))).join(', ') : d.readers;
   return `<div class="advice"><strong>AI recommendation (advisory only, approvers decide):</strong> ${esc(rec)}
-    <div class="kv">${readers ? `read by ${esc(readers)} · ` : ''}${d.evidenceHash ? `evidence <code>${esc(String(d.evidenceHash).slice(0, 18))}…</code>` : ''}${d.anchorTx ? ` · ${String(d.anchorTx).startsWith('http') ? `<a href="${esc(d.anchorTx)}" target="_blank" rel="noopener">anchor tx</a>` : TX(d.anchorTx, 'anchor tx')}` : ''}</div></div>`;
+    <div class="kv">${readers ? `read by ${esc(readers)} · ` : ''}${d.evidenceHash ? `evidence <code>${esc(String(d.evidenceHash).slice(0, 18))}…</code>` : ''}${d.anchorTx ? ` · ${String(d.anchorTx).startsWith('http') ? `<a href="${esc(d.anchorTx)}" target="_blank" rel="noopener">anchor tx</a>` : TX(d.anchorTx, 'anchor tx')}` : ''}</div></div>${receipt(rfq)}`;
 }
 
 function render() {
@@ -107,12 +124,16 @@ function render() {
     const { id, winner, balance, deadline } = l.args;
     const due = Number(deadline) <= S.now;
     const rfq = S.rfqs[String(id)];
-    const pay = deliveryKey(id, true), refund = deliveryKey(id, false);
+    const q = S.queue[String(id)];
+    const pay = deliveryKey(id, true, q?.round), refund = deliveryKey(id, false, q?.round);
+    const [eta, queuedPay] = q?.queued ?? [0n, false];
+    const queued = eta ? `<div class="warn">Quorum reached: <strong>${queuedPay ? 'pay winner' : 'refund buyer'}</strong> queued, executable by anyone from ${esc(utc(eta))}. Until then the buyer can still confirm delivery, and a quorum for the other outcome replaces it.</div>
+      <button type="button" data-fn="executeDelivery" data-args="${esc(JSON.stringify([String(id)]))}" ${Number(eta) <= S.now ? '' : 'disabled'}>Execute decision</button>` : '';
     return `<div class="item"><div><strong>Tender #${esc(id)}</strong>${rfq ? ` · ${esc(rfq.title)}` : ''} · ${esc(S.fmt(balance, id))} held for ${ADDR(winner)}</div>
       <div class="kv">${due ? `<span class="warn">delivery deadline passed ${esc(utc(deadline))}; the buyer has not confirmed: approvers decide</span>` : `buyer can confirm until ${esc(utc(deadline))}; approvers can only vote after that`} · ${TX(l.transactionHash, 'settle tx')}${rfq ? ` · <a href="tenders/${encodeURIComponent(rfq.id)}.json">tender record</a>` : ''}</div>
       ${advisory(rfq)}
       <div>Pay winner: ${votesHtml(pay)} · Refund buyer: ${votesHtml(refund)}</div>
-      ${btn('Vote: pay winner', 'resolveDelivery', [String(id), true], pay, due)}${btn('Vote: refund buyer', 'resolveDelivery', [String(id), false], refund, due)}</div>`;
+      ${btn('Vote: pay winner', 'resolveDelivery', [String(id), true], pay, due && !(eta && queuedPay))}${btn('Vote: refund buyer', 'resolveDelivery', [String(id), false], refund, due && !(eta && !queuedPay))}${queued}</div>`;
   }).join('') : '<p class="kv">Nothing held: every balance was confirmed or resolved.</p>';
 }
 
@@ -148,13 +169,13 @@ $('connect').addEventListener('click', async () => {
 document.querySelector('main').addEventListener('click', async (e) => {
   const b = e.target.closest('button[data-fn]');
   if (!b || b.disabled) return;
-  const fn = b.dataset.fn, [id, x] = JSON.parse(b.dataset.args);
+  const fn = b.dataset.fn, [id, ...rest] = JSON.parse(b.dataset.args);
   b.disabled = true;
   try {
     const from = await wallet();
-    const data = encodeFunctionData({ abi: D.abi, functionName: fn, args: [BigInt(id), x] });
+    const data = encodeFunctionData({ abi: D.abi, functionName: fn, args: [BigInt(id), ...rest] });
     const hash = await window.ethereum.request({ method: 'eth_sendTransaction', params: [{ from, to: D.escrow.address, data }] });
-    status(`Vote sent: ${TX(hash)}. Waiting for Kite…`);
+    status(`${fn === 'executeDelivery' ? 'Execution' : 'Vote'} sent: ${TX(hash)}. Waiting for Kite…`);
     const r = await client.waitForTransactionReceipt({ hash });
     status(r.status === 'success' ? `Vote recorded: ${TX(hash)}` : `Reverted: ${TX(hash)}`, r.status === 'success' ? 'ok' : 'bad');
     await load();

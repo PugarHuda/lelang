@@ -28,7 +28,15 @@
   --serif: "Inter Tight", system-ui, sans-serif;  /* name kept for page styles that reference it */
   --sans: "Inter Tight", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
-  color-scheme: light;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #0d0e11; --paper: #17181d; --sheet: #202127; --ink: #eceef2; --ink-2: #b9bdc6; --mute: #8a8f99;
+    --line: #2b2d34; --rule: #3a3d45; --tint: #262830; --acc: #a996ff; --purple: #8f75ff;
+    --ok: #4ccb8a; --ok-bg: #12291e; --bad: #ff7b6e; --bad-bg: #2e1715; --warn: #f0b75a; --warn-bg: #2b2213; --mark: #5b4a10;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.6);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -48,18 +56,8 @@ mark { background: var(--mark); color: inherit; padding: 0 2px; border-radius: 3
 strong, b { font-weight: 600; }
 :focus-visible { outline: 2px solid var(--purple); outline-offset: 3px; }
 
-/* ---- floating pill nav, same on every page ---- */
-.mast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; max-width: calc(100% - 24px); }
-.mast-in { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,.88); backdrop-filter: blur(14px); border: 1px solid rgba(0,0,0,.05); box-shadow: var(--shadow); border-radius: 14px; padding: 6px 6px 6px 14px; }
-.mark-word { display: inline-flex; align-items: center; gap: 7px; font: 600 16px/1 var(--sans); letter-spacing: -.03em; color: var(--ink); text-decoration: none; margin-right: 10px; flex: none; }
-.mark-word::before { content: ""; width: 18px; height: 18px; border-radius: 6px; background: radial-gradient(circle at 50% 50%, #fff 0 3px, transparent 3.5px), linear-gradient(155deg, #a993ff, var(--purple) 50%, #5b3fe0); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
-.mark-word span { display: none; }
-.mast nav { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
-.mast nav a { font: 400 13px/1 var(--sans); color: var(--ink-2); text-decoration: none; padding: 8px 9px; border-radius: 9px; white-space: nowrap; }
-.mast nav a:hover { background: var(--sheet); }
-.mast nav a[aria-current="page"] { background: var(--sheet); color: var(--ink); font-weight: 500; }
-.mast nav a[href="buy.html"] { order: 9; background: var(--ink); color: #fff; margin-left: 6px; padding: 9px 14px; border-radius: 10px; }
-.mast nav a[href="buy.html"][aria-current="page"] { background: var(--purple); }
+/* nav: nav.css (shared with the landing page) */
+.share img { display: block; width: 100%; max-width: 560px; height: auto; border-radius: 14px; box-shadow: var(--shadow); margin: 14px 0 8px; }
 
 /* ---- type ---- */
 h1 { font: 500 clamp(34px, 5vw, 58px)/1.02 var(--sans); letter-spacing: -.045em; margin: 4px 0 14px; text-wrap: balance; }
@@ -83,7 +81,7 @@ main h2::before { counter-increment: sec; content: counter(sec, decimal-leading-
 /* ---- stamps: verdicts read at a glance ---- */
 .bid .st, #proof > p:first-child > strong, #result > p:first-child > strong {
   display: inline-block; font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
-  border: 1.5px solid currentColor; border-radius: 7px; padding: 6px 8px 5px; margin: 2px 0 8px; background: #fff;
+  border: 1.5px solid currentColor; border-radius: 7px; padding: 6px 8px 5px; margin: 2px 0 8px; background: var(--paper);
 }
 .bid .st.ok, #proof strong.ok, #result strong.ok { background: var(--ok-bg); }
 .bid .st.bad, #proof strong.bad, #result strong.bad { background: var(--bad-bg); }
@@ -93,8 +91,8 @@ main h2::before { counter-increment: sec; content: counter(sec, decimal-leading-
 
 /* bid cards: winner and slashed bids carry an outline in their colour */
 .bid { position: relative; }
-.bid.win { box-shadow: inset 0 0 0 1.5px var(--ok); background: #fff; }
-.bid:has(.st.bad) { box-shadow: inset 0 0 0 1.5px var(--bad); background: #fff; }
+.bid.win { box-shadow: inset 0 0 0 1.5px var(--ok); background: var(--paper); }
+.bid:has(.st.bad) { box-shadow: inset 0 0 0 1.5px var(--bad); background: var(--paper); }
 .bid .kv { margin-top: 4px; font-variant-numeric: tabular-nums; }
 .bar { height: 6px; background: var(--line); margin: 6px 0 8px; border-radius: 3px; overflow: hidden; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, #a993ff, var(--purple)); border-radius: 3px; }
 .bid.win .bar i { background: linear-gradient(90deg, #5fd39a, var(--ok)); }
@@ -102,7 +100,7 @@ main h2::before { counter-increment: sec; content: counter(sec, decimal-leading-
 details { margin-top: 8px; }
 summary { cursor: pointer; font: 500 12px/1.6 var(--mono); color: var(--ink-2); }
 details[open] > summary { margin-bottom: 6px; }
-details pre { background: #fff; padding: 12px 14px; border-radius: 12px; margin: 6px 0; }
+details pre { background: var(--paper); padding: 12px 14px; border-radius: 12px; margin: 6px 0; }
 
 /* ---- the ledger: trace, settlement and proof rows ---- */
 ol { list-style: none; padding: 0; margin: 0; }
@@ -131,17 +129,17 @@ td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; font-family:
 
 /* ---- controls ---- */
 button {
-  font: 500 14px/1 var(--sans); background: var(--ink); color: #fff;
+  font: 500 14px/1 var(--sans); background: var(--ink); color: var(--paper);
   border: 0; border-radius: 10px; padding: 12px 18px; cursor: pointer; transition: transform .15s, background .15s;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 18px -10px rgba(12,13,16,.6);
 }
-button:hover:not(:disabled) { background: #26282e; transform: translateY(-1px); }
+button:hover:not(:disabled) { background: var(--ink-2); transform: translateY(-1px); }
 button:disabled { opacity: .45; cursor: default; }
-button.ghost { background: #fff; color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+button.ghost { background: var(--paper); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
 button.ghost:hover:not(:disabled) { background: var(--sheet); }
 label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
 label.kv { font-weight: 400; }
-input, textarea, select { width: 100%; font: inherit; color: var(--ink); background: #fff; border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; transition: border-color .15s, box-shadow .15s; }
+input, textarea, select { width: 100%; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; transition: border-color .15s, box-shadow .15s; }
 input:focus, textarea:focus, select:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,92,255,.16); }
 input[type="number"] { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 input[type="file"] { padding: 8px; font-size: 13px; }
@@ -185,7 +183,6 @@ a.tile:hover { transform: translateY(-2px); }
 /* ---- small screens ---- */
 @media (max-width: 720px) {
   .intro { grid-template-columns: 1fr; }
-  .mark-word { margin-right: 4px; }
 }
 @media (max-width: 600px) {
   body { font-size: 14.5px; padding: 76px 8px 8px; }
@@ -203,3 +200,7 @@ a.tile:hover { transform: translateY(-2px); }
 /* hashes may break anywhere, words in table cells may not ("matc / h") */
 .card table, table { overflow-wrap: break-word; }
 #result tr:first-child th { border-bottom-color: var(--line); }
+
+/* JetBrains Mono would draw "<!--" as an arrow: evidence must read exactly as typed. !important because every
+   `font:` shorthand resets ligature settings. */
+* { font-variant-ligatures: none !important; font-feature-settings: "calt" 0, "liga" 0 !important; }

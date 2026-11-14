@@ -22,6 +22,8 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 - **[Approver console](https://lelang-ten.vercel.app/approver.html)**: what the approver quorum can still act on (slashes in their challenge window, held balances past their deadline), read from V4; an approver votes from a browser wallet.
 - **[Proof page of a slash](https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&b=Bid%20E)**: the hidden text highlighted in the bid; your browser hashes it and compares with Kite.
 - **[Overview](https://lelang-ten.vercel.app)**: the one-page tour: the slashed text, the video, how a tender runs, live numbers from Kite and what did not work.
+- **[Try to fool the evaluator](https://lelang-ten.vercel.app/landing.html#try)**: replay any measured attack for free, or pay 0.05 test PYUSD from a browser wallet and have the live evaluator judge your own paragraph. A win pays a bounty from the pool of slashed bonds.
+- **Slash receipts**: every slashed bid has a share card with Open Graph tags, e.g. [tender #8, Bid E](https://lelang-ten.vercel.app/r/rfq-mwdt4xm3-bide.html) (made by `scripts/og.mjs`).
 - **[Live dashboard](https://lelang-ten.vercel.app/index.html)**: 18 real tenders on Kite testnet across four escrow versions, each re-verified against the chain in your browser.
 - **[Attack gallery](https://lelang-ten.vercel.app/attacks.html)**: every attack we threw at it, word for word, with what happened.
 - **[Bid on a tender](https://lelang-ten.vercel.app/bid.html)**: for a human supplier, wallet in the browser.

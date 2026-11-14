@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery, publishedTenders } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery, deliveryReceipt, publishedTenders } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo } from './kite.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -304,6 +304,15 @@ createServer(async (req, res) => {
       if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
       const { evidence } = await body(req);
       return json(res, 200, await disputeDelivery(dd[1], evidence));
+    }
+    // V4: the buyer of record's signed delivery receipt. No token: the EIP-191 signature by the x402 payer (or our buyer
+    // wallet) is the authorization; a token without it proves nothing about who received the goods (see deliveryReceipt).
+    const rc = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/receipt$/);
+    if (rc && req.method === 'POST') {
+      if (!getRfq(rc[1])) return json(res, 404, { error: 'not found' });
+      const { message, signature } = await body(req);
+      if (typeof message !== 'string' || message.length > 1000 || !/^0x[0-9a-fA-F]{130}$/.test(signature ?? '')) bad('message (the receipt text) and signature (65-byte hex) required');
+      return json(res, 200, await deliveryReceipt(rc[1], { message, signature }));
     }
     // An approver's on-chain overturn vote (sent with its own key by scripts/decide-appeal.js), linked into the trace.
     const ot = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/overturn-tx$/);

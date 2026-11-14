@@ -293,6 +293,55 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   assert.equal(deliveryRecommendation([r(false), r(null, false)]), 'human-review');
   assert.equal(deliveryRecommendation([r(true)]), 'human-review'); // one reader is not enough
   assert.equal(deliveryRecommendation([]), 'human-review');
+  // a signed receipt: "complete" is the buyer admitting delivery; anything less never refunds on its own
+  const rc = (received) => ({ received });
+  assert.equal(deliveryRecommendation([], rc('complete')), 'pay-winner');
+  assert.equal(deliveryRecommendation([r(false), r(false)], rc('complete')), 'pay-winner');
+  assert.equal(deliveryRecommendation([], rc('not received')), 'human-review');
+  assert.equal(deliveryRecommendation([], rc('partial')), 'human-review');
+  assert.equal(deliveryRecommendation([r(false), r(false)], rc('not received')), 'refund-buyer'); // readers agree with it
+  assert.equal(deliveryRecommendation([r(true), r(true)], rc('not received')), 'human-review'); // buyer contradicts readers
+  assert.equal(deliveryRecommendation([r(true), r(false)], rc('partial')), 'human-review');
+}
+// Delivery receipt template: one builder/parser on the server, a copy in public/buy.js, both pinned to this fixture
+{
+  const { receiptMessage, parseReceipt } = await import('../src/lelang.js');
+  const { readFileSync } = await import('node:fs');
+  const FIXTURE = 'LELANG delivery receipt\ntender: rfq-abc123\nwinner: Bid B\nreceived: partial\nnote: 180 of 200 laptops, 20 back-ordered';
+  const args = { rfqId: 'rfq-abc123', winner: 'Bid B', received: 'partial', note: '180 of 200 laptops, 20 back-ordered' };
+  assert.equal(receiptMessage(args), FIXTURE);
+  const src = /^const receiptMessage = (.+);$/m.exec(readFileSync(new URL('../public/buy.js', import.meta.url), 'utf8'))?.[1];
+  assert.ok(src, 'public/buy.js defines receiptMessage on one line');
+  assert.equal(new Function(`return ${src}`)()(args), FIXTURE, 'browser builder matches the server template');
+  assert.deepEqual(parseReceipt(FIXTURE), args);
+  assert.deepEqual(parseReceipt(receiptMessage({ ...args, note: '' })), { ...args, note: '' });
+  for (const t of ['not received', 'complete']) assert.equal(parseReceipt(receiptMessage({ ...args, received: t })).received, t);
+  // tampering: every edit that isn't a valid template is refused
+  for (const bad of [FIXTURE.replace('partial', 'completely'), FIXTURE.replace('received: partial', 'received: complete\nnote: x'), `${FIXTURE}\nextra`,
+    FIXTURE.replace('LELANG', 'lelang'), ` ${FIXTURE}`, FIXTURE.replace(/note: .*/, `note: ${'x'.repeat(301)}`), undefined, 42]) assert.equal(parseReceipt(bad), null);
+  assert.throws(() => receiptMessage({ ...args, received: 'yes' }), /received must be/);
+  assert.throws(() => receiptMessage({ ...args, note: 'a\nreceived: complete' }), /one line/);
+  assert.throws(() => receiptMessage({ ...args, note: 'x'.repeat(301) }), /300/);
+  // a changed receipt no longer verifies against the buyer's signature
+  const buyer = privateKeyToAccount(generatePrivateKey());
+  const signature = await buyer.signMessage({ message: FIXTURE });
+  assert.equal(await verifyMessage({ address: buyer.address, message: FIXTURE, signature }), true);
+  assert.equal(await verifyMessage({ address: buyer.address, message: FIXTURE.replace('partial', 'complete'), signature }), false);
+}
+// New-address bond surcharge: a wallet with no history locks 2x base; an unreadable chain never surcharges
+{
+  const { newAddressCheck } = await import('../src/lelang.js');
+  assert.equal(newAddressCheck({ txCount: 0, priorCommits: 0 }, 5).newAddress, true);
+  assert.equal(newAddressCheck({ txCount: 4, priorCommits: 0 }, 5).newAddress, true);
+  assert.equal(newAddressCheck({ txCount: 5, priorCommits: 0 }, 5).newAddress, false);
+  assert.equal(newAddressCheck({ txCount: 0, priorCommits: 1 }, 5).newAddress, false); // bid on Lelang before
+  const err = newAddressCheck({ error: 'rpc down' }, 5);
+  assert.equal(err.newAddress, false);
+  assert.match(err.reason, /rpc down/);
+  assert.equal(requiredBond(0.05, 0, true), 0.1); // like one proven slash
+  assert.equal(requiredBond(0.05, 1, true), 0.2);
+  assert.equal(requiredBond(0.05, 4, true), 0.8); // still capped at 16x
+  assert.equal(requiredBond(0.05, 0, false), 0.05);
 }
 // Quality anchor: one hash over [{label, engine, score, quote}] in label order; any edit to a published rating changes it
 {

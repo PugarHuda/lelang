@@ -186,8 +186,16 @@ export async function escrowDelivery(chainId, escrow) {
   if (!e || !escrowV4(e.abi)) return null;
   const [winner, balance, fee, deadline, closed] = await pub.readContract({ address: e.address, abi: e.abi, functionName: 'deliveries', args: [BigInt(chainId)] });
   const { decimals } = await tokenInfo();
-  return { winner, balance: formatUnits(balance, decimals), fee: formatUnits(fee, decimals), deadline: Number(deadline), closed };
+  const out = { winner, balance: formatUnits(balance, decimals), fee: formatUnits(fee, decimals), deadline: Number(deadline), closed };
+  if (deliveryTimelocked(e.abi)) {
+    const [eta, payWinner] = await pub.readContract({ address: e.address, abi: e.abi, functionName: 'queuedDelivery', args: [BigInt(chainId)] });
+    out.queued = eta ? { eta: Number(eta), payWinner } : null;
+  }
+  return out;
 }
+// Escrows after V4 queue the approvers' delivery decision behind a timelock (executeDelivery moves the money); the live
+// V4 escrow pays at the quorum vote. Chosen per escrow by its ABI, so tenders on either keep working.
+export const deliveryTimelocked = (abi = ESCROW_ABI) => (abi ?? []).some((f) => f.name === 'executeDelivery');
 // Forfeited bonds waiting to pay bounties, in the tender token.
 export async function bountyPool() {
   if (!escrowV4()) return null;
@@ -218,6 +226,22 @@ async function slashHistoryIn({ address, abi, block }, bidder) {
     buyers.set(id, buyer);
   }
   return logs.map((l) => ({ escrow: address, tender: l.args.id.toString(), bidder: l.args.bidder, buyer: buyers.get(l.args.id), evidenceHash: l.args.evidenceHash, proven: BigInt(l.args.evidenceHash) !== 0n, tx: explorerTx(l.transactionHash) }));
+}
+
+// Wallet history for the new-address bond surcharge: transactions sent on Kite and Committed events on every Lelang
+// escrow. With `here` (a tender this address already bid on), both are read as of that commit: the count is the commit
+// tx's own nonce and only earlier commits count, so the approve/commit for this bid (or a quick bid elsewhere) can't age
+// a fresh wallet. ponytail: the approve before the commit still counts, so evaluation is at most one tx more lenient
+// than the quote, never stricter.
+export async function addressHistory(addr, here) {
+  const commits = [];
+  for (const e of escrows().filter((x) => x.abi?.length)) {
+    const logs = await pub.getContractEvents({ address: e.address, abi: e.abi, eventName: 'Committed', args: { bidder: addr }, fromBlock: BigInt(e.block ?? 0) });
+    commits.push(...logs.map((l) => ({ escrow: e.address.toLowerCase(), tender: l.args.id.toString(), block: l.blockNumber, tx: l.transactionHash })));
+  }
+  const own = here && commits.find((c) => c.escrow === String(here.escrow).toLowerCase() && c.tender === String(here.chainId));
+  if (!own) return { txCount: await pub.getTransactionCount({ address: addr }), priorCommits: commits.length };
+  return { txCount: (await pub.getTransaction({ hash: own.tx })).nonce, priorCommits: commits.filter((c) => c.block < own.block).length };
 }
 
 export const escrowAddress = () => ESCROW();

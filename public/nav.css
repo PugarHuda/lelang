@@ -1,0 +1,24 @@
+/* The one nav: identical markup and order on every page (landing included), only aria-current moves.
+   Floating pill; on narrow screens the links scroll sideways instead of disappearing. */
+.mast { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 50; width: max-content; max-width: calc(100% - 24px); }
+.mast-in { display: flex; align-items: center; gap: 4px; background: rgba(255,255,255,.88); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border: 1px solid rgba(0,0,0,.06); box-shadow: 0 1px 2px rgba(16,18,24,.04), 0 12px 32px -12px rgba(16,18,24,.18); border-radius: 14px; padding: 6px 6px 6px 14px; }
+.mark-word { display: inline-flex; align-items: center; gap: 7px; font: 600 16px/1 "Inter Tight", system-ui, sans-serif; letter-spacing: -.03em; color: #0c0d10; text-decoration: none; margin-right: 8px; flex: none; }
+.mark-word::before { content: ""; width: 18px; height: 18px; border-radius: 6px; background: radial-gradient(circle at 50% 50%, #fff 0 3px, transparent 3.5px), linear-gradient(155deg, #a993ff, #7b5cff 50%, #5b3fe0); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); }
+.mast nav { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.mast nav::-webkit-scrollbar { display: none; }
+.mast nav a { font: 400 13px/1 "Inter Tight", system-ui, sans-serif; color: #3d4149; text-decoration: none; padding: 8px 9px; border-radius: 9px; white-space: nowrap; }
+.mast nav a:hover { background: #f1f2f5; color: #0c0d10; }
+.mast nav a[aria-current="page"] { background: #eceaff; color: #4b2fd6; font-weight: 500; }
+.mast nav .sep { flex: none; width: 1px; height: 18px; background: #e1e3e8; margin: 0 4px; }
+.mast nav a.cta { background: #0c0d10; color: #fff; padding: 9px 14px; border-radius: 10px; margin-left: 2px; }
+.mast nav a.cta:hover { background: #26282e; color: #fff; }
+.mast nav a.cta[aria-current="page"] { background: #7b5cff; color: #fff; }
+@media (max-width: 720px) { .mark-word { margin-right: 2px; } .mast nav .sep { display: none; } }
+@media (prefers-color-scheme: dark) {
+  .mast-in { background: rgba(24,25,30,.86); border-color: rgba(255,255,255,.08); }
+  .mark-word { color: #f1f2f5; }
+  .mast nav a { color: #b8bcc6; } .mast nav a:hover { background: #2a2c33; color: #fff; }
+  .mast nav a[aria-current="page"] { background: #2d2758; color: #c9bcff; }
+  .mast nav .sep { background: #33353d; }
+  .mast nav a.cta { background: #f1f2f5; color: #0c0d10; } .mast nav a.cta:hover { background: #fff; color: #0c0d10; }
+}

@@ -305,9 +305,65 @@ describe('LelangEscrow', () => {
       await escrow.connect(p1).resolveDelivery(id, false);
       await escrow.connect(p2).resolveDelivery(id, true); // a split vote does nothing
       expect((await escrow.deliveries(id)).closed).to.equal(false);
-      await expect(escrow.connect(p2).resolveDelivery(id, false)).to.emit(escrow, 'DeliveryClosed').withArgs(id, buyer.address, BAL + FEE, false);
+      await expect(escrow.connect(p2).resolveDelivery(id, false)).to.emit(escrow, 'DeliveryQueued').and.not.to.emit(escrow, 'DeliveryClosed');
+      await time.increase(LOCK);
+      await expect(escrow.connect(buyer).executeDelivery(id)).to.emit(escrow, 'DeliveryClosed').withArgs(id, buyer.address, BAL + FEE, false);
       expect(await token.balanceOf(buyer.address)).to.equal(b0 + BAL + FEE);
       await expect(escrow.confirmDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+    });
+    const LOCK = 3600; // LelangEscrow.DELIVERY_TIMELOCK
+    it('the quorum only queues; anyone executes after the timelock, not before, and only once', async () => {
+      const { escrow, token, a, outsider, approvers: [p1, p2], id } = await awarded(BAL, 100);
+      expect(await escrow.DELIVERY_TIMELOCK()).to.equal(BigInt(LOCK));
+      await time.increase(100);
+      await expect(escrow.executeDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase'); // nothing queued
+      await escrow.connect(p1).resolveDelivery(id, true);
+      const tx = escrow.connect(p2).resolveDelivery(id, true);
+      await expect(tx).to.emit(escrow, 'DeliveryQueued');
+      const q = await escrow.queuedDelivery(id);
+      expect(q.payWinner).to.equal(true);
+      await expect(escrow.connect(outsider).executeDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase'); // too early
+      await expect(escrow.connect(p1).resolveDelivery(id, true)).to.be.revertedWithCustomError(escrow, 'WrongPhase'); // already queued
+      await time.increaseTo(q.eta);
+      const a0 = await token.balanceOf(a.address);
+      await expect(escrow.connect(outsider).executeDelivery(id)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, BAL, true);
+      expect(await token.balanceOf(a.address)).to.equal(a0 + BAL);
+      await expect(escrow.connect(outsider).executeDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+      expect(await token.balanceOf(await escrow.getAddress())).to.equal(0n);
+    });
+    it('the buyer confirming during the queue wins over a queued refund', async () => {
+      const { escrow, token, a, approvers: [p1, p2], id } = await awarded(BAL, 100);
+      await time.increase(100);
+      await escrow.connect(p1).resolveDelivery(id, false);
+      await escrow.connect(p2).resolveDelivery(id, false);
+      const a0 = await token.balanceOf(a.address);
+      await expect(escrow.confirmDelivery(id)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, BAL, true);
+      expect(await token.balanceOf(a.address)).to.equal(a0 + BAL);
+      expect((await escrow.queuedDelivery(id)).eta).to.equal(0n);
+      await time.increase(LOCK);
+      await expect(escrow.executeDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+    });
+    it('a quorum for the opposite outcome replaces the queued decision and restarts the clock; old votes do not count again', async () => {
+      const { escrow, token, a, buyer, approvers: [p1, p2], id } = await awarded(BAL, 100);
+      await time.increase(100);
+      await escrow.connect(p1).resolveDelivery(id, false);
+      await escrow.connect(p2).resolveDelivery(id, false); // refund queued
+      const first = (await escrow.queuedDelivery(id)).eta;
+      await time.increase(LOCK / 2);
+      await escrow.connect(p1).resolveDelivery(id, true);
+      await expect(escrow.connect(p2).resolveDelivery(id, true)).to.emit(escrow, 'DeliveryQueued'); // pay replaces refund
+      const q = await escrow.queuedDelivery(id);
+      expect(q.payWinner).to.equal(true);
+      expect(q.eta).to.be.greaterThan(first);
+      await time.increaseTo(first);
+      await expect(escrow.executeDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase'); // the old eta is gone
+      // round 2: p1's round-0 refund vote doesn't count, one new vote alone can't flip it back
+      await expect(escrow.connect(p1).resolveDelivery(id, false)).not.to.emit(escrow, 'DeliveryQueued');
+      await time.increaseTo(q.eta);
+      const b0 = await token.balanceOf(buyer.address), a0 = await token.balanceOf(a.address);
+      await expect(escrow.executeDelivery(id)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, BAL, true);
+      expect(await token.balanceOf(a.address)).to.equal(a0 + BAL);
+      expect(await token.balanceOf(buyer.address)).to.equal(b0);
     });
   });
 
@@ -331,7 +387,9 @@ describe('LelangEscrow', () => {
         await expect(escrow.connect(ap[j]).overturnSlash(id, c.address)).to.emit(escrow, 'SlashOverturned');
         await time.increase(100);
         await expect(escrow.connect(ap[i]).resolveDelivery(id, true)).not.to.emit(escrow, 'DeliveryClosed');
-        await expect(escrow.connect(ap[j]).resolveDelivery(id, true)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, ethers.parseUnits('9', 18), true);
+        await expect(escrow.connect(ap[j]).resolveDelivery(id, true)).to.emit(escrow, 'DeliveryQueued');
+        await time.increase(3600); // DELIVERY_TIMELOCK
+        await expect(escrow.executeDelivery(id)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, ethers.parseUnits('9', 18), true);
       });
     }
     it('one approver alone, voting twice, or a non-approver cannot act', async () => {
@@ -478,7 +536,7 @@ describe('LelangEscrow', () => {
         expect(await token.balanceOf(buyer.address)).to.be.lessThanOrEqual(buyer0); // invariant 4
         const overturn = slash.filter(() => rnd(2) === 0);
         for (const s of overturn) { await escrow.connect(p1).overturnSlash(id, s.address); await escrow.connect(p2).overturnSlash(id, s.address); }
-        if (balance) { if (rnd(2)) await escrow.confirmDelivery(id); else { await time.increase(100); await escrow.connect(p1).resolveDelivery(id, true); await escrow.connect(p2).resolveDelivery(id, true); } }
+        if (balance) { if (rnd(2)) await escrow.confirmDelivery(id); else { await time.increase(100); await escrow.connect(p1).resolveDelivery(id, true); await escrow.connect(p2).resolveDelivery(id, true); await time.increase(3600); await escrow.executeDelivery(id); } }
         await time.increase(CHALLENGE);
         for (const s of slash.filter((x) => !overturn.includes(x))) await escrow.finalizeSlash(id, s.address);
       }

@@ -9,6 +9,7 @@ import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
   escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory, escrowTimes,
   escrowV4, escrowFor, escrowPending, escrowFinalizeSlash, escrowConfirmDelivery, escrowQuorum, overturnedIn, escrowDelivery, anchorHash,
+  addressHistory, deliveryTimelocked,
 } from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
@@ -85,15 +86,36 @@ export async function bondQuote(rfqId, supplier, agentId) {
 async function bondQuoteFresh(rfq, supplier, agentId) {
   const priors = rfq.chainId ? provenPriors(await slashHistory(supplier), rfq, trustedBuyers(), overturnedSlashes()) : [];
   const ext = rfq.chainId ? await outsideReputation(supplier, agentId) : { externalSlashes: 0 };
-  return { base: rfq.bondPie, required: requiredBond(rfq.bondPie, priors.length + ext.externalSlashes), provenSlashes: priors.map(({ escrow, tender, tx }) => ({ escrow, tender, tx })), erc8004: ext };
+  const fresh = rfq.chainId ? await freshness(supplier) : { newAddress: false, reason: 'off-chain tender: no address history read' };
+  return { base: rfq.bondPie, required: requiredBond(rfq.bondPie, priors.length + ext.externalSlashes, fresh.newAddress), provenSlashes: priors.map(({ escrow, tender, tx }) => ({ escrow, tender, tx })), erc8004: ext,
+    newAddress: fresh.newAddress, newAddressReason: fresh.reason, addressHistory: fresh.history };
 }
+// Sybil speed bump: a slashed supplier's cheapest move is a fresh wallet, so a wallet with no history locks 2x base,
+// like a bidder with one proven slash. "No history" = fewer than NEW_ADDRESS_MIN_TXS transactions sent on Kite AND no
+// Committed event on any Lelang escrow. An unreadable chain never blocks a bid: no surcharge, the error is reported
+// (same stance as outsideReputation).
+// ponytail: a patient attacker ages wallets with a few self-transfers; a Kite Passport identity check would close it.
+export const newAddressMinTxs = () => Number(process.env.NEW_ADDRESS_MIN_TXS ?? 5);
+export function newAddressCheck(history, threshold = newAddressMinTxs()) {
+  if (history.error) return { newAddress: false, reason: `address history unreadable (${history.error}): no new-address surcharge` };
+  const { txCount, priorCommits } = history;
+  if (priorCommits > 0) return { newAddress: false, reason: `${priorCommits} earlier Lelang bid(s)` };
+  if (txCount >= threshold) return { newAddress: false, reason: `${txCount} transactions on Kite (at least ${threshold})` };
+  return { newAddress: true, reason: `new address: ${txCount} transaction(s) on Kite (under ${threshold}) and no earlier Lelang bid, so it locks 2x the base bond` };
+}
+// `here` (the tender being evaluated) makes the history "as of this bid's commit", so the bid itself never ages the wallet.
+const freshness = async (supplier, here) => {
+  const history = await addressHistory(supplier, here).catch((e) => ({ error: e.shortMessage ?? e.message }));
+  return { ...newAddressCheck(history), history };
+};
 // Slashes on marketplaces the operator trusts, read from ERC-8004 on Arc. In a quote an unreadable registry is
 // reported as an error; at evaluation it sends the bid to a human when trusted marketplaces are configured.
 const outsideReputation = (supplier, agentId) => externalReputation(supplier, agentId, trustedBuyers()).catch((e) => ({ externalSlashes: 0, error: e.shortMessage ?? e.message }));
 // Price of a second chance: a bidder with n proven slashes must lock base x 2^n (capped at 16x) to compete normally.
 // Less than that and it can still bid, but it can't win without a human looking first.
+// A new address (newAddressCheck) pays like one more slash.
 // ponytail: fixed doubling; a buyer-set schedule if someone needs a different curve.
-export const requiredBond = (base, priors) => +(base * 2 ** Math.min(priors, 4)).toFixed(6);
+export const requiredBond = (base, priors, newAddress = false) => +(base * 2 ** Math.min(priors + (newAddress ? 1 : 0), 4)).toFixed(6);
 // What the public may see. Full documents only where they are evidence (slashed bids) or the contract (the settled
 // winner); every other bid keeps its document hash and extracted terms (enough to re-run the formula), and its owner
 // can still prove the text with its own salt. Before an award no document is public.
@@ -122,11 +144,30 @@ export const qualityRows = (bids) => [...bids].filter((b) => b.quality).sort((a,
   .flatMap((b) => b.quality.readers.map(({ engine, score, quote }) => ({ label: b.label, engine, score, quote })));
 export const qualityHash = (bids) => keccak256(toHex(JSON.stringify(qualityRows(bids))));
 // Advisory only: both readers must agree with verified quotes; one reader, a disagreement or an unverified quote -> a human.
-export function deliveryRecommendation(readers) {
+// A buyer-signed receipt is evidence too, but only against the buyer's own interest: "complete" admits delivery and
+// recommends paying even with no readers; "partial"/"not received" is a claim by an interested party, so it never
+// refunds on its own and turns the readers' "pay" into a human review.
+export function deliveryRecommendation(readers, receipt) {
+  if (receipt?.received === 'complete') return 'pay-winner';
   const sure = readers.length === 2 && readers.every((r) => r.verified && typeof r.met === 'boolean');
-  if (sure && readers.every((r) => r.met)) return 'pay-winner';
+  if (sure && readers.every((r) => r.met)) return receipt ? 'human-review' : 'pay-winner';
   if (sure && readers.every((r) => !r.met)) return 'refund-buyer';
   return 'human-review';
+}
+// The buyer's delivery receipt (EIP-191). One fixed template, built and parsed here; public/buy.js has a copy of the
+// builder (it can't import src), and scripts/selftest.js checks both against the same fixture.
+export const RECEIVED = ['complete', 'partial', 'not received'];
+export function receiptMessage({ rfqId, winner, received, note = '' }) {
+  if (!RECEIVED.includes(received)) fail(`received must be one of: ${RECEIVED.join(', ')}`);
+  if (typeof note !== 'string' || note.length > 300 || /[\r\n]/.test(note)) fail('note: one line, at most 300 characters');
+  return `LELANG delivery receipt\ntender: ${rfqId}\nwinner: ${winner}\nreceived: ${received}\nnote: ${note}`;
+}
+// Strict: anything that doesn't rebuild to the exact same text is not a receipt.
+export function parseReceipt(message) {
+  const m = /^LELANG delivery receipt\ntender: ([\w-]+)\nwinner: ([^\n]+)\nreceived: (complete|partial|not received)\nnote: ([^\r\n]{0,300})$/.exec(String(message ?? ''));
+  if (!m) return null;
+  const r = { rfqId: m[1], winner: m[2], received: m[3], note: m[4] };
+  return receiptMessage(r) === message ? r : null;
 }
 export function readersDisagree(a, b) {
   const get = (t, f) => f.split('.').reduce((o, k) => o?.[k], t) ?? null;
@@ -379,21 +420,26 @@ export async function evaluate(rfqId) {
         bid.externalSlashes = ext;
         log(rfq, 'reputation', `${bid.label}: ${ext.externalSlashes} slash(es) recorded by a trusted marketplace in ERC-8004 (agent #${ext.agentId} on Arc)`);
       }
-      if (priors?.length || ext.externalSlashes) {
+      // Same new-address rule as the quote, read as of this bid's own commit (bondQuoteFresh / newAddressCheck).
+      const fresh = await freshness(bid.supplier, rfq);
+      if (fresh.history.error) log(rfq, 'reputation', `${bid.label}: ${fresh.reason}`);
+      if (fresh.newAddress) bid.newAddress = fresh.reason;
+      if (priors?.length || ext.externalSlashes || fresh.newAddress) {
         priors ??= [];
         bid.priorSlashes = priors;
         const where = [...priors.map((h) => `#${h.tender}`), ...(ext.externalSlashes ? [`ERC-8004 agent #${ext.agentId}`] : [])].join(', ');
         const n = priors.length + ext.externalSlashes;
-        const need = requiredBond(rfq.bondPie, n);
+        const need = requiredBond(rfq.bondPie, n, fresh.newAddress);
         const posted = bid.bondPie ?? rfq.bondPie;
         bid.bondRequired = need;
+        const why = [n && `slashed with on-chain evidence before (tender ${where})`, fresh.newAddress && fresh.reason.replace(/, so it locks.*/, '')].filter(Boolean).join('; ');
         if (posted >= need) {
           // It paid for its second chance: a repeat offence now costs it `posted`, so it competes like anyone else.
-          log(rfq, 'reputation', `${bid.label}: slashed with on-chain evidence before (tender ${where}); it locked ${posted}, at least the ${need} asked of a bidder with ${n} proven slash${n > 1 ? 'es' : ''}, so it competes normally`, priors[0] && { tx: priors[0].tx });
+          log(rfq, 'reputation', `${bid.label}: ${why}; it locked ${posted}, at least the ${need} required, so it competes normally`, priors[0] && { tx: priors[0].tx });
         } else {
           bid.trustFlag = true;
-          bid.review = `slashed before for proven manipulation (escrow tender ${where}) and locked ${posted}, under the ${need} that would let it win on its own: a human should look`;
-          log(rfq, 'reputation', `${bid.label}: supplier was slashed with on-chain evidence in tender ${where}; it locked ${posted} of the ${need} required, so it can't win automatically`, priors[0] && { tx: priors[0].tx });
+          bid.review = `${why}; it locked ${posted}, under the ${need} that would let it win on its own: a human should look`;
+          log(rfq, 'reputation', `${bid.label}: ${why}; it locked ${posted} of the ${need} required, so it can't win automatically`, priors[0] && { tx: priors[0].tx });
         }
       }
     }
@@ -884,15 +930,51 @@ export async function disputeDelivery(rfqId, evidence) {
     const winner = rfq.bids[rfq.award.winner];
     const evidenceHash = keccak256(toHex(evidence));
     const readers = await judgeDelivery(winner.terms, evidence);
-    const recommendation = deliveryRecommendation(readers);
+    const recommendation = deliveryRecommendation(readers, rfq.deliveryReceipt);
     const anchorTx = explorerTx(await anchorHash(process.env.BUYER_PRIVATE_KEY, evidenceHash));
     rfq.deliveryDispute = { evidence, evidenceHash, readers, recommendation, anchorTx, at: new Date().toISOString() };
     const due = new Date(onChain.deadline * 1000).toISOString();
     log(rfq, 'dispute', `Buyer disputed delivery by ${winner.label}: ${readers.map((r) => `${r.engine} ${r.met === null ? 'no finding (quote not verified)' : r.met ? 'met' : 'not met'}`).join('; ')}. ` +
-      `Advice to approvers: ${recommendation}. The held balance moves only if the buyer confirms delivery, or after the deadline (${due}) by the escrow's on-chain approver quorum (resolveDelivery)`, { tx: anchorTx });
+      `Advice to approvers: ${recommendation}. ${heldUntil(rfq, due)}`, { tx: anchorTx });
     return rfq.deliveryDispute;
   } finally {
     disputing.delete(rfqId);
+  }
+}
+const heldUntil = (rfq, due) => `The held balance moves only if the buyer confirms delivery, or after the deadline (${due}) by the escrow's on-chain approver quorum (resolveDelivery)` +
+  (deliveryTimelocked(escrowFor(rfq.escrow)?.abi) ? ', whose decision waits out a timelock before anyone can execute it (executeDelivery)' : '');
+
+// V4: the buyer of record signs what it received (EIP-191, template above). No token needed: the signature is the
+// authorization, and it is stronger than a token (a leaked owner token or the demo token can't forge the payer's key).
+// It can't be replayed elsewhere (tender id and winner are in the text) and only one receipt per tender is kept, so a
+// stranger can only make us anchor a receipt the buyer really signed, once. The buyer of record is whoever paid the
+// x402 tender fee, else our own buyer wallet (operator tenders: signed with that key, e.g. from a script).
+const receipting = new Set();
+export async function deliveryReceipt(rfqId, { message, signature }) {
+  const rfq = getRfq(rfqId);
+  if (!rfq) fail('unknown tender');
+  if (!onV4(rfq) || rfq.delivery?.status !== 'held') fail('no balance is held for delivery on this tender');
+  if (rfq.deliveryReceipt || receipting.has(rfqId)) fail('this tender already has a delivery receipt');
+  const r = parseReceipt(message);
+  if (!r) fail('message is not a Lelang delivery receipt (use the exact template)');
+  const winner = rfq.bids[rfq.award.winner];
+  if (r.rfqId !== rfqId || r.winner !== winner.label) fail(`receipt must name tender ${rfqId} and winner ${winner.label}`);
+  const signer = rfq.paidBy?.payer ?? buyerAddress();
+  if (!signature || !(await verifyMessage({ address: signer, message, signature }).catch(() => false))) fail(`the receipt must be signed by the buyer of record ${signer}`);
+  receipting.add(rfqId);
+  try {
+    const onChain = await escrowDelivery(rfq.chainId, rfq.escrow);
+    if (!onChain || onChain.closed) fail('the escrow has already closed this delivery');
+    if (rfq.deliveryReceipt) fail('this tender already has a delivery receipt'); // re-check after the await
+    const hash = keccak256(toHex(message));
+    const anchorTx = explorerTx(await anchorHash(process.env.BUYER_PRIVATE_KEY, hash));
+    const recommendation = deliveryRecommendation(rfq.deliveryDispute?.readers ?? [], r);
+    rfq.deliveryReceipt = { message, signature, signer, received: r.received, note: r.note, hash, anchorTx, recommendation, at: new Date().toISOString() };
+    if (rfq.deliveryDispute) rfq.deliveryDispute.recommendation = recommendation;
+    log(rfq, 'receipt', `Buyer ${signer} signed a delivery receipt for ${winner.label}: received ${r.received}${r.note ? ` (${r.note})` : ''}. Advice to approvers: ${recommendation}`, { tx: anchorTx });
+    return rfq.deliveryReceipt;
+  } finally {
+    receipting.delete(rfqId);
   }
 }
 

@@ -131,12 +131,42 @@ async function act(id, token, action) {
   if (!res.ok) throw new Error(out.error ?? res.status);
   return out;
 }
+// Same template as receiptMessage in src/lelang.js (this page can't import src; scripts/selftest.js checks both builders
+// against one fixture string): change both together.
+const receiptMessage = ({ rfqId, winner, received, note = '' }) => `LELANG delivery receipt\ntender: ${rfqId}\nwinner: ${winner}\nreceived: ${received}\nnote: ${note}`;
+const utf8Hex = (s) => `0x${[...new TextEncoder().encode(s)].map((b) => b.toString(16).padStart(2, '0')).join('')}`;
+// V4 delivery held in escrow: the wallet that paid the tender fee signs what it received (EIP-191, no token needed).
+function receiptForm(el, t, r) {
+  const box = el.querySelector('[data-receipt]');
+  if (r.deliveryReceipt) { box.innerHTML = `<p class="kv">Delivery receipt signed: <strong>${esc(r.deliveryReceipt.received)}</strong>${r.deliveryReceipt.anchorTx ? ` · <a href="${esc(r.deliveryReceipt.anchorTx)}">anchor tx</a>` : ''}</p>`; return; }
+  if (r.delivery?.status !== 'held') { box.innerHTML = ''; return; }
+  box.innerHTML = `<p class="kv">Balance held in escrow until delivery. Sign what you received (with the wallet that paid the fee):</p>
+    <select data-received><option>complete</option><option>partial</option><option>not received</option></select>
+    <input data-note maxlength="300" placeholder="short note (optional)">
+    <button class="ghost" type="button" data-sign>Sign receipt</button>`;
+  box.querySelector('[data-sign]').addEventListener('click', async (ev) => {
+    ev.target.disabled = true;
+    try {
+      const from = await wallet();
+      const message = receiptMessage({ rfqId: t.id, winner: r.award.winner, received: box.querySelector('[data-received]').value, note: box.querySelector('[data-note]').value.replace(/[\r\n]+/g, ' ').trim() });
+      const signature = await window.ethereum.request({ method: 'personal_sign', params: [utf8Hex(message), from] });
+      const res = await fetch(`${API}/api/rfqs/${encodeURIComponent(t.id)}/receipt`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message, signature }) });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error ?? res.status);
+      receiptForm(el, t, { ...r, deliveryReceipt: out });
+    } catch (e) {
+      box.insertAdjacentHTML('beforeend', `<p class="bad">${esc(e.message ?? e)}</p>`);
+      ev.target.disabled = false;
+    }
+  });
+}
 async function render() {
   const list = mine();
   if (!list.length) return;
   $('mine').innerHTML = list.map((t) => `<div data-id="${esc(t.id)}" style="padding:10px 0;border-bottom:1px solid var(--line)">
     <strong>${esc(t.title)}</strong> <span class="kv">${esc(t.id)}</span>
     <p class="kv" data-phase>loading…</p>
+    <div data-receipt></div>
     <button class="ghost" data-a="close" type="button">Close commits</button>
     <button class="ghost" data-a="evaluate" type="button">Evaluate</button>
     <details><summary class="kv">How supplier agents bid on it</summary>
@@ -153,6 +183,7 @@ node scripts/supplier-agent.js ${esc(API)} ${esc(t.id)} bid.txt   # or plain HTT
         const r = await (await fetch(`${API}/api/rfqs/${t.id}`)).json();
         const last = r.events?.at(-1);
         phase.innerHTML = `Phase <strong>${esc(r.phase)}</strong> · ${Object.keys(r.bids ?? {}).length} sealed bid(s)${last ? ` · ${esc(last.msg)}` : ''}`;
+        receiptForm(el, t, r);
       } catch { phase.textContent = 'API not reachable (it may be waking up)'; }
     };
     for (const b of el.querySelectorAll('[data-a]')) b.addEventListener('click', async () => {

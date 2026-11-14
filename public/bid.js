@@ -97,7 +97,7 @@ async function quote() {
   if (!me || !id) return;
   try {
     const q = await api(`/api/rfqs/${encodeURIComponent(id)}/bond?supplier=${me}`);
-    $('quote').innerHTML = `Wallet <code>${esc(me)}</code>. Bond to lock: <strong>${esc(q.required)}</strong> (tender base ${esc(q.base)}). The bond doubles for every proven slash on record for your address, up to 16×; you have ${esc(q.provenSlashes?.length ?? 0)}. It comes back when your revealed bid complies.`;
+    $('quote').innerHTML = `Wallet <code>${esc(me)}</code>. Bond to lock: <strong>${esc(q.required)}</strong> (tender base ${esc(q.base)}). The bond doubles for every proven slash on record for your address, up to 16×; you have ${esc(q.provenSlashes?.length ?? 0)}.${q.newAddress ? ` <span class="warn">It also doubles once because this address has almost no history on Kite (${esc(q.newAddressReason ?? 'new address')}): a slashed supplier can't start over with a fresh wallet for free.</span>` : ''} It comes back when your revealed bid complies.`;
     $('seal').disabled = false;
   } catch (e) { $('quote').innerHTML = `<span class="bad">${esc(e.message)}</span>`; }
 }

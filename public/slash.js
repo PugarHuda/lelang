@@ -23,6 +23,14 @@ function appealHtml(a) {
     ${a.refundTx ? `<p class="kv"><a href="${esc(a.refundTx)}" target="_blank" rel="noopener">refund transaction</a></p>` : ''}</div>`;
 }
 
+// The share page under r/ carries Open Graph tags and a card image (scripts/og.mjs): crawlers don't run this script.
+function share(id, label, overturned) {
+  const slug = `${id}-${label.replace(/\s+/g, '').toLowerCase()}`;
+  const url = `${location.origin}/r/${slug}.html`;
+  return `<p class="kv share"><img src="r/${esc(slug)}.png" alt="Slash receipt card for ${esc(label)}" width="1200" height="630" loading="lazy">
+    Share this receipt: <a href="https://x.com/intent/post?url=${encodeURIComponent(url)}&amp;text=${encodeURIComponent(overturned ? `Lelang slashed ${label}, the approvers overturned it on appeal and refunded the bond. Every step is on Kite testnet:` : `${label} hid instructions for the AI evaluator. Lelang slashed its bond; verify it against Kite testnet yourself:`)}" target="_blank" rel="noopener">post on X</a> · <a href="r/${esc(slug)}.html">link with preview card</a></p>`;
+}
+
 try {
   const id = q.get('t') ?? '';
   if (!/^rfq-[\w-]+$/.test(id)) throw new Error('No tender given.');
@@ -35,6 +43,7 @@ try {
   view.innerHTML = `
     <h1>${esc(bid.label)}'s bond was slashed</h1>
     <p class="kv">Escrow tender #${esc(rfq.chainId)} · ${esc(rfq.title)} · <a href="${esc(settle)}" target="_blank" rel="noopener">settle transaction on Kitescan</a></p>
+    ${share(rfq.id, bid.label, bid.appeal?.outcome === 'overturned')}
     <div class="card"><strong>Why:</strong> ${esc(bid.disqualified)}</div>
     ${bid.evidence ? `<h2>The text the supplier hid for the AI evaluator</h2><div class="card"><pre>${esc(bid.evidence)}</pre></div>` : ''}
     <h2>Its revealed bid document</h2><div class="card"><pre>${bid.evidence ? highlight(bid.doc, bid.evidence) : esc(bid.doc)}</pre>

@@ -14,6 +14,8 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///      approvers can overturn it on-chain; after that it goes to a bounty pool that pays whoever finds a hole in the
 ///      evaluator. Attackers fund the defence. The balance after the down payment is held until the buyer confirms
 ///      delivery (or, if the buyer stays silent past the deadline, a quorum of approvers decides).
+///      V5: the approvers' delivery decision is queued for DELIVERY_TIMELOCK before anyone can execute it, so a wrong or
+///      captured quorum can be seen (and outvoted, or pre-empted by the buyer confirming) before the money moves.
 contract LelangEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -69,6 +71,17 @@ contract LelangEscrow is ReentrancyGuard {
     /// @notice The balance of the contract price, held from settle until delivery is confirmed or resolved.
     mapping(uint256 => Delivery) public deliveries;
 
+    /// @notice How long a quorum's delivery decision waits before `executeDelivery` can move the balance.
+    uint64 public constant DELIVERY_TIMELOCK = 1 hours;
+    struct QueuedDelivery {
+        uint64 eta; // 0: nothing queued
+        bool payWinner;
+    }
+    /// @notice The approvers' decision on a held balance, waiting out the timelock.
+    mapping(uint256 => QueuedDelivery) public queuedDelivery;
+    /// @notice Bumped each time a decision is queued, so votes cast for an earlier decision never count again.
+    mapping(uint256 => uint256) public deliveryRound;
+
     /// @notice Forfeited bonds by token: they only ever leave as evidence-tagged bounties.
     mapping(address => uint256) public bountyPool;
     /// @notice Evidence hashes a bounty was already paid for (one bounty per finding).
@@ -100,6 +113,7 @@ contract LelangEscrow is ReentrancyGuard {
     event Voted(bytes32 indexed action, address indexed approver, uint256 votes);
     event BalanceHeld(uint256 indexed id, address indexed winner, uint256 balance, uint64 deadline);
     event DeliveryClosed(uint256 indexed id, address indexed to, uint256 amount, bool delivered);
+    event DeliveryQueued(uint256 indexed id, bool payWinner, uint64 eta);
     event BountyPaid(address indexed token, address indexed to, uint256 amount, bytes32 evidenceHash);
 
     error WrongPhase();
@@ -285,17 +299,37 @@ contract LelangEscrow is ReentrancyGuard {
     }
 
     /// @notice The buyer confirms delivery: the held balance goes to the winner and its success fee to the treasury.
+    ///         Also while an approver decision is queued: the buyer admitting delivery beats a queued refund.
     function confirmDelivery(uint256 id) external nonReentrant {
         if (msg.sender != tenders[id].buyer) revert NotBuyer();
+        delete queuedDelivery[id];
         _closeDelivery(id, true);
     }
 
-    /// @notice If the buyer has not confirmed by the deadline, `quorum` approvers decide: pay the winner, or refund the buyer.
+    /// @notice If the buyer has not confirmed by the deadline, `quorum` approvers decide: pay the winner, or refund the
+    ///         buyer. The vote that reaches quorum only queues the decision; `executeDelivery` moves the money after
+    ///         DELIVERY_TIMELOCK. A quorum for the other outcome replaces the queued one (and restarts the clock).
+    /// @dev Votes are counted per round, so an approver who voted for the replaced outcome must vote again to bring it
+    ///      back: one approver alone can't flip a decision. ponytail: rival quorums can keep replacing each other (each
+    ///      flip needs a full quorum); the buyer's confirmDelivery ends it at any time.
     function resolveDelivery(uint256 id, bool payWinner) external nonReentrant {
         Delivery storage d = deliveries[id];
+        QueuedDelivery storage q = queuedDelivery[id];
         if (d.balance == 0 || d.closed || block.timestamp < d.deadline) revert WrongPhase();
-        if (!_vote(keccak256(abi.encode("delivery", id, payWinner)))) return;
-        _closeDelivery(id, payWinner);
+        if (q.eta != 0 && q.payWinner == payWinner) revert WrongPhase(); // already queued: nothing to decide
+        if (!_vote(keccak256(abi.encode("delivery", id, payWinner, deliveryRound[id])))) return;
+        deliveryRound[id]++;
+        uint64 eta = uint64(block.timestamp) + DELIVERY_TIMELOCK;
+        queuedDelivery[id] = QueuedDelivery(eta, payWinner);
+        emit DeliveryQueued(id, payWinner, eta);
+    }
+
+    /// @notice After the timelock, anyone executes the approvers' queued delivery decision.
+    function executeDelivery(uint256 id) external nonReentrant {
+        QueuedDelivery memory q = queuedDelivery[id];
+        if (q.eta == 0 || block.timestamp < q.eta) revert WrongPhase();
+        delete queuedDelivery[id];
+        _closeDelivery(id, q.payWinner);
     }
 
     function _closeDelivery(uint256 id, bool delivered) internal {

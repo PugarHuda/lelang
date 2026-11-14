@@ -1,7 +1,7 @@
 // Independent checks, run in the visitor's browser against the Kite RPC: nothing here trusts the published JSON.
 // They recompute keccak256 of every published slash quote and revealed document and compare them with the settle
 // transaction's events and the escrow contract's storage. Used by the dashboard and by each slash's proof page.
-import { createPublicClient, http, defineChain, parseEventLogs, keccak256, toHex } from 'https://cdn.jsdelivr.net/npm/viem@2.57.18/+esm';
+import { createPublicClient, http, defineChain, parseEventLogs, keccak256, toHex, verifyMessage } from 'https://cdn.jsdelivr.net/npm/viem@2.57.18/+esm';
 
 const kite = defineChain({ id: 2368, name: 'KiteAI Testnet', nativeCurrency: { name: 'KITE', symbol: 'KITE', decimals: 18 }, rpcUrls: { default: { http: ['https://rpc-testnet.gokite.ai'] } } });
 const client = createPublicClient({ chain: kite, transport: http(undefined, { timeout: 15_000, retryCount: 2 }) });
@@ -94,6 +94,14 @@ export async function checkTender(rfq) {
   if (rfq.deliveryDispute?.anchorTx) {
     const h = keccak256(toHex(rfq.deliveryDispute.evidence));
     add(h === rfq.deliveryDispute.evidenceHash && await anchored(rfq, h, rfq.deliveryDispute.anchorTx), `keccak256 of the published delivery report (${h.slice(0, 10)}…) matches the hash the buyer anchored on Kite`);
+  }
+  // The buyer's signed delivery receipt: same keccak as src/lelang.js deliveryReceipt, anchored by the same buyer wallet,
+  // and the EIP-191 signature recovers to the published signer.
+  if (rfq.deliveryReceipt?.anchorTx) {
+    const r = rfq.deliveryReceipt;
+    const h = keccak256(toHex(r.message));
+    const signed = await verifyMessage({ address: r.signer, message: r.message, signature: r.signature }).catch(() => false);
+    add(h === r.hash && signed && await anchored(rfq, h, r.anchorTx), `Buyer's delivery receipt ("${r.received}") is signed by ${r.signer.slice(0, 10)}… and its keccak256 (${h.slice(0, 10)}…) matches the hash anchored on Kite`);
   }
   return { rows, block };
 }
