@@ -422,7 +422,13 @@ export async function evaluate(rfqId) {
       }
       // Same new-address rule as the quote, read as of this bid's own commit (bondQuoteFresh / newAddressCheck).
       const fresh = await freshness(bid.supplier, rfq);
-      if (fresh.history.error) log(rfq, 'reputation', `${bid.label}: ${fresh.reason}`);
+      // fail closed at evaluation, like the slash history above: an unreadable history must not let a fresh wallet
+      // skip the surcharge and win on its own (only the advisory quote stays lenient)
+      if (fresh.history.error) {
+        bid.trustFlag = true;
+        bid.review ??= `address history check failed (${fresh.history.error}): a human should look`;
+        log(rfq, 'reputation', `${bid.label}: ${fresh.reason}; flagged for review`);
+      }
       if (fresh.newAddress) bid.newAddress = fresh.reason;
       if (priors?.length || ext.externalSlashes || fresh.newAddress) {
         priors ??= [];
