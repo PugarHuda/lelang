@@ -256,5 +256,9 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   const amb = { label: 'A', terms: t(150, 20, 12), review: 'two figures', ambiguous: [{ field: 'total_usd', values: [150, 40] }] };
   assert.deepEqual(blockingFlags(rfq, [win, amb]), ['A']); // the rebate figure would make it win
   assert.deepEqual(blockingFlags(rfq, [{ ...win, review: 'repeat offender' }, loser]), ['W']); // the winner's own flag always blocks
+  assert.deepEqual(blockingFlags(rfq, [win, { ...loser, review: 'Prompt Guard block', trustFlag: true }]), ['L']); // trust flags always block
+  assert.deepEqual(blockingFlags(rfq, [win, loser, { ...loser, label: 'L2' }]), ['L', 'L2']); // two flagged bids: block
+  const tie = { label: 'T', terms: t(100, 10, 24), review: 'readers disagree' };
+  assert.deepEqual(blockingFlags(rfq, [win, tie]), ['T']); // a tie at its best reading blocks
 }
 console.log('selftest OK');

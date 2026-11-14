@@ -266,10 +266,14 @@ export function scoreBreakdown(weights, eligible) {
   }]));
 }
 
-// A review flag only blocks an automatic award if the flagged bid could win. Each flagged bid is scored at its most
-// favourable reading: lowest price, longest warranty and fastest delivery among both readers and every alternative
-// figure the document states, and the higher quality rating. If it still doesn't rank first, the flag can't change who
-// wins, so it stays on record for a human but doesn't hold the tender. The formula winner's own flag always blocks.
+// A review flag only blocks an automatic award if the flagged bid could win. Only flags about figures (readers disagree,
+// two values for one term, quality ratings apart) can be dismissed this way; flags about trust (Prompt Guard block,
+// suspected manipulation, a reputation check that failed or a repeat offender's short bond) always block. A figure-flagged
+// bid is scored at its most favourable reading: lowest price, longest warranty and fastest delivery among both readers
+// and every alternative figure it states, and the higher quality rating (each part of the formula only improves for that
+// bid as its own figure improves, so this is its best possible score). If even that is strictly below the best other
+// bid, the flag can't change who wins: it stays on record for a human but doesn't hold the tender. A tie blocks, and
+// with more than one flagged bid everything blocks (their readings could combine).
 export function bestCase(bid) {
   const reads = [bid.terms, bid.secondRead?.terms].filter(Boolean);
   const alt = (field) => (bid.ambiguous ?? []).find((x) => x.field === field)?.values ?? [];
@@ -280,12 +284,12 @@ export function bestCase(bid) {
 }
 export function blockingFlags(rfq, eligible) {
   const flagged = eligible.filter((b) => b.review);
-  if (!flagged.length) return [];
-  return flagged.filter((b) => {
-    const scores = weightedScores(rfq.weights, eligible.map((x) => (x === b ? bestCase(x) : x)));
-    if (!Object.values(scores).every(Number.isFinite)) return true; // can't tell: keep blocking
-    return Object.entries(scores).sort((p, q) => q[1] - p[1])[0][0] === b.label;
-  }).map((b) => b.label);
+  if (flagged.length !== 1 || flagged[0].trustFlag) return flagged.map((b) => b.label);
+  const [b] = flagged;
+  const scores = weightedScores(rfq.weights, eligible.map((x) => (x === b ? bestCase(x) : x)));
+  if (!Object.values(scores).every(Number.isFinite)) return [b.label]; // can't tell: keep blocking
+  const others = Object.entries(scores).filter(([l]) => l !== b.label).map(([, v]) => v);
+  return others.length && scores[b.label] < Math.max(...others) ? [] : [b.label];
 }
 
 // A rationale whose final line names the other decision contradicts the action; it must never be submitted.
@@ -330,6 +334,7 @@ export async function evaluate(rfqId) {
         priors = provenPriors(await slashHistory(bid.supplier), rfq, trustedBuyers(), overturnedSlashes());
       } catch (e) {
         // fail closed: an unreadable history must not let a repeat offender win automatically
+        bid.trustFlag = true;
         bid.review = `reputation check failed (${e.shortMessage ?? e.message}): a human should look`;
         log(rfq, 'reputation', `${bid.label}: couldn't read slash history from the escrow; flagged for review`);
       }
@@ -337,6 +342,7 @@ export async function evaluate(rfqId) {
       // fail closed, like the escrow history above: with trusted marketplaces configured, an unreadable record
       // (RPC down, or a claimed agentId that doesn't exist) must not let the bid win on its own
       if (ext.error && process.env.EXTERNAL_REPUTATION_CLIENTS) {
+        bid.trustFlag = true;
         bid.review ??= `ERC-8004 reputation check failed (${ext.error}): a human should look`;
         log(rfq, 'reputation', `${bid.label}: couldn't read its ERC-8004 reputation on Arc; flagged for review`);
       }
@@ -356,6 +362,7 @@ export async function evaluate(rfqId) {
           // It paid for its second chance: a repeat offence now costs it `posted`, so it competes like anyone else.
           log(rfq, 'reputation', `${bid.label}: slashed with on-chain evidence before (tender ${where}); it locked ${posted}, at least the ${need} asked of a bidder with ${n} proven slash${n > 1 ? 'es' : ''}, so it competes normally`, priors[0] && { tx: priors[0].tx });
         } else {
+          bid.trustFlag = true;
           bid.review = `slashed before for proven manipulation (escrow tender ${where}) and locked ${posted}, under the ${need} that would let it win on its own: a human should look`;
           log(rfq, 'reputation', `${bid.label}: supplier was slashed with on-chain evidence in tender ${where}; it locked ${posted} of the ${need} required, so it can't win automatically`, priors[0] && { tx: priors[0].tx });
         }
@@ -383,6 +390,7 @@ export async function evaluate(rfqId) {
       inj.p > 0.8 && !inj.verified && 'manipulation suspected but quote not found in document',
       inj.p > 0.8 && inj.verified && `quoted text found but it states commercial terms rather than addressing the evaluator (p=${aimed.toFixed(2)})`].filter(Boolean);
     if (why.length) {
+      bid.trustFlag = true;
       bid.review = [bid.review, `${why.join('; ')}: a human should look`].filter(Boolean).join('; ');
       log(rfq, 'review', `${bid.label} flagged for human review (${why.join('; ')})`);
     }
