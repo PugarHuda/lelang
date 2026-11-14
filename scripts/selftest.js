@@ -259,6 +259,10 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   assert.deepEqual(blockingFlags(rfq, [{ ...win, review: 'repeat offender' }, loser]), ['W', 'L']); // two flagged bids: both block
   assert.deepEqual(blockingFlags(rfq, [win, { ...loser, review: 'Prompt Guard block', trustFlag: true }]), ['L']); // trust flags always block
   assert.deepEqual(blockingFlags(rfq, [win, loser, { ...loser, label: 'L2' }]), ['L', 'L2']); // two flagged bids: block
+  // a flagged bid whose other reading moves the price minimum and so flips the order between the two others
+  const p = { label: 'P', terms: t(100, 30, 36) }, q2 = { label: 'Q', terms: t(120, 10, 12) };
+  const shifter = { label: 'S', terms: t(300, 30, 12), review: 'readers disagree', secondRead: { terms: t(50, 30, 12) } };
+  assert.deepEqual(blockingFlags({ weights: { price: 0.6, warranty: 0.2, delivery: 0.2 } }, [p, q2, shifter]), ['S']);
   const tie = { label: 'T', terms: t(100, 10, 24), review: 'readers disagree' };
   assert.deepEqual(blockingFlags(rfq, [win, tie]), ['T']); // a tie at its best reading blocks
 }

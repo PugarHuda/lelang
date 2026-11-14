@@ -266,30 +266,39 @@ export function scoreBreakdown(weights, eligible) {
   }]));
 }
 
-// A review flag only blocks an automatic award if the flagged bid could win. Only flags about figures (readers disagree,
-// two values for one term, quality ratings apart) can be dismissed this way; flags about trust (Prompt Guard block,
-// suspected manipulation, a reputation check that failed or a repeat offender's short bond) always block. A figure-flagged
-// bid is scored at its most favourable reading: lowest price, longest warranty and fastest delivery among both readers
-// and every alternative figure it states, and the higher quality rating (each part of the formula only improves for that
-// bid as its own figure improves, so this is its best possible score). If even that is strictly below the best other
-// bid, the flag can't change who wins: it stays on record for a human but doesn't hold the tender. A tie blocks, and
-// with more than one flagged bid everything blocks (their readings could combine).
-export function bestCase(bid) {
+// A review flag only blocks an automatic award if it could change who wins. Only flags about figures (readers disagree,
+// two values for one term, quality ratings apart) can be dismissed; flags about trust (Prompt Guard block, suspected
+// manipulation, a reputation check that failed or a repeat offender's short bond) always block, and so does more than one
+// flagged bid. For a single figure-flagged bid, every plausible version of it is tried: each combination of the values
+// either reader or the document gives for price, warranty and delivery, each quality rating, and the bid left out
+// entirely (it might not be eligible). The flag is dismissed only if the formula winner is the same, unflagged bid in
+// every one of them; any difference, any tie at the top or any non-finite score keeps it blocking.
+export function readingsOf(bid) {
   const reads = [bid.terms, bid.secondRead?.terms].filter(Boolean);
   const alt = (field) => (bid.ambiguous ?? []).find((x) => x.field === field)?.values ?? [];
-  const vals = (field) => [...reads.map((t) => t?.[field]), ...alt(field)].filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0);
-  const terms = { ...bid.terms, total_usd: Math.min(...vals('total_usd')), warranty_months: Math.max(...vals('warranty_months')), delivery_days: Math.min(...vals('delivery_days')) };
-  const quality = bid.quality ? { ...bid.quality, score: Math.max(bid.quality.score, ...(bid.quality.readers ?? []).map((r) => r.score)) } : undefined;
-  return { ...bid, terms, quality };
+  const vals = (field) => [...new Set([...reads.map((t) => t?.[field]), ...alt(field)].filter((v) => typeof v === 'number' && Number.isFinite(v) && v > 0))];
+  const q = bid.quality ? [...new Set([bid.quality.score, ...(bid.quality.readers ?? []).map((r) => r.score)])] : [undefined];
+  const out = [];
+  for (const total_usd of vals('total_usd')) for (const warranty_months of vals('warranty_months')) for (const delivery_days of vals('delivery_days')) {
+    for (const score of q) out.push({ ...bid, terms: { ...bid.terms, total_usd, warranty_months, delivery_days }, ...(bid.quality && { quality: { ...bid.quality, score } }) });
+  }
+  return out;
 }
 export function blockingFlags(rfq, eligible) {
   const flagged = eligible.filter((b) => b.review);
   if (flagged.length !== 1 || flagged[0].trustFlag) return flagged.map((b) => b.label);
   const [b] = flagged;
-  const scores = weightedScores(rfq.weights, eligible.map((x) => (x === b ? bestCase(x) : x)));
-  if (!Object.values(scores).every(Number.isFinite)) return [b.label]; // can't tell: keep blocking
-  const others = Object.entries(scores).filter(([l]) => l !== b.label).map(([, v]) => v);
-  return others.length && scores[b.label] < Math.max(...others) ? [] : [b.label];
+  const top = (bids) => {
+    const ranked = Object.entries(weightedScores(rfq.weights, bids)).sort((p, q) => q[1] - p[1]);
+    if (!ranked.length || !ranked.every(([, v]) => Number.isFinite(v)) || (ranked[1] && ranked[1][1] === ranked[0][1])) return null; // tie or can't tell
+    return ranked[0][0];
+  };
+  const winner = top(eligible);
+  if (!winner || winner === b.label) return [b.label];
+  const versions = readingsOf(b);
+  if (!versions.length) return [b.label];
+  const scenarios = [eligible.filter((x) => x !== b), ...versions.map((v) => eligible.map((x) => (x === b ? v : x)))];
+  return scenarios.every((bids) => top(bids) === winner) ? [] : [b.label];
 }
 
 // A rationale whose final line names the other decision contradicts the action; it must never be submitted.

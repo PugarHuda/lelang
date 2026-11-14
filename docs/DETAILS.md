@@ -89,7 +89,7 @@ A tender can weight one qualitative criterion (`weights.quality` + `qualitative.
 | B | "the best after-sales support in the industry" | 0 | 0 | **0**: no sentence backs a rating |
 | A | "support through our national hotline" | 0 (quote not found) | 3 | 0, readers apart: human review |
 
-Limit seen live: a disagreement on a bid that could not win (A) still held the whole tender for a signed release. That is the existing rule (any flagged eligible bid blocks auto-award), cautious by design; narrowing it to bids that could win is the next step.
+Seen live: a disagreement on a bid that could not win (A) still held the whole tender for a signed release. The rule is now narrower: a single flag about figures is dismissed only if the formula winner stays the same, unflagged bid under every combination of the flagged bid's readings (both readers, every stated alternative, each quality rating) and with that bid left out; ties block, two flagged bids block, and flags about trust (Prompt Guard, suspected manipulation, reputation) always block. Tender #3 was evaluated before this change.
 
 ## Learning from Reppo across tenders: what helped and what didn't
 
