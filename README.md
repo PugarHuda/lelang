@@ -21,7 +21,8 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 - **[Lelang in numbers](https://lelang-ten.vercel.app/stats.html)**: tenders, sealed bids, slashes, pool and bounties counted from the escrow events on Kite by your browser, plus the public Break Lelang leaderboard.
 - **[Approver console](https://lelang-ten.vercel.app/approver.html)**: what the approver quorum can still act on (slashes in their challenge window, held balances past their deadline), read from V4; an approver votes from a browser wallet.
 - **[Proof page of a slash](https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&b=Bid%20E)**: the hidden text highlighted in the bid; your browser hashes it and compares with Kite.
-- **[Live dashboard](https://lelang-ten.vercel.app)**: 10 real tenders on Kite testnet across three escrow versions, each re-verified against the chain in your browser.
+- **[Overview](https://lelang-ten.vercel.app)**: the one-page tour: the slashed text, the video, how a tender runs, live numbers from Kite and what did not work.
+- **[Live dashboard](https://lelang-ten.vercel.app/index.html)**: 20 real tenders on Kite testnet across four escrow versions, each re-verified against the chain in your browser.
 - **[Attack gallery](https://lelang-ten.vercel.app/attacks.html)**: every attack we threw at it, word for word, with what happened.
 - **[Bid on a tender](https://lelang-ten.vercel.app/bid.html)**: for a human supplier, wallet in the browser.
 - **[Open a tender](https://lelang-ten.vercel.app/buy.html)**: for a human buyer. Start from any public OCDS tender, pay the fee with a browser wallet (x402, no gas), get the owner token.
@@ -60,7 +61,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 2. **Check a slash yourself:** open the [proof page](https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&b=Bid%20E) and press *Verify against Kite testnet*. Your browser hashes the quote and the document and reads the escrow; nothing comes from our server.
 3. **See the market discipline:** the [repeat offender's reputation](https://lelang-ten.vercel.app/rep.html?a=0x5d6674Ce278747115d8031e34d9FAe6B42cA214E). It was slashed three times on three escrow versions, and its next bond is 8×.
 4. **Open one yourself:** [buy.html](https://lelang-ten.vercel.app/buy.html) prefills from an OCDS release and pays the fee from your wallet.
-5. **See the money:** on the [dashboard](https://lelang-ten.vercel.app), tab *#3 (escrow V3)* was opened by an agent that paid over x402 on Arc. Tab *#2 (escrow V3)* sends a 2% success fee to the treasury in the same settle transaction as the winner's payment.
+5. **See the money:** on the [dashboard](https://lelang-ten.vercel.app/index.html), tab *#3 (escrow V3)* was opened by an agent that paid over x402 on Arc. Tab *#2 (escrow V3)* sends a 2% success fee to the treasury in the same settle transaction as the winner's payment.
 6. **Try to break it:** the [attack gallery](https://lelang-ten.vercel.app/attacks.html) lists what we threw at it, including the gap an adaptive attacker found and how it was closed.
 7. **Run it** (optional): `npm install && npm test` runs the protocol, the MCP supplier tools and the safety rules offline in about a minute.
 
