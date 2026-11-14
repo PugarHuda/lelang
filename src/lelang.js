@@ -712,8 +712,11 @@ export const appealMessage = (rfqId, label, reason) => `LELANG appeal ${rfqId} $
 const published = () => {
   const dir = new URL('../public/tenders/', import.meta.url);
   if (!existsSync(dir)) return [];
-  return readdirSync(dir).filter((f) => /^rfq-[w-]+.json$/.test(f) && !f.endsWith('.ocds.json')).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
+  return readdirSync(dir).filter((f) => /^rfq-[\w-]+\.json$/.test(f) && !f.endsWith('.ocds.json')).map((f) => JSON.parse(readFileSync(new URL(f, dir), 'utf8')));
 };
+// Read-only history for the public API after a reset (Render's free disk is wiped on every deploy): the published
+// tenders, flagged archived, never written back into the live state.
+export const publishedTenders = () => published().filter((r) => !db.rfqs[r.id]).map((r) => ({ ...r, archived: true }));
 export const overturnedSlashes = () => new Set([...Object.values(db.rfqs), ...published()].flatMap((r) => Object.values(r.bids ?? {})
   .filter((b) => b.appeal?.outcome === 'overturned').map((b) => slashKey(r.escrow, r.chainId, b.supplier))));
 

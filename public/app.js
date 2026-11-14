@@ -20,7 +20,7 @@ function bidCard(b, rfq) {
     ${b.review ? `<div class="kv warn">review: ${esc(b.review)}</div>` : ''}
     ${b.priorSlashes?.length && b.bondRequired ? `<div class="kv ${b.bondPie >= b.bondRequired ? '' : 'warn'}">history: ${b.priorSlashes.length} proven slash${b.priorSlashes.length > 1 ? 'es' : ''} · bond locked ${esc(b.bondPie ?? rfq.bondPie)} of ${esc(b.bondRequired)} required${b.bondPie >= b.bondRequired ? ' · competes normally' : ''}</div>` : ''}
     ${p != null ? `<div class="kv">p=${p.toFixed(2)}</div><div class="bar"><i style="width:${p * 100}%"></i></div>` : ''}
-    <div class="kv"><a href="rep.html?a=${esc(b.supplier)}">reputation</a>${b.bondTx ? ` · < href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
+    <div class="kv"><a href="rep.html?a=${esc(b.supplier)}">reputation</a>${b.bondTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(b.bondTx)}" target="_blank">bond tx</a>` : ''}
       ${b.revealTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(b.revealTx)}" target="_blank">reveal tx</a>` : ''}</div>
   </div>`;
 }

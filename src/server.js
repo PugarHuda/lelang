@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery, publishedTenders } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo } from './kite.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -64,7 +64,7 @@ createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204, { ...CORS, 'access-control-max-age': '600' }); return res.end(); }
   try {
     if (url.pathname === '/deployment.json') return json(res, 200, deployment ?? {});
-    if (url.pathname === '/api/rfqs' && req.method === 'GET') return json(res, 200, { running, rfqs: listRfqs().reverse() });
+    if (url.pathname === '/api/rfqs' && req.method === 'GET') return json(res, 200, { running, rfqs: [...listRfqs().reverse(), ...publishedTenders().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).map(({ id, title, phase, createdAt }) => ({ id, title, phase, createdAt, archived: true }))] });
     const o = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/ocds$/);
     if (o) {
       const rfq = getRfq(o[1]);
@@ -73,7 +73,9 @@ createServer(async (req, res) => {
     const m = url.pathname.match(/^\/api\/rfqs\/([\w-]+)$/);
     if (m) {
       const rfq = getRfq(m[1]);
-      return rfq ? json(res, 200, publicView(rfq)) : json(res, 404, { error: 'not found' });
+      if (rfq) return json(res, 200, publicView(rfq));
+      const old = publishedTenders().find((r) => r.id === m[1]); // already a public view
+      return old ? json(res, 200, old) : json(res, 404, { error: 'not found' });
     }
     // Break Lelang: a public, paid red team (src/challenge.js). Reading the results is free; an attempt costs a small
     // x402 fee, which pays for the five model calls it triggers. One attempt in flight per client, two overall.

@@ -5,37 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Open a tender · Lelang</title>
 <link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="theme.css">
 <style>
-  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
-  main { max-width:860px; margin:0 auto; padding:24px 16px 64px; }
-  h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
-  a { color:var(--acc); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
-  .kv { font-size:13px; color:var(--mute); }
-  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
-  label { display:block; font-size:13px; font-weight:600; margin:12px 0 4px; }
-  input, textarea, select { width:100%; font:inherit; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px 10px; }
-  textarea { min-height:110px; font:12px/1.5 ui-monospace, monospace; }
-  .row { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; }
-  button { background:var(--ink); color:var(--bg); border:0; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer; margin-top:14px; }
-  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
-  button:disabled { opacity:.5; cursor:default; }
-  pre { white-space:pre-wrap; overflow-wrap:anywhere; font:12px/1.55 ui-monospace, monospace; margin:8px 0 0; }
-  ol { padding-left:20px; } li { margin:4px 0; }
-  .status { margin-top:12px; font-size:14px; }
+  button { margin-top:14px; }
+  #claim { margin:0 0 0 6px; padding:5px 10px; }
 </style>
 </head>
 <body>
-<main>
-  <p class="kv"><a href="./">← Dashboard</a> · <a href="bid.html">Suppliers: bid here</a></p>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="./">Lelang <span>sealed-bid ledger · Kite testnet</span></a>
+  <nav aria-label="Site"><a href="./">Tenders</a><a href="buy.html" aria-current="page">Open a tender</a><a href="bid.html">Bid</a><a href="attacks.html">Attacks</a><a href="pool.html">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a></nav>
+</div></header>
+<main class="narrow">
   <h1>Open a tender</h1>
-  <p class="kv">For a human buyer with a browser wallet. You pay the tender fee in test PYUSD on Kite testnet by signing an EIP-3009 authorization (no gas needed for the payment). Lelang then opens the tender in the escrow on Kite, supplier agents bid sealed, SERV and Dolphin check every bid, Reppo audits the award. The page talks to the public API at <code>lelang-6k05.onrender.com</code>; the free instance can take ~50 s to wake up.</p>
+  <p class="lede">For a human buyer with a browser wallet. You pay the tender fee in test PYUSD on Kite testnet by signing an EIP-3009 authorization (no gas needed for the payment). Lelang then opens the tender in the escrow on Kite, supplier agents bid sealed, SERV and Dolphin check every bid, Reppo audits the award. The page talks to the public API at <code>lelang-6k05.onrender.com</code>; the free instance can take ~50 s to wake up.</p>
 
-  <h2>1 · Start from a real tender (optional)</h2>
+  <h2>Start from a real tender (optional)</h2>
   <div class="card">
     <p class="kv" style="margin-top:0">Paste or upload an <a href="https://standard.open-contracting.org/">Open Contracting Data Standard</a> release, release package or record package from any public procurement portal. Title, budget and contract period are copied into the form below. Nothing is uploaded: the file is read in your browser.</p>
     <textarea id="ocds" placeholder='{"releases":[{"ocid":"…","tender":{"title":"…","value":{"amount":90000,"currency":"USD"},"contractPeriod":{"durationInDays":30}}}]}'></textarea>
@@ -46,7 +34,7 @@
     <p id="importNote" class="kv"></p>
   </div>
 
-  <h2>2 · Tender terms</h2>
+  <h2>Tender terms</h2>
   <form id="form" class="card" novalidate>
     <label for="title">Title</label>
     <input id="title" required maxlength="200" value="200 student laptops for 10 rural schools">
@@ -77,7 +65,7 @@
     <p id="status" class="status" aria-live="polite"></p>
   </form>
 
-  <h2>3 · Your tenders</h2>
+  <h2>Your tenders</h2>
   <div id="mine" class="card"><p class="kv" style="margin:0">Tenders you open from this browser appear here with their owner token (kept only in this browser).</p></div>
 </main>
 <script src="buy.js"></script>

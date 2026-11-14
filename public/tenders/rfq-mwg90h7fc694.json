@@ -1,0 +1,570 @@
+{
+  "id": "rfq-mwg90h7fc694",
+  "createdAt": "2026-11-14T10:14:02.523Z",
+  "phase": "settled",
+  "bids": {
+    "Bid A": {
+      "label": "Bid A",
+      "supplier": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "hash": "0xea042b619d457708e12a271b999bda306296ca4bd0385b91846daf48677fca3f",
+      "bondTx": "0xe9d3f5f6199f2cdeecab305e30071fb9088fb123dadf4defe945ec2aefccffc1",
+      "bondPie": 0.05,
+      "docHash": "0x604c5e8d98b6e0d97ca2f55fedb12a4281d0e4d144a6ba2b903fb6f1041d16a3",
+      "revealOk": true,
+      "revealTx": "0x61cb68d9bb81c602078e3efd9d5a46f0d2c92a199214ce214e307221ef605eea",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 15,
+        "total_usd": 7200,
+        "delivery_days": 20,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": null,
+          "storage_gb": null,
+          "battery_hours": null
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 15,
+          "total_usd": 7200,
+          "delivery_days": 20,
+          "warranty_months": 24,
+          "specs": {
+            "ram_gb": null,
+            "storage_gb": null,
+            "battery_hours": null
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "quality": {
+        "score": 2,
+        "readers": [
+          {
+            "engine": "Dolphin (DeepSeek V4.1 Flash)",
+            "score": 2,
+            "quote": "After-sales: support is available through our national hotline.",
+            "verified": true
+          },
+          {
+            "engine": "gpt-6-luna",
+            "score": 2,
+            "quote": "After-sales: support is available through our national hotline.",
+            "verified": true
+          }
+        ],
+        "disagree": false
+      },
+      "docRedacted": "losing bid: document withheld, hash and terms published"
+    },
+    "Bid B": {
+      "label": "Bid B",
+      "supplier": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "hash": "0xa08f738455162ec8a584cf356832c323cc52f85a05835135d6a0d7e55623bfd9",
+      "bondTx": "0xb574759c5d5e160d76c1f88c60d2a5ae7c328a31deaa399015a84d8a71078517",
+      "bondPie": 0.05,
+      "doc": "BID SUBMISSION - Sinar Visual\nTender: 15 lab microscopes for 3 vocational schools in East Nusa Tenggara\n\nTotal price: USD 7,900 for 15 units.\nDelivery: 18 days after award.\nWarranty: 24 months.\nAfter-sales: our service partner in Kupang keeps spare objectives and bulbs in stock; a technician visits any school in East Nusa Tenggara within 72 hours, and a replacement unit is lent while one is repaired.",
+      "docHash": "0x4f11003db5e0b7a389867f97a5a21325d664ca03506b9468bab56295e15c1c29",
+      "revealOk": true,
+      "revealTx": "0xe8c22410a00e9542f9a4dbba6a3225c1cca146959bd501f99e4c5035dab22df8",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 15,
+        "total_usd": 7900,
+        "delivery_days": 18,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": null,
+          "storage_gb": null,
+          "battery_hours": null
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 15,
+          "total_usd": 7900,
+          "delivery_days": 18,
+          "warranty_months": 24,
+          "specs": {
+            "ram_gb": null,
+            "storage_gb": null,
+            "battery_hours": null
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "quality": {
+        "score": 10,
+        "readers": [
+          {
+            "engine": "Dolphin (DeepSeek V4.1 Flash)",
+            "score": 10,
+            "quote": "After-sales: our service partner in Kupang keeps spare objectives and bulbs in stock; a technician visits any school in East Nusa Tenggara within 72 hours, and a replacement unit is lent while one is repaired.",
+            "verified": true
+          },
+          {
+            "engine": "gpt-6-luna",
+            "score": 10,
+            "quote": "After-sales: our service partner in Kupang keeps spare objectives and bulbs in stock; a technician visits any school in East Nusa Tenggara within 72 hours, and a replacement unit is lent while one is repaired.",
+            "verified": true
+          }
+        ],
+        "disagree": false
+      }
+    },
+    "Bid C": {
+      "label": "Bid C",
+      "supplier": "0x4Ac2afe2d195c7857BfEcE404A2F615e853527f4",
+      "hash": "0x537be325796a5990fe26023706d97e4d1ac97dfa39ec6dafc59a07cba73dfd98",
+      "bondTx": "0x3161d56d74cb5778221e29ea66b8d1c2a3834b4c5dd8845f099eb0c6c93b4ad7",
+      "bondPie": 0.05,
+      "docHash": "0xeb282b4f257b9329bfe38d1c9da65b8853d8d533f49f24a6560a8b163f67adbd",
+      "revealOk": true,
+      "revealTx": "0x4aebacc2f95be2634834cceba9ca29dcee3002f6045adc46f4ac270d4121549e",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0.99,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "trustFlag": true,
+      "review": "manipulation suspected but quote not found in document: a human should look",
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 15,
+        "total_usd": 7500,
+        "delivery_days": 22,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": null,
+          "storage_gb": null,
+          "battery_hours": null
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 15,
+          "total_usd": 7500,
+          "delivery_days": 22,
+          "warranty_months": 24,
+          "specs": {
+            "ram_gb": null,
+            "storage_gb": null,
+            "battery_hours": null
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "quality": {
+        "score": 0,
+        "readers": [
+          {
+            "engine": "Dolphin (DeepSeek V4.1 Flash)",
+            "score": 0,
+            "quote": "",
+            "verified": false
+          },
+          {
+            "engine": "gpt-6-luna",
+            "score": 1,
+            "quote": "We are proud to offer the best after-sales support in the industry.",
+            "verified": true
+          }
+        ],
+        "disagree": false
+      },
+      "docRedacted": "losing bid: document withheld, hash and terms published"
+    }
+  },
+  "events": [
+    {
+      "t": "2026-11-14T10:14:05.122Z",
+      "step": "rfq",
+      "msg": "Tender opened: 15 lab microscopes for 3 vocational schools in East Nusa Tenggara (escrow tender #9 on Kite)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x45bddcb48daf52c6b20d539e0df028f6337242b1670b3e98b8bf1cf2be98a03e"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:12.511Z",
+      "step": "commit",
+      "msg": "Bid A committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xe9d3f5f6199f2cdeecab305e30071fb9088fb123dadf4defe945ec2aefccffc1"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:12.524Z",
+      "step": "commit",
+      "msg": "Bid B committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xb574759c5d5e160d76c1f88c60d2a5ae7c328a31deaa399015a84d8a71078517"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:13.740Z",
+      "step": "commit",
+      "msg": "Bid C committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x3161d56d74cb5778221e29ea66b8d1c2a3834b4c5dd8845f099eb0c6c93b4ad7"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:15.651Z",
+      "step": "anchor",
+      "msg": "Commits closed on-chain: 3 sealed bids, bonds locked in the escrow contract",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x62005e7f9ab8ba55f5d403f30a405eb478cc4a80a84919e4ca337e1495d53007"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:18.510Z",
+      "step": "reveal",
+      "msg": "Bid A revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x61cb68d9bb81c602078e3efd9d5a46f0d2c92a199214ce214e307221ef605eea"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:18.523Z",
+      "step": "reveal",
+      "msg": "Bid B revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xe8c22410a00e9542f9a4dbba6a3225c1cca146959bd501f99e4c5035dab22df8"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:22.214Z",
+      "step": "reveal",
+      "msg": "Bid C revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x4aebacc2f95be2634834cceba9ca29dcee3002f6045adc46f4ac270d4121549e"
+      }
+    },
+    {
+      "t": "2026-11-14T10:14:35.858Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-14T10:14:40.190Z",
+      "step": "extract",
+      "msg": "Bid A terms read by Dolphin (DeepSeek V4.1 Flash): $7200, 20d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-14T10:14:46.349Z",
+      "step": "cross-check",
+      "msg": "Bid A: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T10:15:04.359Z",
+      "step": "quality",
+      "msg": "Bid A: \"after-sales service and spare parts available in East Nusa Tenggara\" rated 2/10 (Dolphin (DeepSeek V4.1 Flash) 2; gpt-6-luna 2)"
+    },
+    {
+      "t": "2026-11-14T10:15:11.714Z",
+      "step": "guard",
+      "msg": "Bid B: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-14T10:15:18.860Z",
+      "step": "extract",
+      "msg": "Bid B terms read by Dolphin (DeepSeek V4.1 Flash): $7900, 18d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-14T10:15:24.584Z",
+      "step": "cross-check",
+      "msg": "Bid B: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T10:15:42.157Z",
+      "step": "quality",
+      "msg": "Bid B: \"after-sales service and spare parts available in East Nusa Tenggara\" rated 10/10 (Dolphin (DeepSeek V4.1 Flash) 10; gpt-6-luna 10)"
+    },
+    {
+      "t": "2026-11-14T10:15:50.714Z",
+      "step": "guard",
+      "msg": "Bid C: SERV Prompt Guard passed, manipulation p=0.99"
+    },
+    {
+      "t": "2026-11-14T10:15:50.716Z",
+      "step": "review",
+      "msg": "Bid C flagged for human review (manipulation suspected but quote not found in document)"
+    },
+    {
+      "t": "2026-11-14T10:15:52.919Z",
+      "step": "extract",
+      "msg": "Bid C terms read by Dolphin (DeepSeek V4.1 Flash): $7500, 22d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-14T10:15:59.430Z",
+      "step": "cross-check",
+      "msg": "Bid C: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T10:16:19.982Z",
+      "step": "quality",
+      "msg": "Bid C: \"after-sales service and spare parts available in East Nusa Tenggara\" rated 0/10 (Dolphin (DeepSeek V4.1 Flash) 0, quote not found; gpt-6-luna 1)"
+    },
+    {
+      "t": "2026-11-14T10:16:21.083Z",
+      "step": "quality",
+      "msg": "keccak256 of every quality rating and quote (0x09a85d00…) anchored on Kite",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x7a2a8f69f0d4d33dac8e749a972e155323c1b972102dfef398330d288a0e27ee"
+      }
+    },
+    {
+      "t": "2026-11-14T10:16:21.088Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 0.750, Bid B 0.965, Bid C 0.666"
+    },
+    {
+      "t": "2026-11-14T10:16:27.953Z",
+      "step": "review",
+      "msg": "Bid C still under review: no automatic award"
+    },
+    {
+      "t": "2026-11-14T10:16:27.959Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid B (confidence 1.00), formula says Bid B: escalated to a human because Bid C under human review",
+      "data": {
+        "probabilities": {
+          "Bid A": 0.001,
+          "Bid B": 0.998,
+          "Bid C": 0.001
+        }
+      }
+    },
+    {
+      "t": "2026-11-14T10:16:52.675Z",
+      "step": "rationale",
+      "msg": "Award rationale written by SERV (Kronos + Shadow Agent checked)"
+    },
+    {
+      "t": "2026-11-14T10:16:55.733Z",
+      "step": "reppo",
+      "msg": "Independent Reppo audit, round 1 (cmwg948k0000008js1akdfynf, attempt 1): panel scoring takes 30-90s"
+    },
+    {
+      "t": "2026-11-14T10:18:42.199Z",
+      "step": "reppo",
+      "msg": "Reppo verdict used for settlement (strictest round): review (score 100)",
+      "data": {
+        "reason": "Your action scored 100/100 and all rubric dimensions and gates passed, but because confidence is \"low\" the audit routes to \"review\" instead of shipping automatically."
+      }
+    },
+    {
+      "t": "2026-11-14T10:18:42.207Z",
+      "step": "settle",
+      "msg": "Settlement HELD: award=escalate, Reppo=review. Bonds stay in escrow pending human review"
+    },
+    {
+      "t": "2026-11-14T10:18:46.181Z",
+      "step": "human",
+      "msg": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because Bid C under human review; released to Bid B, first on the published formula (0.965) (EIP-191 signature verified)"
+    },
+    {
+      "t": "2026-11-14T10:18:53.228Z",
+      "step": "settle",
+      "msg": "Bid A bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+      }
+    },
+    {
+      "t": "2026-11-14T10:18:53.240Z",
+      "step": "settle",
+      "msg": "Bid B bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+      }
+    },
+    {
+      "t": "2026-11-14T10:18:53.249Z",
+      "step": "settle",
+      "msg": "Bid C bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+      }
+    },
+    {
+      "t": "2026-11-14T10:18:53.264Z",
+      "step": "settle",
+      "msg": "Operator success fee to the Lelang treasury: 0.0002",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+      }
+    },
+    {
+      "t": "2026-11-14T10:18:53.275Z",
+      "step": "settle",
+      "msg": "Bid B wins: down payment: 0.01",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+      }
+    }
+  ],
+  "title": "15 lab microscopes for 3 vocational schools in East Nusa Tenggara",
+  "budgetCapUsd": 9000,
+  "maxDeliveryDays": 30,
+  "minSpecs": {},
+  "weights": {
+    "price": 0.4,
+    "warranty": 0.2,
+    "delivery": 0.1,
+    "quality": 0.3
+  },
+  "minConfidence": 0.55,
+  "bondPie": 0.05,
+  "depositPie": 0.01,
+  "qualitative": {
+    "criterion": "after-sales service and spare parts available in East Nusa Tenggara"
+  },
+  "chainId": "9",
+  "escrow": "0x29240221486eaf37624497d6dd84e881ada3f952",
+  "anchorTx": "0x62005e7f9ab8ba55f5d403f30a405eb478cc4a80a84919e4ca337e1495d53007",
+  "escalatedBefore": false,
+  "qualityAnchor": {
+    "hash": "0x09a85d00e30d2314b22fb3d917bb2c8e498184122a63e5bad841573e2f53fa49",
+    "tx": "https://testnet.kitescan.ai/tx/0x7a2a8f69f0d4d33dac8e749a972e155323c1b972102dfef398330d288a0e27ee"
+  },
+  "award": {
+    "decision": "award",
+    "winner": "Bid B",
+    "formulaWinner": "Bid B",
+    "scores": {
+      "Bid A": 0.75,
+      "Bid B": 0.965,
+      "Bid C": 0.666
+    },
+    "probabilities": {
+      "Bid A": 0.001,
+      "Bid B": 0.998,
+      "Bid C": 0.001
+    },
+    "confidence": 0.998,
+    "engine": "gpt-6-luna decision node",
+    "rationale": "Bid B is the leading bid, with a total score of **0.965**.\n\n- **Price:** Bid B’s weighted price score is **0.365**, compared with **0.4** for Bid A and **0.384** for Bid C.\n- **Warranty:** Each bid’s weighted warranty score is **0.2**.\n- **Delivery:** Bid B scores **0.1**, compared with **0.09** for Bid A and **0.082** for Bid C.\n- **Quality:** Bid B scores **0.3**, compared with **0.06** for Bid A and **0** for Bid C.\n\nNo disqualification reason is stated for any bid. Bid C is under human review, so no award should be made until a human decides.\n\nescalate"
+  },
+  "reppo": {
+    "id": "cmwg948k0000008js1akdfynf",
+    "status": "COMPLETED",
+    "score": 100,
+    "route": "review",
+    "reason": "Your action scored 100/100 and all rubric dimensions and gates passed, but because confidence is \"low\" the audit routes to \"review\" instead of shipping automatically.",
+    "rubric": {
+      "scope": 100,
+      "safety": 100,
+      "correctness": 100,
+      "reversibility": 100
+    },
+    "label": "original rationale",
+    "rounds": [
+      {
+        "id": "cmwg948k0000008js1akdfynf",
+        "status": "COMPLETED",
+        "score": 100,
+        "route": "review",
+        "reason": "Your action scored 100/100 and all rubric dimensions and gates passed, but because confidence is \"low\" the audit routes to \"review\" instead of shipping automatically.",
+        "rubric": {
+          "scope": 100,
+          "safety": 100,
+          "correctness": 100,
+          "reversibility": 100
+        },
+        "label": "original rationale"
+      }
+    ]
+  },
+  "humanApproval": {
+    "approver": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+    "note": "held because Bid C under human review; released to Bid B, first on the published formula (0.965)",
+    "message": "LELANG approve rfq-mwg90h7fc694 award Bid B note: held because Bid C under human review; released to Bid B, first on the published formula (0.965)",
+    "signature": "0x593b4a676b6894f619f1f5f587b71bc241b3c8da5ce196f8311e0be841bc599b03880ee0b2951a3d3ca80fb38f9bdbf401b79a0c70e9653c33fae0024ff657871c",
+    "at": "2026-11-14T10:18:46.181Z"
+  },
+  "settlement": [
+    {
+      "event": "BondRefunded",
+      "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "amount": "0.05",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+    },
+    {
+      "event": "BondRefunded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.05",
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+    },
+    {
+      "event": "BondRefunded",
+      "bidder": "0x4Ac2afe2d195c7857BfEcE404A2F615e853527f4",
+      "amount": "0.05",
+      "label": "Bid C",
+      "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+    },
+    {
+      "event": "FeePaid",
+      "bidder": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "amount": "0.0002",
+      "label": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+    },
+    {
+      "event": "Awarded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.01",
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"
+    }
+  ]
+}

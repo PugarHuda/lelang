@@ -5,31 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bounty pool · Lelang</title>
 <link rel="icon" href="data:,">
-<style>
-  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
-  main { max-width:900px; margin:0 auto; padding:24px 16px 64px; }
-  h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
-  a { color:var(--acc); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; }
-  .kv { font-size:13px; color:var(--mute); }
-  .big { font-size:40px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
-  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
-  table { border-collapse:collapse; width:100%; font-size:13px; }
-  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
-  code { font-size:12px; overflow-wrap:anywhere; }
-  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-size:14px; }
-  .flow span { border:1px solid var(--line); border-radius:999px; padding:4px 12px; background:var(--card); }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
-<main>
-  <p class="kv"><a href="./">← Dashboard</a></p>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="./">Lelang <span>sealed-bid ledger · Kite testnet</span></a>
+  <nav aria-label="Site"><a href="./">Tenders</a><a href="buy.html">Open a tender</a><a href="bid.html">Bid</a><a href="attacks.html">Attacks</a><a href="pool.html" aria-current="page">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a></nav>
+</div></header>
+<main class="narrow">
   <h1>Attackers fund the defence</h1>
-  <p class="kv">Read live from the LelangEscrow V4 contract on Kite testnet by your browser. Nothing here comes from our server.</p>
+  <p class="lede">Read live from the LelangEscrow V4 contract on Kite testnet by your browser. Nothing here comes from our server.</p>
   <div class="card flow" aria-label="How a slashed bond moves">
     <span>bid tries to steer the AI evaluator</span>→<span>quote verified, slash <strong>pending</strong> (1 h)</span>→<span>2 approvers can overturn on-chain</span>→<span>else <strong>final</strong>: bond to the bounty pool</span>→<span>pool pays whoever finds a hole</span>
   </div>

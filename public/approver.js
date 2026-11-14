@@ -79,7 +79,7 @@ function advisory(rfq) {
   const d = rfq?.deliveryDispute;
   if (!d) return '';
   const rec = typeof d.recommendation === 'string' ? d.recommendation : JSON.stringify(d.recommendation);
-  const readers = Array.isArray(d.readers) ? d.readers.map((r) => (typeof r === 'string' ? r : r.model ?? r.name ?? r.route ?? JSON.stringify(r))).join(', ') : d.readers;
+  const readers = Array.isArray(d.readers) ? d.readers.map((r) => (typeof r === 'string' ? r : (r.engine ? `${r.engine}: ${r.met === true ? 'met' : r.met === false ? 'not met' : 'no verified quote'}` : r.model ?? r.name ?? JSON.stringify(r)))).join(', ') : d.readers;
   return `<div class="advice"><strong>AI recommendation (advisory only, approvers decide):</strong> ${esc(rec)}
     <div class="kv">${readers ? `read by ${esc(readers)} · ` : ''}${d.evidenceHash ? `evidence <code>${esc(String(d.evidenceHash).slice(0, 18))}…</code>` : ''}${d.anchorTx ? ` · ${String(d.anchorTx).startsWith('http') ? `<a href="${esc(d.anchorTx)}" target="_blank" rel="noopener">anchor tx</a>` : TX(d.anchorTx, 'anchor tx')}` : ''}</div></div>`;
 }

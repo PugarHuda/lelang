@@ -199,6 +199,8 @@ assert.deepEqual([0, 25, 26, 27, 51, 52, 99].map(bidLabel), ['A', 'Z', 'AA', 'AB
   delete process.env.APPEAL_QUORUM;
   await assert.rejects(decideAppeal(r.id, l, await decide(boss, false)), /waiting for a human/);
   assert.ok(overturnedSlashes().has(slashKey(undefined, 42, k.address)));
+  // a fresh deployment (empty state) still knows the published overturn of live tender #10 (the file regex once lost a backslash)
+  assert.ok(overturnedSlashes().has(slashKey("0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b", 10, "0x4Ac2afe2d195c7857BfEcE404A2F615e853527f4")));
   delete process.env.APPROVERS;
   // an overturned slash never counts against the supplier
   const us = '0x1111111111111111111111111111111111111111';

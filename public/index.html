@@ -5,60 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Lelang</title>
 <link rel="icon" href="data:,">
-<style>
-  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
-  * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
-  main { max-width:1100px; margin:0 auto; padding:24px 16px 64px; }
-  header { display:flex; flex-wrap:wrap; gap:12px; align-items:baseline; justify-content:space-between; }
-  h1 { margin:0; font-size:28px; letter-spacing:-.02em; }
-  h1 small { font-size:14px; color:var(--mute); font-weight:400; margin-left:8px; }
-  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
-  button { background:var(--ink); color:var(--bg); border:0; border-radius:8px; padding:10px 16px; font-weight:600; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:default; }
-  .stack { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-  .pill { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:2px 10px; color:var(--mute); }
-  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr)); gap:10px; }
-  .grid > * { min-width:0; overflow-wrap:anywhere; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; }
-  .bid h3 { margin:0 0 6px; font-size:15px; }
-  .bid .st { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
-  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); } .mute { color:var(--mute); }
-  .kv { font-size:13px; color:var(--mute); }
-  .win { outline:2px solid var(--ok); }
-  ol { list-style:none; padding:0; margin:0; }
-  ol li { display:grid; grid-template-columns:90px 92px 1fr; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  ol li .t { color:var(--mute); font-variant-numeric:tabular-nums; font-size:12px; }
-  ol li .s { font-size:12px; font-weight:700; text-transform:uppercase; color:var(--acc); }
-  .tabs { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
-  .tabs button { font-size:13px; padding:6px 10px; }
-  .tabs button[aria-pressed="true"] { outline:2px solid var(--acc); }
-  ol li .s.ok { color:var(--ok); } ol li .s.bad { color:var(--bad); }
-  a { color:var(--acc); }
-  pre { white-space:pre-wrap; font:13px/1.55 ui-monospace, monospace; margin:0; }
-  .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; } .bar i { display:block; height:100%; background:var(--acc); }
-  @media (max-width:600px) { ol li { grid-template-columns:1fr; gap:2px; } }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="./">Lelang <span>sealed-bid ledger · Kite testnet</span></a>
+  <nav aria-label="Site"><a href="./" aria-current="page">Tenders</a><a href="buy.html">Open a tender</a><a href="bid.html">Bid</a><a href="attacks.html">Attacks</a><a href="pool.html">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a></nav>
+</div></header>
 <main>
-  <header>
+  <section class="intro">
     <div>
-      <h1>Lelang <small>sealed-bid tenders run by agents</small></h1>
-      <div class="stack">
-        <span class="pill">Kite: sealed commits, bonds, settlement</span>
-        <span class="pill">SERV: Prompt Guard, Kronos, Shadow Agent</span>
-        <span class="pill">Decision nodes: manipulation check, award choice</span>
-        <span class="pill">Dolphin: reads every bid; SERV re-reads to cross-check</span>
-        <span class="pill">Reppo: independent audit</span>
-      </div>
-      <p class="kv" style="margin:8px 0 0"><a href="demo.mp4">Demo video (165 s)</a> · <a href="buy.html"><strong>Open a tender</strong></a> · <a href="bid.html"><strong>Bid on a tender</strong></a> · <a href="pool.html">Bounty pool</a> · <a href="approver.html">Approver console</a> · <a href="attacks.html">Attack gallery</a> · <a href="stats.html">Lelang in numbers</a> · <a href="rep.html?a=0x5d6674Ce278747115d8031e34d9FAe6B42cA214E">Reputation of a repeat offender</a> · <a href="https://github.com/PugarHuda/lelang">Source</a></p>
+      <h1>Sealed-bid tenders, run by agents.<small>Bonds sit in an escrow on Kite testnet. A bid that tries to steer the AI evaluator loses its bond, with the evidence on-chain. Every claim on this page is re-checked against the chain by your browser.</small></h1>
+      <p class="links"><a href="demo.mp4">Demo video (185 s)</a> · <a href="buy.html"><strong>Open a tender</strong></a> · <a href="bid.html"><strong>Bid on a tender</strong></a> · <a href="rep.html?a=0x5d6674Ce278747115d8031e34d9FAe6B42cA214E">Reputation of a repeat offender</a> · <a href="https://github.com/PugarHuda/lelang">Source</a></p>
     </div>
     <button id="run">Run demo tender</button>
-  </header>
+  </section>
+  <ul class="stack" aria-label="Who does what">
+    <li class="pill"><b>Kite</b>sealed commits, bonds, settlement</li>
+    <li class="pill"><b>SERV</b>Prompt Guard, Kronos, Shadow Agent</li>
+    <li class="pill"><b>Decision nodes</b>manipulation check, award choice</li>
+    <li class="pill"><b>Dolphin</b>reads every bid; SERV re-reads to cross-check</li>
+    <li class="pill"><b>Reppo</b>independent audit</li>
+  </ul>
   <p id="note" class="kv" hidden>Recorded tenders from real runs on Kite testnet: every <em>tx</em> link opens the on-chain transaction. Clone the repo and run <code>npm start</code> to run a live tender.</p>
   <section id="live" hidden aria-live="polite"></section>
+  <h2 id="tenders-h">Recorded tenders</h2>
   <nav id="tenders" class="tabs" aria-label="Recorded tenders" hidden></nav>
   <div id="view"><p class="mute">No tender yet. Run the demo.</p></div>
 </main>

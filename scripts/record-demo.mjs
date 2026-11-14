@@ -91,6 +91,9 @@ try {
     await page.goto(`${BASE}/pool.html`);
     await page.locator('#slashes').filter({ hasNotText: 'Reading' }).waitFor({ timeout: 45_000 }).catch(() => {});
     await caption('Attackers fund the defence: the pool pays whoever finds a hole in the evaluator. Read live from the escrow.', 6000);
+    await page.goto(`${BASE}/stats.html`);
+    await page.waitForFunction(() => window.__statsDone, null, { timeout: 60_000 }).catch(() => {});
+    await caption('Lelang in numbers: tenders, sealed bids, slashes, pool and bounties, counted from the escrow events by your browser.', 5500);
     await page.goto(`${BASE}/buy.html`);
     await caption('A human buyer can start from any public Open Contracting tender and pay the fee from a browser wallet, no gas.', 6000);
     await page.goto(`${BASE}/bid.html`);
@@ -102,6 +105,21 @@ try {
       await page.locator(`#tenders button[data-id="${mixed.id}"]`).click();
       await page.waitForFunction((id) => window.__lastRfq?.id === id, mixed.id);
       await caption('Here a human in a browser competed with two supplier agents in the same escrow, under the same checks.', 6000);
+    }
+    // after delivery: a disputed balance, read by two readers, decided only by the buyer or the approver quorum
+    const disputed = index.find((t) => /delivery disputed/.test(t.label));
+    if (disputed) {
+      await page.goto(`${BASE}/`);
+      await page.waitForFunction(() => window.__lastRfq);
+      await page.locator(`#tenders button[data-id="${disputed.id}"]`).click();
+      await page.waitForFunction((id) => window.__lastRfq?.id === id, disputed.id);
+      await scrollTo('#proof');
+      await page.locator('#proof').filter({ hasNotText: 'Checking' }).waitFor({ timeout: 45_000 }).catch(() => {});
+      await caption('After delivery the balance stays in escrow. This buyer disputed it: SERV and Dolphin each quoted its inspection report and both said "not met".', 6000);
+      await caption('Their advice never moves money. The report hash is anchored on Kite, and only the buyer or the approver quorum releases the balance.', 5500);
+      await page.goto(`${BASE}/approver.html`);
+      await page.waitForFunction(() => window.__approverDone, null, { timeout: 60_000 }).catch(() => {});
+      await caption('The approver console: any approver, including one from outside the team, votes on-chain from a browser wallet.', 5500);
     }
   }
   // 5b. a tender on the public API with no operator token
