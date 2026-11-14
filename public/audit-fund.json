@@ -1,13 +1,13 @@
 {
   "slashes": 6,
   "slashedUsd": 0.5,
-  "audits": 17,
+  "audits": 19,
   "tenderFees": 3,
-  "successFees": 5,
-  "feesUsd": 1.2034,
-  "auditCostUsd": 3.74,
-  "coveredPct": 13,
-  "coveredWithFeesPct": 46,
+  "successFees": 7,
+  "feesUsd": 1.204,
+  "auditCostUsd": 4.18,
+  "coveredPct": 12,
+  "coveredWithFeesPct": 41,
   "auditUsd": 0.22,
   "auditsPerSlashAt10UsdBond": 45
 }

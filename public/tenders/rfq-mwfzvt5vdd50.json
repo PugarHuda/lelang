@@ -1,0 +1,327 @@
+{
+  "id": "rfq-mwfzvt5vdd50",
+  "createdAt": "2026-11-14T05:58:28.195Z",
+  "phase": "settled",
+  "bids": {
+    "Bid A": {
+      "label": "Bid A",
+      "supplier": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "hash": "0x03abff9ffead9f073c9438db1ea7fa93d05617ae41ea4e1e7058efdd45445014",
+      "bondTx": "0xe03d88a16a67702438e20c8a60c44f484ac04663e6c5e98030ef70acfc7ff2ad",
+      "bondPie": 0.01,
+      "doc": "Total price: USD 7,900 for all 10 projectors, delivered.\nDelivery: 14 days after award.\nWarranty: 36 months.\nAfter-sales: lamp replacement within 3 working days.",
+      "docHash": "0x069694e3a60f3cc38df89c93fd9ea89e62efaff8093071070bbcc7e4d07de596",
+      "revealOk": true,
+      "revealTx": "0x495ff4723c07094d01f7421ffbc2f5066607947e388c1ba176d4aef2d1600ad9",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 10,
+        "total_usd": 7900,
+        "delivery_days": 14,
+        "warranty_months": 36,
+        "specs": {
+          "ram_gb": null,
+          "storage_gb": null,
+          "battery_hours": null
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 10,
+          "total_usd": 7900,
+          "delivery_days": 14,
+          "warranty_months": 36,
+          "specs": {
+            "ram_gb": null,
+            "storage_gb": null,
+            "battery_hours": null
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "ambiguous": [
+        {
+          "field": "delivery_days",
+          "values": [
+            14,
+            3
+          ]
+        }
+      ],
+      "review": "bid states more than one value (delivery_days 14 / 3): a human should ask which one binds"
+    }
+  },
+  "events": [
+    {
+      "t": "2026-11-14T05:58:30.047Z",
+      "step": "rfq",
+      "msg": "Tender opened: Browser supplier test: 10 classroom projectors (escrow tender #5 on Kite)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5d0abdca71c2387b56639ae1b6bc9eaa8de8779f3df30486b6ec8eab1e330812"
+      }
+    },
+    {
+      "t": "2026-11-14T05:58:42.651Z",
+      "step": "commit",
+      "msg": "Bid A committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xe03d88a16a67702438e20c8a60c44f484ac04663e6c5e98030ef70acfc7ff2ad"
+      }
+    },
+    {
+      "t": "2026-11-14T05:58:43.920Z",
+      "step": "anchor",
+      "msg": "Commits closed on-chain: 1 sealed bids, bonds locked in the escrow contract",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x1d60770c4fcb302effd4ccd68000e8ff0be80b2e7195d86b637fb3b9ba5b0119"
+      }
+    },
+    {
+      "t": "2026-11-14T05:58:46.907Z",
+      "step": "reveal",
+      "msg": "Bid A revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x495ff4723c07094d01f7421ffbc2f5066607947e388c1ba176d4aef2d1600ad9"
+      }
+    },
+    {
+      "t": "2026-11-14T06:39:47.258Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-14T06:39:50.177Z",
+      "step": "extract",
+      "msg": "Bid A terms read by Dolphin (DeepSeek V4.1 Flash): $7900, 14d, 36mo warranty"
+    },
+    {
+      "t": "2026-11-14T06:39:56.217Z",
+      "step": "cross-check",
+      "msg": "Bid A: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T06:40:02.567Z",
+      "step": "ambiguity",
+      "msg": "Bid A: the document states more than one value for delivery_days 14 / 3; no automatic award for this bid"
+    },
+    {
+      "t": "2026-11-14T06:40:02.570Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 1.000"
+    },
+    {
+      "t": "2026-11-14T06:40:07.114Z",
+      "step": "review",
+      "msg": "Bid A still under review: no automatic award"
+    },
+    {
+      "t": "2026-11-14T06:40:07.128Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid A (confidence 1.00), formula says Bid A: escalated to a human because Bid A under human review",
+      "data": {
+        "probabilities": {
+          "Bid A": 1
+        }
+      }
+    },
+    {
+      "t": "2026-11-14T06:41:36.164Z",
+      "step": "recover",
+      "msg": "Evaluation was interrupted (process stopped); the tender is back in reveal and can be evaluated again"
+    },
+    {
+      "t": "2026-11-14T06:41:47.763Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-14T06:41:50.185Z",
+      "step": "extract",
+      "msg": "Bid A terms read by Dolphin (DeepSeek V4.1 Flash): $7900, 14d, 36mo warranty"
+    },
+    {
+      "t": "2026-11-14T06:41:56.102Z",
+      "step": "cross-check",
+      "msg": "Bid A: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T06:42:02.463Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 1.000"
+    },
+    {
+      "t": "2026-11-14T06:42:07.137Z",
+      "step": "review",
+      "msg": "Bid A still under review: no automatic award"
+    },
+    {
+      "t": "2026-11-14T06:42:07.154Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid A (confidence 1.00), formula says Bid A: escalated to a human because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that",
+      "data": {
+        "probabilities": {
+          "Bid A": 1
+        }
+      }
+    },
+    {
+      "t": "2026-11-14T06:42:27.363Z",
+      "step": "rationale",
+      "msg": "Award rationale written by SERV (Kronos + Shadow Agent checked)"
+    },
+    {
+      "t": "2026-11-14T06:42:29.463Z",
+      "step": "reppo",
+      "msg": "Independent Reppo audit, round 1 (cmwg1gglc000008jvqo9u3wxi, attempt 1): panel scoring takes 30-90s"
+    },
+    {
+      "t": "2026-11-14T06:45:34.261Z",
+      "step": "reppo",
+      "msg": "Reppo verdict used for settlement (strictest round): ship (score 98)",
+      "data": {
+        "reason": "score 98 >= passAt 70 -> decision accept; score >= acceptAt 85 and confidence high >= high -> ship"
+      }
+    },
+    {
+      "t": "2026-11-14T06:45:34.272Z",
+      "step": "settle",
+      "msg": "Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review"
+    },
+    {
+      "t": "2026-11-14T10:02:18.394Z",
+      "step": "human",
+      "msg": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid A: held because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that; released to Bid A, first on the published formula (1); skipped Bid A: two figures  (EIP-191 signature verified)"
+    },
+    {
+      "t": "2026-11-14T10:02:25.697Z",
+      "step": "settle",
+      "msg": "Bid A bond refunded: 0.01",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+      }
+    },
+    {
+      "t": "2026-11-14T10:02:25.699Z",
+      "step": "settle",
+      "msg": "Operator success fee to the Lelang treasury: 0.0002",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+      }
+    },
+    {
+      "t": "2026-11-14T10:02:25.701Z",
+      "step": "settle",
+      "msg": "Bid A wins: down payment: 0.01",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+      }
+    }
+  ],
+  "title": "Browser supplier test: 10 classroom projectors",
+  "budgetCapUsd": 90000,
+  "maxDeliveryDays": 30,
+  "minSpecs": {},
+  "weights": {
+    "price": 0.5,
+    "warranty": 0.3,
+    "delivery": 0.2
+  },
+  "minConfidence": 0.55,
+  "bondPie": "0.01",
+  "depositPie": 0.01,
+  "chainId": "5",
+  "escrow": "0x29240221486eaf37624497d6dd84e881ada3f952",
+  "anchorTx": "0x1d60770c4fcb302effd4ccd68000e8ff0be80b2e7195d86b637fb3b9ba5b0119",
+  "escalatedBefore": true,
+  "award": {
+    "decision": "award",
+    "winner": "Bid A",
+    "formulaWinner": "Bid A",
+    "scores": {
+      "Bid A": 1
+    },
+    "probabilities": {
+      "Bid A": 1
+    },
+    "confidence": 1,
+    "engine": "gpt-6-luna decision node",
+    "rationale": "No award is made. The leading bid is **Bid A**, with a total score of **1**.\n\n- **Price:** part **1**; weighted score **0.5**.\n- **Warranty:** part **1**; weighted score **0.3**.\n- **Delivery:** part **1**; weighted score **0.2**.\n\nEscalation reasons:\n- Bid A under human review.\n- An earlier evaluation of this tender escalated, and a re-run cannot undo that.\n\nA human must decide.\n\nescalate"
+  },
+  "reppo": {
+    "id": "cmwg1gglc000008jvqo9u3wxi",
+    "status": "COMPLETED",
+    "score": 98,
+    "route": "ship",
+    "reason": "score 98 >= passAt 70 -> decision accept; score >= acceptAt 85 and confidence high >= high -> ship",
+    "rubric": {
+      "scope": 100,
+      "safety": 100,
+      "correctness": 100,
+      "reversibility": 87
+    },
+    "label": "original rationale",
+    "rounds": [
+      {
+        "id": "cmwg1gglc000008jvqo9u3wxi",
+        "status": "COMPLETED",
+        "score": 98,
+        "route": "ship",
+        "reason": "score 98 >= passAt 70 -> decision accept; score >= acceptAt 85 and confidence high >= high -> ship",
+        "rubric": {
+          "scope": 100,
+          "safety": 100,
+          "correctness": 100,
+          "reversibility": 87
+        },
+        "label": "original rationale"
+      }
+    ]
+  },
+  "humanApproval": {
+    "approver": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+    "note": "held because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that; released to Bid A, first on the published formula (1); skipped Bid A: two figures ",
+    "message": "LELANG approve rfq-mwfzvt5vdd50 award Bid A note: held because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that; released to Bid A, first on the published formula (1); skipped Bid A: two figures ",
+    "signature": "0x304fdd0166c8662c40dc3101da1f772a877664749174d5ab0f3cd276b56aaeb95df410501f3e6343b6c6a9e97196c597c1a30a8e766b8025635ad75065a2fccc1b",
+    "at": "2026-11-14T10:02:18.394Z"
+  },
+  "settlement": [
+    {
+      "event": "BondRefunded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.01",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+    },
+    {
+      "event": "FeePaid",
+      "bidder": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "amount": "0.0002",
+      "label": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+    },
+    {
+      "event": "Awarded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.01",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"
+    }
+  ]
+}

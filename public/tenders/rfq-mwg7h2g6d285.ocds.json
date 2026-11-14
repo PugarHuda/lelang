@@ -1,0 +1,245 @@
+{
+  "uri": "https://lelang-ten.vercel.app/ocds/rfq-mwg7h2g6d285.json",
+  "version": "1.1",
+  "publishedDate": "2026-11-14T10:02:07.814Z",
+  "publisher": {
+    "name": "Lelang"
+  },
+  "extensions": [
+    "https://raw.githubusercontent.com/open-contracting-extensions/ocds_bid_extension/v1.1.5/extension.json"
+  ],
+  "releases": [
+    {
+      "ocid": "ocds-lelang-rfq-mwg7h2g6d285",
+      "id": "rfq-mwg7h2g6d285-settled",
+      "date": "2026-11-14T10:02:07.814Z",
+      "tag": [
+        "tender",
+        "award"
+      ],
+      "initiationType": "tender",
+      "language": "en",
+      "parties": [
+        {
+          "id": "lelang-buyer",
+          "name": "Buyer agent",
+          "roles": [
+            "buyer",
+            "procuringEntity"
+          ]
+        },
+        {
+          "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+          "name": "Bid A (supplier agent)",
+          "roles": [
+            "tenderer"
+          ]
+        },
+        {
+          "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+          "name": "Bid B (supplier agent)",
+          "roles": [
+            "tenderer",
+            "supplier"
+          ]
+        }
+      ],
+      "buyer": {
+        "id": "lelang-buyer",
+        "name": "Buyer agent"
+      },
+      "tender": {
+        "id": "rfq-mwg7h2g6d285",
+        "title": "12 classroom document cameras for 3 vocational schools",
+        "status": "complete",
+        "value": {
+          "amount": 6000,
+          "currency": "USD"
+        },
+        "procurementMethod": "open",
+        "procurementMethodDetails": "Sealed-bid tender between agents: commit-reveal on Kite, bonds in escrow",
+        "awardCriteria": "ratedCriteria",
+        "awardCriteriaDetails": "Weights {\"price\":0.5,\"warranty\":0.3,\"delivery\":0.2}; minimum specs {\"ram_gb\":2,\"storage_gb\":16,\"battery_hours\":1}; max delivery 30 days",
+        "submissionMethod": [
+          "electronicSubmission"
+        ],
+        "tenderPeriod": {
+          "startDate": "2026-11-14T09:30:57.318Z"
+        },
+        "numberOfTenderers": 2,
+        "tenderers": [
+          {
+            "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "name": "Bid A (supplier agent)"
+          },
+          {
+            "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "name": "Bid B (supplier agent)"
+          }
+        ]
+      },
+      "bids": {
+        "details": [
+          {
+            "id": "Bid A",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+                "name": "Bid A (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 3300,
+              "currency": "USD"
+            }
+          },
+          {
+            "id": "Bid B",
+            "status": "valid",
+            "tenderers": [
+              {
+                "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+                "name": "Bid B (supplier agent)"
+              }
+            ],
+            "value": {
+              "amount": 3500,
+              "currency": "USD"
+            }
+          }
+        ]
+      },
+      "awards": [
+        {
+          "id": "rfq-mwg7h2g6d285-award",
+          "status": "active",
+          "date": "2026-11-14T10:01:53.577Z",
+          "value": {
+            "amount": 3500,
+            "currency": "USD"
+          },
+          "suppliers": [
+            {
+              "id": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+              "name": "Bid B (supplier agent)"
+            }
+          ],
+          "description": "Bid B ranks first with a total score of 0.971, compared with Bid A’s 0.811.\n\n- **Price:** Bid A has the advantage, with a price part of 1 and weighted score of 0.5. Bid B’s price part is 0.943 and weighted score is 0.471.\n- **Warranty:** Bid B leads with a part of 1 and weighted score of 0.3; Bid A’s part is 0.667 and weighted score is 0.2.\n- **Delivery:** Bid B leads with a part of 1 and weighted score of 0.2; Bid A’s part is 0.556 and weighted score is 0.111.\n\nNeither bid is disqualified. Bid B meets the stated minimum specifications and is within the budget and delivery limits.\n\naward"
+        }
+      ],
+      "x_lelang": {
+        "escrow": "0x29240221486eaf37624497d6dd84e881ada3f952",
+        "escrowTenderId": "7",
+        "commitsClosedTx": "0xe393e24a3b21b73967baf1311fa6a6c9ef3b5254fb43f123729e9bc1a786e243",
+        "bids": [
+          {
+            "id": "Bid A",
+            "commitment": "0xa0d87c7f7a078dbefc83f9089e4f33334f21cfc1cebbddd31c2872fb3999a4e8",
+            "docHash": "0x9541d88710b6a309cf0f24b1c1de61ef6d28f4abeb4e25a85d384c3ca336fd40",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          },
+          {
+            "id": "Bid B",
+            "commitment": "0x23e0c4a97ec881b00aec7b40f7241eae3bdb84a46e9f21edca8b4647d81e93f6",
+            "docHash": "0xed8c3e7dc6f97169e01d5758347d80d47acc9892cc87ad0ae9a8a81f8c4e0472",
+            "revealOk": true,
+            "disqualified": null,
+            "evidence": null,
+            "evidenceHash": null
+          }
+        ],
+        "decision": {
+          "decision": "award",
+          "formulaScores": {
+            "Bid A": 0.811,
+            "Bid B": 0.971
+          },
+          "probabilities": {
+            "Bid A": 0.02,
+            "Bid B": 0.98
+          },
+          "engine": "gpt-6-luna decision node"
+        },
+        "audit": {
+          "id": "cmwg7j08o000008jpj7gnvsng",
+          "status": "COMPLETED",
+          "score": 93,
+          "route": "review",
+          "reason": "The award was routed to human review because, although the score (93) easily exceeds the acceptance threshold and all evaluators agreed on the decision, the confidence level reached only \"medium\" when the policy requires \"high\" confidence for automatic shipping of tender awards. The action itself is technically correct—Bid B does rank first under the published formula (0.971 vs 0.811) and the independent decision node agrees—but the reversibility concerns around financial commitment kept overall confidence from reaching the \"high\" bar needed for full automation.",
+          "rubric": {
+            "scope": 100,
+            "safety": 92,
+            "correctness": 100,
+            "reversibility": 65
+          },
+          "label": "original rationale",
+          "rounds": [
+            {
+              "id": "cmwg7j08o000008jpj7gnvsng",
+              "status": "COMPLETED",
+              "score": 93,
+              "route": "review",
+              "reason": "The award was routed to human review because, although the score (93) easily exceeds the acceptance threshold and all evaluators agreed on the decision, the confidence level reached only \"medium\" when the policy requires \"high\" confidence for automatic shipping of tender awards. The action itself is technically correct—Bid B does rank first under the published formula (0.971 vs 0.811) and the independent decision node agrees—but the reversibility concerns around financial commitment kept overall confidence from reaching the \"high\" bar needed for full automation.",
+              "rubric": {
+                "scope": 100,
+                "safety": 92,
+                "correctness": 100,
+                "reversibility": 65
+              },
+              "label": "original rationale"
+            }
+          ]
+        },
+        "humanApproval": {
+          "approver": "0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f",
+          "note": "held because of a review flag; released to Bid B, first on the published formula (0.971)",
+          "message": "LELANG approve rfq-mwg7h2g6d285 award Bid B note: held because of a review flag; released to Bid B, first on the published formula (0.971)",
+          "signature": "0x67a75c872b8d49644664f2cf03dcdd62c35f7065224af8e823d2d0f06291cc8635376037dcc51e151859b453f997d56c610f68b1bec5557800f5765270afefc31b",
+          "at": "2026-11-14T10:01:47.066Z"
+        },
+        "settlement": [
+          {
+            "event": "BondRefunded",
+            "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+            "amount": "0.05",
+            "label": "Bid A",
+            "tx": "https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"
+          },
+          {
+            "event": "BondRefunded",
+            "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "amount": "0.05",
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"
+          },
+          {
+            "event": "FeePaid",
+            "bidder": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+            "amount": "0.0004",
+            "label": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+            "tx": "https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"
+          },
+          {
+            "event": "BalanceHeld",
+            "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "amount": "0.03",
+            "deadline": 1794736915,
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"
+          },
+          {
+            "event": "Awarded",
+            "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+            "amount": "0.02",
+            "label": "Bid B",
+            "tx": "https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"
+          }
+        ]
+      }
+    }
+  ]
+}
