@@ -43,6 +43,12 @@ export async function anchorCommits(rfqId, hashes) {
   return confirm(await w.sendTransaction({ to: w.account.address, value: 0n, data }));
 }
 
+// One 32-byte hash on Kite: a 0-value tx to self with data "LELANG" (0x4c454c414e47) + hash. public/verify.js reads it back.
+export async function anchorHash(pk, hash) {
+  const w = wallet(pk);
+  return confirm(await w.sendTransaction({ to: w.account.address, value: 0n, data: concat(['0x4c454c414e47', hash]) }));
+}
+
 export async function transferPie(fromPk, to, amount) {
   const w = wallet(fromPk);
   const { decimals } = await tokenInfo();

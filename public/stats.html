@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lelang in numbers</title>
+<meta name="description" content="Tenders, sealed bids, slashes and bounties read live from the Lelang escrows on Kite testnet, plus the Break Lelang leaderboard.">
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
+  a { color:var(--acc); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; }
+  .kv { font-size:13px; color:var(--mute); }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .tile { display:block; text-decoration:none; color:inherit; }
+  .tile:hover { border-color:var(--acc); }
+  .tile .label { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); }
+  .tile .big { font-size:34px; font-weight:700; letter-spacing:-.02em; font-variant-numeric:tabular-nums; margin:2px 0; overflow-wrap:anywhere; }
+  .tile .big.warn { font-size:16px; font-weight:600; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+  code { font-size:12px; overflow-wrap:anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <p class="kv"><a href="./">← Dashboard</a></p>
+  <h1>Lelang in numbers</h1>
+  <p class="kv">Everything below is read when you open the page: chain numbers come straight from the Lelang escrows on Kite testnet via your browser, the leaderboard from the Break Lelang API. Click a tile for its source.</p>
+
+  <div class="tiles" id="tiles"><p class="kv">Reading Kite testnet…</p></div>
+
+  <h2>Per escrow</h2>
+  <div class="card" id="escrows"><p class="kv">Reading Kite testnet…</p></div>
+
+  <h2>Break Lelang leaderboard</h2>
+  <div class="card" id="board"><p class="kv">Asking the API…</p></div>
+
+  <h2>Recent attempts</h2>
+  <div class="card" id="attempts"><p class="kv">Asking the API…</p></div>
+
+  <h2>Bounties paid on-chain</h2>
+  <div class="card" id="bounties"><p class="kv">Reading Kite testnet…</p></div>
+</main>
+<script type="module" src="stats.js"></script>
+</body>
+</html>

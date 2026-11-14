@@ -3,12 +3,12 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { keccak256, toHex, verifyMessage, encodeAbiParameters, parseAbiParameters } from 'viem';
-import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives, confirmAddressedToEvaluator, rateCriterion } from './ai.js';
+import { promptGuard, findManipulation, choice, extractBid, writeRationale, servRead, SERV_READER, spotlight, statedAlternatives, confirmAddressedToEvaluator, rateCriterion, judgeDelivery } from './ai.js';
 import { submitEval, waitEval, reppoEnabled } from './reppo.js';
 import {
   anchorCommits, transferPie, kiteEnabled, buyerAccount, explorerTx,
   escrowEnabled, escrowOpen, escrowBid, escrowCloseCommits, escrowSettle, escrowAddress, slashHistory, escrowTimes,
-  escrowV4, escrowFor, escrowPending, escrowFinalizeSlash, escrowConfirmDelivery, escrowQuorum, overturnedIn,
+  escrowV4, escrowFor, escrowPending, escrowFinalizeSlash, escrowConfirmDelivery, escrowQuorum, overturnedIn, escrowDelivery, anchorHash,
 } from './kite.js';
 
 const FILE = process.env.LELANG_STATE || 'data/state.json';
@@ -116,6 +116,18 @@ export const ambiguousTerms = (alts) => ['total_usd', 'delivery_days', 'warranty
 
 // Decision-relevant fields only; a number vs null counts as a disagreement.
 const READ_FIELDS = ['total_usd', 'delivery_days', 'warranty_months', 'specs.ram_gb', 'specs.storage_gb', 'specs.battery_hours'];
+// Canonical form of the qualitative ratings: bids by label, readers in order, exactly the published fields.
+// public/verify.js recomputes this in the browser, so change both together.
+export const qualityRows = (bids) => [...bids].filter((b) => b.quality).sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0))
+  .flatMap((b) => b.quality.readers.map(({ engine, score, quote }) => ({ label: b.label, engine, score, quote })));
+export const qualityHash = (bids) => keccak256(toHex(JSON.stringify(qualityRows(bids))));
+// Advisory only: both readers must agree with verified quotes; one reader, a disagreement or an unverified quote -> a human.
+export function deliveryRecommendation(readers) {
+  const sure = readers.length === 2 && readers.every((r) => r.verified && typeof r.met === 'boolean');
+  if (sure && readers.every((r) => r.met)) return 'pay-winner';
+  if (sure && readers.every((r) => !r.met)) return 'refund-buyer';
+  return 'human-review';
+}
 export function readersDisagree(a, b) {
   const get = (t, f) => f.split('.').reduce((o, k) => o?.[k], t) ?? null;
   return READ_FIELDS.filter((f) => get(a, f) !== get(b, f)).map((f) => ({ field: f, a: get(a, f), b: get(b, f) }));
@@ -453,6 +465,20 @@ export async function evaluate(rfqId) {
 
     const fails = ruleCheck(rfq, ex.terms);
     if (fails.length) disqualify(rfq, bid, fails.join('; '), false);
+  }
+
+  // Every quality rating and its quote, hashed once and anchored on Kite, so the published ratings can't be edited later.
+  if (bids.some((b) => b.quality)) {
+    const hash = qualityHash(bids);
+    rfq.qualityAnchor = { hash, tx: null };
+    if (kiteEnabled()) {
+      try {
+        rfq.qualityAnchor.tx = explorerTx(await anchorHash(process.env.BUYER_PRIVATE_KEY, hash));
+        log(rfq, 'quality', `keccak256 of every quality rating and quote (${hash.slice(0, 10)}…) anchored on Kite`, { tx: rfq.qualityAnchor.tx });
+      } catch (e) {
+        log(rfq, 'quality', `quality ratings hash ${hash.slice(0, 10)}… could not be anchored on Kite: ${e.shortMessage ?? e.message}`);
+      }
+    }
   }
 
   const eligible = bids.filter((b) => !b.disqualified);
@@ -837,6 +863,34 @@ export async function confirmDelivery(rfqId) {
     save();
   }
   return rfq.delivery;
+}
+
+// V4: the buyer disputes the quality of what was delivered. Two readers judge the report against the winning terms;
+// the result is advice to the approvers. Money moves only by confirmDelivery or the on-chain quorum's resolveDelivery.
+const disputing = new Set();
+export async function disputeDelivery(rfqId, evidence) {
+  const rfq = getRfq(rfqId);
+  if (!rfq) fail('unknown tender');
+  if (typeof evidence !== 'string' || !evidence.trim() || evidence.length > 20_000) fail('evidence must be the delivery note / inspection report text (max 20000 chars)');
+  if (!onV4(rfq) || rfq.delivery?.status !== 'held') fail('no balance is held for delivery on this tender');
+  if (rfq.deliveryDispute || disputing.has(rfqId)) fail('this delivery is already disputed');
+  disputing.add(rfqId);
+  try {
+    const onChain = await escrowDelivery(rfq.chainId, rfq.escrow);
+    if (!onChain || onChain.closed) fail('the escrow has already closed this delivery');
+    const winner = rfq.bids[rfq.award.winner];
+    const evidenceHash = keccak256(toHex(evidence));
+    const readers = await judgeDelivery(winner.terms, evidence);
+    const recommendation = deliveryRecommendation(readers);
+    const anchorTx = explorerTx(await anchorHash(process.env.BUYER_PRIVATE_KEY, evidenceHash));
+    rfq.deliveryDispute = { evidence, evidenceHash, readers, recommendation, anchorTx, at: new Date().toISOString() };
+    const due = new Date(onChain.deadline * 1000).toISOString();
+    log(rfq, 'dispute', `Buyer disputed delivery by ${winner.label}: ${readers.map((r) => `${r.engine} ${r.met === null ? 'no finding (quote not verified)' : r.met ? 'met' : 'not met'}`).join('; ')}. ` +
+      `Advice to approvers: ${recommendation}. The held balance moves only if the buyer confirms delivery, or after the deadline (${due}) by the escrow's on-chain approver quorum (resolveDelivery)`, { tx: anchorTx });
+    return rfq.deliveryDispute;
+  } finally {
+    disputing.delete(rfqId);
+  }
 }
 
 // A human release of held money is signed (EIP-191) by the approver's own key, so anyone can later check who released it.

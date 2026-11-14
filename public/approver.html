@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approver console · Lelang</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --ink:#1c1b18; --mute:#6b6860; --line:#e3e0d8; --ok:#1f7a4d; --bad:#b3261e; --warn:#a15c00; --acc:#2b4acb; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141412; --card:#1d1d1a; --ink:#ecebe6; --mute:#9d9a91; --line:#2e2d29; --ok:#4cc38a; --bad:#ff7a6e; --warn:#f0b35a; --acc:#8ea2ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+  main { max-width:900px; margin:0 auto; padding:24px 16px 64px; }
+  h1 { margin:0 0 4px; font-size:26px; letter-spacing:-.02em; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; color:var(--mute); margin:28px 0 10px; }
+  a { color:var(--acc); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; overflow-x:auto; }
+  .item + .item { margin-top:12px; }
+  .card > p:first-child { margin-top:0; } .card > p:last-child { margin-bottom:0; }
+  .kv { font-size:13px; color:var(--mute); }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); }
+  code { font-size:12px; overflow-wrap:anywhere; }
+  button { background:var(--ink); color:var(--bg); border:0; border-radius:8px; padding:8px 14px; font-weight:600; cursor:pointer; margin:8px 8px 0 0; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button:disabled { opacity:.5; cursor:default; }
+  .advice { border-left:3px solid var(--warn); padding:6px 10px; margin-top:8px; font-size:14px; }
+  .status { margin-top:10px; font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="kv"><a href="./">← Dashboard</a> · <a href="pool.html">Bounty pool</a></p>
+  <h1>Approver console</h1>
+  <p class="kv">Approvers are the on-chain check on the operator: a quorum of them can overturn a slash inside its challenge window, or decide a held balance when the buyer stays silent past the delivery deadline. Everything below is read live from the LelangEscrow V4 contract on Kite testnet by your browser. Vote only when a slash looks wrong or a delivery is really disputed; doing nothing is the default.</p>
+
+  <h2>You</h2>
+  <div class="card">
+    <div id="me" class="kv">Not connected.</div>
+    <button id="connect" class="ghost" type="button">Connect wallet</button>
+    <div id="status" class="status" aria-live="polite"></div>
+  </div>
+
+  <h2>Approver set</h2>
+  <div class="card" id="set"><p class="kv">Reading Kite testnet…</p></div>
+
+  <h2>Slashes in their challenge window</h2>
+  <div class="card" id="slashes"><p class="kv">Reading Kite testnet…</p></div>
+
+  <h2>Held balances</h2>
+  <div class="card" id="deliveries"><p class="kv">Reading Kite testnet…</p></div>
+</main>
+<script type="module" src="approver.js"></script>
+</body>
+</html>

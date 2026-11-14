@@ -1,8 +1,9 @@
 // Deploys LelangEscrow to Kite testnet, verifies its source on Kitescan (Blockscout API v2) and writes
 // deployments/kite-testnet.json, which src/kite.js and the dashboard read.
 //   npx hardhat compile && node --env-file=.env scripts/deploy-escrow.js [--verify-only]
+//   APPROVERS=0xA,0xB,0xC QUORUM=2 node --env-file=.env scripts/deploy-escrow.js   (2-of-3, one outside approver)
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
-import { createWalletClient, createPublicClient, http } from 'viem';
+import { createWalletClient, createPublicClient, http, isAddress } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { kiteTestnet, explorerTx } from '../src/kite.js';
 
@@ -21,10 +22,19 @@ if (!process.argv.includes('--verify-only')) {
   const keys = JSON.parse(readFileSync('data/agents/keys.json', 'utf8'));
   const treasury = privateKeyToAccount(keys.treasury ?? (keys.treasury = generatePrivateKey())).address;
   writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
-  // V4: a quorum of approvers can overturn a pending slash on-chain; two keys, both needed (no single person decides)
-  const approvers = [keys.approver, keys.approver2 ?? (keys.approver2 = generatePrivateKey())].map((k) => privateKeyToAccount(k).address);
-  writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
-  const quorum = BigInt(process.env.APPEAL_QUORUM ?? 2), challengeSeconds = BigInt(process.env.CHALLENGE_SECONDS ?? 3600);
+  // V4: a quorum of approvers can overturn a pending slash on-chain. Default: our two keys, both needed.
+  // APPROVERS=0xA,0xB,0xC QUORUM=2 deploys e.g. a 2-of-3 with an outside approver whose key we never hold.
+  let approvers;
+  if (process.env.APPROVERS) {
+    approvers = process.env.APPROVERS.split(',').map((a) => a.trim());
+    if (!approvers.every(isAddress)) throw new Error('APPROVERS must be comma-separated 0x addresses');
+  } else {
+    approvers = [keys.approver, keys.approver2 ?? (keys.approver2 = generatePrivateKey())].map((k) => privateKeyToAccount(k).address);
+    writeFileSync('data/agents/keys.json', JSON.stringify(keys, null, 2));
+  }
+  const quorum = BigInt(process.env.QUORUM ?? process.env.APPEAL_QUORUM ?? 2), challengeSeconds = BigInt(process.env.CHALLENGE_SECONDS ?? 3600);
+  if (quorum < 1n || quorum > BigInt(approvers.length)) throw new Error(`QUORUM ${quorum} must be between 1 and ${approvers.length}`);
+  console.log(`approvers (${quorum} of ${approvers.length}): ${approvers.join(', ')}`);
   const hash = await w.deployContract({ abi: art.abi, bytecode: art.bytecode, args: [treasury, approvers, quorum, challengeSeconds] });
   const rcpt = await pub.waitForTransactionReceipt({ hash });
   if (rcpt.status !== 'success') throw new Error('deploy reverted');

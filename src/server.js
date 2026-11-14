@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery } from './lelang.js';
+import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery } from './lelang.js';
 import { toOcds } from './ocds.js';
 import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo } from './kite.js';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -292,6 +292,16 @@ createServer(async (req, res) => {
       const owner = rfq.paidBy && tokenHash(tokenOf(req, url) ?? '') === rfq.paidBy.ownerTokenHash;
       if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
       return json(res, 200, await confirmDelivery(cd[1]));
+    }
+    // V4: the buyer disputes delivery quality with a report; two readers advise the approvers (no money moves here).
+    const dd = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/dispute-delivery$/);
+    if (dd && req.method === 'POST') {
+      const rfq = getRfq(dd[1]);
+      if (!rfq) return json(res, 404, { error: 'not found' });
+      const owner = rfq.paidBy && tokenHash(tokenOf(req, url) ?? '') === rfq.paidBy.ownerTokenHash;
+      if (!authorized && !owner) return json(res, 403, { error: 'demo token or this tender\'s owner token required' });
+      const { evidence } = await body(req);
+      return json(res, 200, await disputeDelivery(dd[1], evidence));
     }
     // An approver's on-chain overturn vote (sent with its own key by scripts/decide-appeal.js), linked into the trace.
     const ot = url.pathname.match(/^\/api\/rfqs\/([\w-]+)\/overturn-tx$/);

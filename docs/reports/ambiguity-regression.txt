@@ -1,0 +1,8 @@
+PASS tender #5 (false hold before the fix): not ambiguous
+PASS on-site repair response time: not ambiguous
+PASS red team: two delivery figures: delivery_days 18/11
+PASS red team: list vs rebated total: total_usd 75000/58500
+PASS tender #5 (false hold before the fix): not ambiguous
+PASS on-site repair response time: not ambiguous
+PASS red team: two delivery figures: delivery_days 18/11
+PASS red team: list vs rebated total: total_usd 75000/58500

@@ -11,12 +11,12 @@ const FEE_BPS = 200; // 2% of the down payment
 const CHALLENGE = 3600; // a slash stays overturnable for an hour
 const QUORUM = 2;
 const approverSigners = async () => (await ethers.getSigners()).slice(10, 12);
-const deployEscrow = async () => ethers.deployContract('LelangEscrow', [TREASURY, (await approverSigners()).map((x) => x.address), QUORUM, CHALLENGE]);
+const deployEscrow = async (approvers) => ethers.deployContract('LelangEscrow', [TREASURY, (approvers ?? await approverSigners()).map((x) => x.address), QUORUM, CHALLENGE]);
 
-async function deploy(tokenName = 'TestToken') {
+async function deploy(tokenName = 'TestToken', approvers) {
   const [buyer, a, b, c, outsider] = await ethers.getSigners();
   const token = await ethers.deployContract(tokenName);
-  const escrow = await deployEscrow();
+  const escrow = await deployEscrow(approvers);
   for (const s of [buyer, a, b, c, outsider]) {
     await token.mint(s.address, ethers.parseUnits('100', 18));
     await token.connect(s).approve(await escrow.getAddress(), ethers.MaxUint256);
@@ -308,6 +308,47 @@ describe('LelangEscrow', () => {
       await expect(escrow.connect(p2).resolveDelivery(id, false)).to.emit(escrow, 'DeliveryClosed').withArgs(id, buyer.address, BAL + FEE, false);
       expect(await token.balanceOf(buyer.address)).to.equal(b0 + BAL + FEE);
       await expect(escrow.confirmDelivery(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
+    });
+  });
+
+  describe('2-of-3 approvers (one outside the team)', () => {
+    const three = async () => (await ethers.getSigners()).slice(10, 13);
+    const pairs = [[0, 1], [0, 2], [1, 2]];
+    async function slashed() {
+      const ap = await three();
+      const ctx = await deploy('TestToken', ap);
+      const { escrow, a, c, id } = ctx;
+      for (const [sg, d, n] of [[a, 'bid a', 1], [c, 'bid c', 3]]) await commitAs(escrow, sg, id, d, salt(n));
+      await escrow.closeCommits(id);
+      for (const [sg, d, n] of [[a, 'bid a', 1], [c, 'bid c', 3]]) await escrow.connect(sg).reveal(id, H(d), salt(n));
+      await escrow.settle(id, a.address, [c.address], [H('quote')], 0, ethers.parseUnits('9', 18), 100);
+      return { ...ctx, ap };
+    }
+    for (const [i, j] of pairs) {
+      it(`approvers ${i + 1} and ${j + 1} together overturn a slash and resolve a delivery`, async () => {
+        const { escrow, c, a, id, ap } = await slashed();
+        await expect(escrow.connect(ap[i]).overturnSlash(id, c.address)).to.emit(escrow, 'Voted').and.not.to.emit(escrow, 'SlashOverturned');
+        await expect(escrow.connect(ap[j]).overturnSlash(id, c.address)).to.emit(escrow, 'SlashOverturned');
+        await time.increase(100);
+        await expect(escrow.connect(ap[i]).resolveDelivery(id, true)).not.to.emit(escrow, 'DeliveryClosed');
+        await expect(escrow.connect(ap[j]).resolveDelivery(id, true)).to.emit(escrow, 'DeliveryClosed').withArgs(id, a.address, ethers.parseUnits('9', 18), true);
+      });
+    }
+    it('one approver alone, voting twice, or a non-approver cannot act', async () => {
+      const { escrow, c, outsider, buyer, id, ap } = await slashed();
+      const key = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['string', 'uint256', 'address'], ['overturn', id, c.address]));
+      await expect(escrow.connect(outsider).overturnSlash(id, c.address)).to.be.revertedWithCustomError(escrow, 'NotApprover');
+      await expect(escrow.connect(buyer).overturnSlash(id, c.address)).to.be.revertedWithCustomError(escrow, 'NotApprover');
+      await expect(escrow.connect(ap[2]).overturnSlash(id, c.address)).to.emit(escrow, 'Voted').withArgs(key, ap[2].address, 1n);
+      await expect(escrow.connect(ap[2]).overturnSlash(id, c.address)).to.be.revertedWithCustomError(escrow, 'AlreadyVoted');
+      expect(await escrow.votes(key)).to.equal(1n);
+      expect((await escrow.pendingSlash(id, c.address)).finalAt).to.not.equal(0n); // still pending
+      await time.increase(CHALLENGE);
+      await expect(escrow.connect(ap[2]).resolveDelivery(id, false)).not.to.emit(escrow, 'DeliveryClosed');
+      await expect(escrow.connect(ap[2]).resolveDelivery(id, false)).to.be.revertedWithCustomError(escrow, 'AlreadyVoted');
+      await expect(escrow.connect(outsider).resolveDelivery(id, false)).to.be.revertedWithCustomError(escrow, 'NotApprover');
+      expect((await escrow.deliveries(id)).closed).to.equal(false);
+      await expect(escrow.finalizeSlash(id, c.address)).to.emit(escrow, 'BondSlashed'); // a lone vote never stopped the slash
     });
   });
 

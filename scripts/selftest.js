@@ -280,4 +280,31 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   assert.deepEqual(bountyPlan({ ...go, pool: 3, treasuryGas: 0 }), { source: 'fee wallet', amount: 1 }); // treasury can't pay gas
   assert.deepEqual(bountyPlan({ ...go, pool: 1e-9 }), { source: 'fee wallet', amount: 1 }); // dust rounds to nothing
 }
+// Delivery dispute advice: both readers, both verified, both agree; anything else goes to a human
+{
+  const { deliveryRecommendation } = await import('../src/lelang.js');
+  const r = (met, verified = true) => ({ engine: 'x', met, quote: 'q', verified });
+  assert.equal(deliveryRecommendation([r(true), r(true)]), 'pay-winner');
+  assert.equal(deliveryRecommendation([r(false), r(false)]), 'refund-buyer');
+  assert.equal(deliveryRecommendation([r(true), r(false)]), 'human-review'); // readers disagree
+  assert.equal(deliveryRecommendation([r(true), r(true, false)]), 'human-review'); // unverified quote = no finding
+  assert.equal(deliveryRecommendation([r(false), r(null, false)]), 'human-review');
+  assert.equal(deliveryRecommendation([r(true)]), 'human-review'); // one reader is not enough
+  assert.equal(deliveryRecommendation([]), 'human-review');
+}
+// Quality anchor: one hash over [{label, engine, score, quote}] in label order; any edit to a published rating changes it
+{
+  const { qualityHash, qualityRows } = await import('../src/lelang.js');
+  const { keccak256, toHex } = await import('viem');
+  const q = (score, quote) => ({ score, readers: [{ engine: 'D', score, quote, verified: true }, { engine: 'S', score, quote: `${quote}.`, verified: true }], disagree: false });
+  const bids = [{ label: 'B', quality: q(7, 'two engineers on site') }, { label: 'A', quality: q(3, 'email support only') }, { label: 'C' }];
+  assert.deepEqual(qualityRows(bids).map((x) => `${x.label}${x.engine}`), ['AD', 'AS', 'BD', 'BS']);
+  assert.deepEqual(Object.keys(qualityRows(bids)[0]), ['label', 'engine', 'score', 'quote']); // exactly the hashed fields
+  assert.equal(qualityHash(bids), keccak256(toHex(JSON.stringify(qualityRows(bids)))));
+  assert.equal(qualityHash([...bids].reverse()), qualityHash(bids)); // order of bids doesn't matter
+  const edited = structuredClone(bids); edited[0].quality.readers[1].score = 8;
+  assert.notEqual(qualityHash(edited), qualityHash(bids));
+  const requoted = structuredClone(bids); requoted[1].quality.readers[0].quote = 'email support only!';
+  assert.notEqual(qualityHash(requoted), qualityHash(bids));
+}
 console.log('selftest OK');

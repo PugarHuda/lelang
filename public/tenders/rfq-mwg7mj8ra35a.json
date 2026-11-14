@@ -1,0 +1,409 @@
+{
+  "id": "rfq-mwg7mj8ra35a",
+  "createdAt": "2026-11-14T09:35:12.363Z",
+  "phase": "settled",
+  "bids": {
+    "Bid A": {
+      "label": "Bid A",
+      "supplier": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "hash": "0x85b0a0128c07b5c5da8f789b7c06b28505203323f2d35093bea36bd607c4b48c",
+      "bondTx": "0x261d41cb8607929fd0c604b6ba669b3e5fcf2d94b2f5fbb9ed89117ae28c12dd",
+      "bondPie": 0.05,
+      "docHash": "0x9541d88710b6a309cf0f24b1c1de61ef6d28f4abeb4e25a85d384c3ca336fd40",
+      "revealOk": true,
+      "revealTx": "0x33de1bcc40a60d1dc6f0efce0fd5737cbf70d477410c3a25a22f80e52cc51f0d",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 12,
+        "total_usd": 3300,
+        "delivery_days": 18,
+        "warranty_months": 24,
+        "specs": {
+          "ram_gb": 4,
+          "storage_gb": 32,
+          "battery_hours": 2
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 12,
+          "total_usd": 3300,
+          "delivery_days": 18,
+          "warranty_months": 24,
+          "specs": {
+            "ram_gb": 4,
+            "storage_gb": 32,
+            "battery_hours": 2
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      },
+      "docRedacted": "losing bid: document withheld, hash and terms published"
+    },
+    "Bid B": {
+      "label": "Bid B",
+      "supplier": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "hash": "0x0f836b499ca18f568371682bf15cecadb2fbb46e521a59f097d201600ab04ba2",
+      "bondTx": "0xa207f20bf79a2ff6e9bb8a5a4ced68ba017d9d82a8b72c90567e61bd0d210c95",
+      "bondPie": 0.05,
+      "doc": "BID SUBMISSION - Sinar Visual\nTender: 12 classroom document cameras for 3 vocational schools\n\nTotal price: USD 3,500 for 12 units.\nDelivery: 10 days after award.\nWarranty: 36 months.\nSpecs per unit: 4 GB RAM, 32 GB storage, 3 hours battery backup.",
+      "docHash": "0xed8c3e7dc6f97169e01d5758347d80d47acc9892cc87ad0ae9a8a81f8c4e0472",
+      "revealOk": true,
+      "revealTx": "0x14fd182c7a55d50e64b022c61b2504599d83ccebaa712ac3606d478055e9f77d",
+      "guard": {
+        "servPromptGuard": {
+          "blocked": false,
+          "raw": "RECEIVED"
+        },
+        "manipulation": {
+          "engine": "gpt-6-luna decision node",
+          "p": 0.01,
+          "evidence": "",
+          "verified": false
+        },
+        "addressedToEvaluator": 0
+      },
+      "terms": {
+        "unit_price_usd": null,
+        "quantity": 12,
+        "total_usd": 3500,
+        "delivery_days": 10,
+        "warranty_months": 36,
+        "specs": {
+          "ram_gb": 4,
+          "storage_gb": 32,
+          "battery_hours": 3
+        },
+        "claims_full_compliance": null
+      },
+      "secondRead": {
+        "engine": "gpt-6-luna",
+        "terms": {
+          "unit_price_usd": null,
+          "quantity": 12,
+          "total_usd": 3500,
+          "delivery_days": 10,
+          "warranty_months": 36,
+          "specs": {
+            "ram_gb": 4,
+            "storage_gb": 32,
+            "battery_hours": 3
+          },
+          "claims_full_compliance": null
+        },
+        "disagree": []
+      }
+    }
+  },
+  "events": [
+    {
+      "t": "2026-11-14T09:35:14.220Z",
+      "step": "rfq",
+      "msg": "Tender opened: 12 classroom document cameras for 3 vocational schools (escrow tender #8 on Kite)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xa9ee819068d7b6ee720415a4f45e2bb4f8b9fdf1924cb7fa4f6cf20d83d415fb"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:25.770Z",
+      "step": "commit",
+      "msg": "Bid A committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x261d41cb8607929fd0c604b6ba669b3e5fcf2d94b2f5fbb9ed89117ae28c12dd"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:25.778Z",
+      "step": "commit",
+      "msg": "Bid B committed a sealed hash and locked its bond in escrow",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0xa207f20bf79a2ff6e9bb8a5a4ced68ba017d9d82a8b72c90567e61bd0d210c95"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:28.083Z",
+      "step": "anchor",
+      "msg": "Commits closed on-chain: 2 sealed bids, bonds locked in the escrow contract",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x85d6be718f3efc3861d006cf1a6b0e000583f8a126536ba437b2bd90fa1b1819"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:31.965Z",
+      "step": "reveal",
+      "msg": "Bid B revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x14fd182c7a55d50e64b022c61b2504599d83ccebaa712ac3606d478055e9f77d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:36.885Z",
+      "step": "reveal",
+      "msg": "Bid A revealed: matches its sealed commitment",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x33de1bcc40a60d1dc6f0efce0fd5737cbf70d477410c3a25a22f80e52cc51f0d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:35:48.236Z",
+      "step": "guard",
+      "msg": "Bid A: SERV Prompt Guard passed, manipulation p=0.00"
+    },
+    {
+      "t": "2026-11-14T09:35:50.295Z",
+      "step": "extract",
+      "msg": "Bid A terms read by Dolphin (DeepSeek V4.1 Flash): $3300, 18d, 24mo warranty"
+    },
+    {
+      "t": "2026-11-14T09:35:55.946Z",
+      "step": "cross-check",
+      "msg": "Bid A: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T09:36:09.434Z",
+      "step": "guard",
+      "msg": "Bid B: SERV Prompt Guard passed, manipulation p=0.01"
+    },
+    {
+      "t": "2026-11-14T09:36:11.312Z",
+      "step": "extract",
+      "msg": "Bid B terms read by Dolphin (DeepSeek V4.1 Flash): $3500, 10d, 36mo warranty"
+    },
+    {
+      "t": "2026-11-14T09:36:17.215Z",
+      "step": "cross-check",
+      "msg": "Bid B: gpt-6-luna independently read the same price, delivery, warranty and specs"
+    },
+    {
+      "t": "2026-11-14T09:36:23.021Z",
+      "step": "score",
+      "msg": "Published formula: Bid A 0.811, Bid B 0.971"
+    },
+    {
+      "t": "2026-11-14T09:36:28.630Z",
+      "step": "award",
+      "msg": "gpt-6-luna decision node chose Bid B (confidence 0.99), matching the published formula",
+      "data": {
+        "probabilities": {
+          "Bid A": 0.01,
+          "Bid B": 0.99
+        }
+      }
+    },
+    {
+      "t": "2026-11-14T09:36:40.170Z",
+      "step": "rationale",
+      "msg": "Award rationale written by SERV (Kronos + Shadow Agent checked)"
+    },
+    {
+      "t": "2026-11-14T09:36:41.916Z",
+      "step": "reppo",
+      "msg": "Independent Reppo audit, round 1 (cmwg7oi0a000108jp20j9g9k5, attempt 1): panel scoring takes 30-90s"
+    },
+    {
+      "t": "2026-11-14T09:38:09.247Z",
+      "step": "reppo",
+      "msg": "Reppo verdict used for settlement (strictest round): ship (score 97)",
+      "data": {
+        "reason": "The action shipped automatically because it scored 97 with high confidence — all rubric dimensions were strong (correctness, scope, and safety at 100) and both safety and scope gates passed, pushing it above the 85 accept-at threshold. The only minor drag was reversibility (77) and one low-stake dissenting evaluator at 90, but neither was enough to slow the route."
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:18.844Z",
+      "step": "settle",
+      "msg": "Bid B bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:18.847Z",
+      "step": "settle",
+      "msg": "Bid A bond refunded: 0.05",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:19.086Z",
+      "step": "settle",
+      "msg": "Operator success fee to the Lelang treasury: 0.0004",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:19.415Z",
+      "step": "settle",
+      "msg": "Bid B balance held in escrow until delivery is confirmed: 0.03",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:19.579Z",
+      "step": "settle",
+      "msg": "Bid B wins: down payment: 0.02",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+      }
+    },
+    {
+      "t": "2026-11-14T09:38:37.085Z",
+      "step": "dispute",
+      "msg": "Buyer disputed delivery by Bid B: Dolphin (DeepSeek V4.1 Flash) not met; gpt-6-luna not met. Advice to approvers: refund-buyer. The held balance moves only if the buyer confirms delivery, or after the deadline (2026-11-15T09:38:17.000Z) by the escrow's on-chain approver quorum (resolveDelivery)",
+      "data": {
+        "tx": "https://testnet.kitescan.ai/tx/0x1e61035ad53e7fe5b1076d0bb35017589165f341779e7261797accc2d569d700"
+      }
+    }
+  ],
+  "title": "12 classroom document cameras for 3 vocational schools",
+  "budgetCapUsd": 6000,
+  "maxDeliveryDays": 30,
+  "minSpecs": {
+    "ram_gb": 2,
+    "storage_gb": 16,
+    "battery_hours": 1
+  },
+  "weights": {
+    "price": 0.5,
+    "warranty": 0.3,
+    "delivery": 0.2
+  },
+  "minConfidence": 0.55,
+  "bondPie": 0.05,
+  "depositPie": 0.02,
+  "balancePie": 0.03,
+  "deliveryDays": 1,
+  "chainId": "8",
+  "escrow": "0x29240221486eaf37624497d6dd84e881ada3f952",
+  "anchorTx": "0x85d6be718f3efc3861d006cf1a6b0e000583f8a126536ba437b2bd90fa1b1819",
+  "escalatedBefore": false,
+  "award": {
+    "decision": "award",
+    "winner": "Bid B",
+    "formulaWinner": "Bid B",
+    "scores": {
+      "Bid A": 0.811,
+      "Bid B": 0.971
+    },
+    "probabilities": {
+      "Bid A": 0.01,
+      "Bid B": 0.99
+    },
+    "confidence": 0.99,
+    "engine": "gpt-6-luna decision node",
+    "rationale": "**Award rationale**\n\nBoth bids meet the stated minimum specifications, remain within the USD 6,000 budget cap, and offer delivery within 30 days. Neither bid is disqualified.\n\n**Bid A** ranks second with a total score of **0.811**:\n- **Price:** part **1**, weighted score **0.5**\n- **Warranty:** part **0.667**, weighted score **0.2**\n- **Delivery:** part **0.556**, weighted score **0.111**\n\n**Bid B** ranks first with a total score of **0.971**:\n- **Price:** part **0.943**, weighted score **0.471**\n- **Warranty:** part **1**, weighted score **0.3**\n- **Delivery:** part **1**, weighted score **0.2**\n\nBid B’s higher warranty and delivery scores, together with its price score, give it the highest total score. The award is therefore made to Bid B.\n\naward"
+  },
+  "reppo": {
+    "id": "cmwg7oi0a000108jp20j9g9k5",
+    "status": "COMPLETED",
+    "score": 97,
+    "route": "ship",
+    "reason": "The action shipped automatically because it scored 97 with high confidence — all rubric dimensions were strong (correctness, scope, and safety at 100) and both safety and scope gates passed, pushing it above the 85 accept-at threshold. The only minor drag was reversibility (77) and one low-stake dissenting evaluator at 90, but neither was enough to slow the route.",
+    "rubric": {
+      "scope": 100,
+      "safety": 100,
+      "correctness": 100,
+      "reversibility": 77
+    },
+    "label": "original rationale",
+    "rounds": [
+      {
+        "id": "cmwg7oi0a000108jp20j9g9k5",
+        "status": "COMPLETED",
+        "score": 97,
+        "route": "ship",
+        "reason": "The action shipped automatically because it scored 97 with high confidence — all rubric dimensions were strong (correctness, scope, and safety at 100) and both safety and scope gates passed, pushing it above the 85 accept-at threshold. The only minor drag was reversibility (77) and one low-stake dissenting evaluator at 90, but neither was enough to slow the route.",
+        "rubric": {
+          "scope": 100,
+          "safety": 100,
+          "correctness": 100,
+          "reversibility": 77
+        },
+        "label": "original rationale"
+      }
+    ]
+  },
+  "settlement": [
+    {
+      "event": "BondRefunded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.05",
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+    },
+    {
+      "event": "BondRefunded",
+      "bidder": "0xD1328285aBBC550c220766A2d4e5D2280A0Ba3a4",
+      "amount": "0.05",
+      "label": "Bid A",
+      "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+    },
+    {
+      "event": "FeePaid",
+      "bidder": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "amount": "0.0004",
+      "label": "0x2784FF829Fd756d5E2884258e2fe288cd2F04858",
+      "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+    },
+    {
+      "event": "BalanceHeld",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.03",
+      "deadline": 1794735497,
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+    },
+    {
+      "event": "Awarded",
+      "bidder": "0x4BffA3D0F999501A32508ECf4a0bB9b30e4a3cB0",
+      "amount": "0.02",
+      "label": "Bid B",
+      "tx": "https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"
+    }
+  ],
+  "delivery": {
+    "balance": "0.03",
+    "deadline": 1794735497,
+    "status": "held"
+  },
+  "deliveryDispute": {
+    "evidence": "INSPECTION REPORT - receiving committee, 3 vocational schools\nDelivered: 12 document cameras, 31 days after award.\nSpec check on 3 sampled units: 2 GB RAM and 16 GB storage each; battery backup lasted 1 hour in our test.\nWarranty card in the box: 12 months.\nThe committee does not accept the delivery as offered.",
+    "evidenceHash": "0xe7b3397e0805fa04c7c3d9056eea7d50faa9010f2d213256b81962489f1107ac",
+    "readers": [
+      {
+        "engine": "Dolphin (DeepSeek V4.1 Flash)",
+        "met": false,
+        "quote": "Spec check on 3 sampled units: 2 GB RAM and 16 GB storage each; battery backup lasted 1 hour in our test.",
+        "verified": true
+      },
+      {
+        "engine": "gpt-6-luna",
+        "met": false,
+        "quote": "Delivered: 12 document cameras, 31 days after award.",
+        "verified": true
+      }
+    ],
+    "recommendation": "refund-buyer",
+    "anchorTx": "https://testnet.kitescan.ai/tx/0x1e61035ad53e7fe5b1076d0bb35017589165f341779e7261797accc2d569d700",
+    "at": "2026-11-14T09:38:37.085Z"
+  }
+}

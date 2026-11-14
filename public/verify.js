@@ -56,6 +56,19 @@ export async function checkSlash(rfq, bid, pre) {
   return r;
 }
 
+// Same canonical form as qualityRows/qualityHash in src/lelang.js: change both together.
+const qualityHash = (bids) => keccak256(toHex(JSON.stringify([...bids].filter((b) => b.quality).sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0))
+  .flatMap((b) => b.quality.readers.map(({ engine, score, quote }) => ({ label: b.label, engine, score, quote }))))));
+// A hash anchored by anchorHash (src/kite.js): a tx from the tender's buyer to itself with data "LELANG" + hash.
+async function anchored(rfq, hash, txUrl) {
+  const [tx, [buyer]] = await Promise.all([
+    client.getTransaction({ hash: txUrl.split('/tx/')[1] }),
+    client.readContract({ address: rfq.escrow, abi: await abi(rfq.escrow), functionName: 'tenders', args: [BigInt(rfq.chainId)] }),
+  ]);
+  const b = buyer.toLowerCase();
+  return tx.input.toLowerCase() === `0x4c454c414e47${hash.slice(2)}`.toLowerCase() && tx.from.toLowerCase() === b && tx.to?.toLowerCase() === b;
+}
+
 // The whole settlement: tx went to the escrow, every slash checks out, refunds and award match the published result.
 export async function checkTender(rfq) {
   const pre = await settleLogs(rfq);
@@ -74,6 +87,14 @@ export async function checkTender(rfq) {
   add(JSON.stringify(refunded) === JSON.stringify(expected), `Bonds refunded on-chain to exactly the compliant bids: ${refunded.join(', ')}`);
   const award = logs.find((x) => x.eventName === 'Awarded');
   add(award && supplierOf(rfq, award.args.winner)?.label === rfq.award.winner, `Awarded event pays ${rfq.award.winner}`);
+  if (rfq.qualityAnchor?.tx) {
+    const h = qualityHash(Object.values(rfq.bids));
+    add(h === rfq.qualityAnchor.hash && await anchored(rfq, h, rfq.qualityAnchor.tx), `keccak256 of the published quality ratings and quotes (${h.slice(0, 10)}…) matches the hash the buyer anchored on Kite`);
+  }
+  if (rfq.deliveryDispute?.anchorTx) {
+    const h = keccak256(toHex(rfq.deliveryDispute.evidence));
+    add(h === rfq.deliveryDispute.evidenceHash && await anchored(rfq, h, rfq.deliveryDispute.anchorTx), `keccak256 of the published delivery report (${h.slice(0, 10)}…) matches the hash the buyer anchored on Kite`);
+  }
   return { rows, block };
 }
 

@@ -24,7 +24,7 @@ const index = settled.map((r) => {
   const n = Object.keys(r.bids).length;
   const slashed = Object.values(r.bids).filter((b) => b.slash).length;
   const overturned = Object.values(r.bids).filter((b) => b.appeal?.outcome === 'overturned').length;
-  return { id: r.id, chainId: r.chainId, featured: r === featured, label: `#${r.chainId}${versionOf(r.escrow) > 1 ? ` (escrow V${versionOf(r.escrow)})` : ''} · ${r.title} · ${n} bid${n > 1 ? 's' : ''}${slashed ? `, ${slashed} slashed` : ''}${overturned ? ` (${overturned} overturned on appeal)` : ''}` };
+  return { id: r.id, chainId: r.chainId, featured: r === featured, label: `#${r.chainId}${versionOf(r.escrow) > 1 ? ` (escrow V${versionOf(r.escrow)})` : ''} · ${r.title} · ${n} bid${n > 1 ? 's' : ''}${slashed ? `, ${slashed} slashed` : ''}${overturned ? ` (${overturned} overturned on appeal)` : ''}${r.deliveryDispute ? ', delivery disputed' : ''}` };
 });
 writeFileSync('public/tenders.json', JSON.stringify(index, null, 2));
 writeFileSync('public/tender.json', JSON.stringify(featured, null, 2));
