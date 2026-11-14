@@ -121,6 +121,11 @@ The award decision node was replayed on all 16 recorded tenders, 3 times each, w
 Re-checked 14 Nov: the canonical addresses on Kite testnet (`0x8004A818…`, `0x8004B663…`) are proxies to a 2,188-byte placeholder (`getVersion()` = 0.0.1; `name()` and `getIdentityRegistry()` revert). Lelang's ERC-8004 identities and feedback therefore stay on Arc testnet, where the registries are live.
 
 
+## Found on the last day
+
+- **SERV Kronos + Shadow Agent started failing on every call** (400 "max_tokens is too large: 130931 … at most 128000"), even for a one-sentence prompt: SERV derives an output limit above the model's maximum when none is given. Every tender would have stopped at the rationale. Passing `max_completion_tokens: 4000` (a rationale is a few hundred tokens) fixes it; plain SERV calls were unaffected.
+- **A false hold from the ambiguity check:** a browser test bid said "Delivery: 14 days" and, under after-sales, "lamp replacement within 3 working days"; the check listed 14 and 3 as two delivery figures, so the tender (V4 #5) went to a human although the offer was clear. Cautious by design (it costs a signed release, never a slash), and recorded here as a false positive.
+
 ## Safety rules learned while building
 
 - **A bid that states two figures for one term can't win automatically.** Found by our adaptive attacker: "list USD 75,000 … payable total USD 58,500 after rebate" or "18 calendar days … committed 11 working days" contains no instruction to the AI, so the injection check passes it, and both readers sometimes took the favourable figure. Now SERV lists every value the document gives for price, delivery and warranty; more than one means a human asks which binds. Measured: 0/8 real bids flagged, 9/9 of those attacks flagged.

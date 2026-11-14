@@ -298,6 +298,9 @@ export async function writeRationale(context, feedback, lessons = []) {
   const r = await serv.chat.completions.create({
     ...NO_CACHE,
     model: `${SERV_MODEL}-serv-kronos`,
+    // SERV derives an output limit above the model's 128k when Kronos runs with the Shadow Agent and none is given
+    // (400 "max_tokens is too large", seen 14 Nov); a rationale is a few hundred tokens.
+    max_completion_tokens: 4000,
     messages: [
       {
         role: 'system',

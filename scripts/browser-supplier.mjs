@@ -4,7 +4,7 @@
 // be asked to confirm. The tender, bond and reveal are real, in the escrow on Kite testnet. No evaluation (AI credits).
 //   node --env-file=.env scripts/browser-supplier.mjs
 import { spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -12,7 +12,14 @@ import { kiteTestnet, balances, transferPie, sendGas, explorerTx } from '../src/
 
 const PORT = 3301, BASE = `http://localhost:${PORT}`, DEMO = `browser-${Date.now()}`;
 const SUPPLIER = process.env.SUPPLIER ?? 'Sinar Visual';
-const account = privateKeyToAccount(JSON.parse(readFileSync('data/agents/keys.json', 'utf8'))[SUPPLIER]);
+const keys = JSON.parse(readFileSync('data/agents/keys.json', 'utf8'));
+const account = privateKeyToAccount(keys[SUPPLIER]);
+// MIXED=1: the human in the browser competes with two supplier agents, and the tender is evaluated to settlement.
+const MIXED = process.env.MIXED === '1';
+const AGENT_BIDS = {
+  'Nusantara Edu Supply': 'Total price: USD 7,200 for 10 projectors, delivered.\nDelivery: 22 days after award.\nWarranty: 24 months.',
+  'Cahaya Media': 'Total price: USD 8,300 for 10 projectors, delivered and installed.\nDelivery: 12 days after award.\nWarranty: 24 months.',
+};
 const wallet = createWalletClient({ account, chain: kiteTestnet, transport: http() });
 
 // Enough of the tender token for a 0.01 bond and some KITE for three transactions; top up from the buyer if short.
@@ -33,7 +40,7 @@ try {
     if (!res.ok) throw new Error(`${path}: ${res.status} ${out.error}`);
     return out;
   };
-  const rfq = await api('/api/rfqs', { title: 'Browser supplier test: 10 classroom projectors', budgetCapUsd: 90000, maxDeliveryDays: 30, bondPie: '0.01', depositPie: 0.01, weights: { price: 0.5, warranty: 0.3, delivery: 0.2 }, minSpecs: {} });
+  const rfq = await api('/api/rfqs', { title: MIXED ? '10 classroom projectors: a human supplier against two agents' : 'Browser supplier test: 10 classroom projectors', budgetCapUsd: 90000, maxDeliveryDays: 30, bondPie: '0.01', depositPie: 0.01, weights: { price: 0.5, warranty: 0.3, delivery: 0.2 }, minSpecs: {} });
   console.log(`[api] opened ${rfq.id} (escrow tender #${rfq.chainId})`);
 
   browser = await chromium.launch({ channel: process.env.PW_CHANNEL ?? 'msedge' });
@@ -63,7 +70,9 @@ try {
   await page.waitForSelector(`#tender option[value="${rfq.id}"]`, { state: 'attached', timeout: 60_000 });
   console.log(`[page] open tenders: ${(await page.textContent('#tenders')).replace(/\s+/g, ' ').slice(0, 300)}`);
   await page.selectOption('#tender', rfq.id);
-  await page.fill('#doc', 'Total price: USD 7,900 for all 10 projectors, delivered.\nDelivery: 14 days after award.\nWarranty: 36 months.\nAfter-sales: lamp replacement within 3 working days.');
+  await page.fill('#doc', MIXED
+    ? 'Total price: USD 7,600 for all 10 projectors, delivered and installed.\nDelivery: 16 days after award.\nWarranty: 36 months on-site.'
+    : 'Total price: USD 7,900 for all 10 projectors, delivered.\nDelivery: 14 days after award.\nWarranty: 36 months.\nAfter-sales: lamp replacement within 3 working days.');
   await page.click('#connect');
   await page.waitForFunction(() => /Bond to lock/.test(document.querySelector('#quote').textContent), null, { timeout: 60_000 });
   console.log(`[page] ${await page.textContent('#quote')}`);
@@ -71,6 +80,19 @@ try {
   await page.waitForSelector('#status.ok, #status.bad', { timeout: 240_000 });
   console.log(`[page] seal: ${await page.textContent('#status')}`);
   if (!(await page.$('#status.ok'))) throw new Error('seal failed');
+
+  // MIXED=1: two supplier agents (separate processes, own keys) bid on the same tender as the human in the browser.
+  const agents = MIXED ? Object.entries(AGENT_BIDS).map(([name, body]) => {
+    const file = `data/agents/${rfq.id}-${name.replaceAll(' ', '_')}.txt`;
+    writeFileSync(file, `BID SUBMISSION - ${name}\n\n${body}`);
+    const p = spawn(process.execPath, ['scripts/supplier-agent.js', BASE, rfq.id, file], { env: { ...process.env, SUPPLIER_PRIVATE_KEY: keys[name] }, stdio: ['ignore', 'pipe', 'pipe'] });
+    p.stdout.on('data', (d) => process.stdout.write(`[${name}] ${d}`));
+    return new Promise((r) => p.on('exit', r));
+  }) : [];
+  for (let i = 0; Object.keys((await api(`/api/rfqs/${rfq.id}`)).bids).length < 1 + agents.length; i++) {
+    if (i > 100) throw new Error('agents did not commit');
+    await new Promise((r) => setTimeout(r, 3000));
+  }
 
   console.log(`[api] close commits: ${JSON.stringify(await api(`/api/rfqs/${rfq.id}/close`, {}))}`);
   for (let i = 0; (await api(`/api/rfqs/${rfq.id}`)).phase !== 'reveal'; i++) {
@@ -93,6 +115,16 @@ try {
   for (const e of final.events.filter((x) => x.data?.tx)) console.log(`[api] ${e.step}: ${e.data.tx}`);
   if (!bid.revealOk) throw new Error('bid not revealed as matching');
   console.log('PASS: a browser supplier sealed, locked its bond and revealed on Kite');
+  if (MIXED) {
+    await Promise.all(agents);
+    console.log(`[api] evaluate: ${JSON.stringify(await api(`/api/rfqs/${rfq.id}/evaluate`, {}))}`);
+    let r;
+    for (let i = 0; !['settled', 'held', 'evaluated'].includes((r = await api(`/api/rfqs/${rfq.id}`)).phase) || (await api('/api/rfqs')).running; i++) {
+      if (i > 120) throw new Error('evaluation did not finish');
+      await new Promise((res) => setTimeout(res, 5000));
+    }
+    console.log(`\n${rfq.id}: ${r.phase}\n${r.events.map((e) => `${e.step}: ${e.msg}${e.data?.tx ? ` ${e.data.tx}` : ''}`).join('\n')}`);
+  }
 } catch (e) {
   console.error(`FAIL: ${e.message}`);
   process.exitCode = 1;
