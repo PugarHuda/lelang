@@ -3,6 +3,7 @@
   "installCommand": "",
   "buildCommand": "",
   "outputDirectory": "public",
+  "redirects": [{ "source": "/", "destination": "/landing.html", "permanent": false }],
   "headers": [
     {
       "source": "/(.*)",
