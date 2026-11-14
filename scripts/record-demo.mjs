@@ -70,7 +70,7 @@ try {
   await caption('We attacked it ourselves: 40 of 40 injection attempts caught, no honest bid slashed.', 5000);
   await page.mouse.wheel(0, 2600);
   await caption('An adaptive attacker found a real gap (two prices for one term). We added an ambiguity check: 3 of 9 would have won before, 0 of 6 after.', 6500);
-  await caption('Find one we miss and you get paid: a winning attack earns a bounty, paid first from the pool of attackers' forfeited bonds.', 5000);
+  await caption('Find one we miss and you get paid: a winning attack earns a bounty, paid first from the pool of forfeited attacker bonds.', 5000);
   // 5. reputation and the price of a second chance
   await page.goto(`${BASE}/rep.html?a=${offender}`);
   await page.waitForFunction(() => window.__repDone, null, { timeout: 60_000 }).catch(() => {});
@@ -93,6 +93,16 @@ try {
     await caption('Attackers fund the defence: the pool pays whoever finds a hole in the evaluator. Read live from the escrow.', 6000);
     await page.goto(`${BASE}/buy.html`);
     await caption('A human buyer can start from any public Open Contracting tender and pay the fee from a browser wallet, no gas.', 6000);
+    await page.goto(`${BASE}/bid.html`);
+    await caption('A human supplier bids from a browser wallet too: the bond is locked and the bid sealed in the escrow, then revealed.', 6000);
+    const mixed = index.find((t) => /human supplier against two agents/.test(t.label));
+    if (mixed) {
+      await page.goto(`${BASE}/`);
+      await page.waitForFunction(() => window.__lastRfq);
+      await page.locator(`#tenders button[data-id="${mixed.id}"]`).click();
+      await page.waitForFunction((id) => window.__lastRfq?.id === id, mixed.id);
+      await caption('Here a human in a browser competed with two supplier agents in the same escrow, under the same checks.', 6000);
+    }
   }
   // 5b. a tender on the public API with no operator token
   if (hosted) {
