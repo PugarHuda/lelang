@@ -2,6 +2,7 @@
   "rule": "bond = tender bond x 2^provenSlashes (max 16x); only evidence-backed slashes by a trusted buyer count; overturned slashes never count",
   "trustedBuyer": "0x1875A37a4d22B5A27F910Afc59a382EBac809C8d",
   "escrows": [
+    "0x29240221486eaf37624497d6dd84e881ada3f952",
     "0x68a4cd1f94ea55b818bd6f0a5ac61a22004ffa67",
     "0xd50f39cb489c7d492fa74b9849cfd054600f08ae",
     "0x11f5f49ed28d34c8db973aa1f8c6579ba1b61e6b"
@@ -58,6 +59,21 @@
           "evidenceHash": "0xad1dd8ef8236090f7804800b5bae95f714ba101091e0f83aa39277af36b830ce",
           "settleTx": "https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2",
           "proof": "slash.html?t=rfq-mwdqcnnx&b=Bid%20E"
+        }
+      ]
+    },
+    {
+      "address": "0xf9991010c43ec5b65d996315e8a427e09a02f433",
+      "provenSlashes": 1,
+      "bondMultiplier": 2,
+      "slashes": [
+        {
+          "escrow": "0x29240221486eaf37624497d6dd84e881ada3f952",
+          "tender": "1",
+          "bid": "Bid A",
+          "evidenceHash": "0xbea3f7e160aa82574225bdcb25ac72d64c9d01d6f9a8ce539fdaf0b46e20acb8",
+          "settleTx": "https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534",
+          "proof": "slash.html?t=rfq-mwfb6biw36a7&b=Bid%20A"
         }
       ]
     }
