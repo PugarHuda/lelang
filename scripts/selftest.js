@@ -243,4 +243,18 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   assert.deepEqual(ws({ price: 0.5, warranty: 0.3, delivery: 0.2 }, bids), { A: 1, B: 1 }); // no quality weight: ratings ignored
   assert.deepEqual(ws(w, bids.map((b) => ({ ...b, quality: { score: 0 } }))), { A: 0.8, B: 0.8 }); // nobody rated: no NaN
 }
+// A flag only holds the tender if the flagged bid could win at its most favourable reading.
+{
+  const { blockingFlags } = await import('../src/lelang.js');
+  const t = (total_usd, delivery_days, warranty_months) => ({ total_usd, delivery_days, warranty_months });
+  const rfq = { weights: { price: 0.5, warranty: 0.3, delivery: 0.2 } };
+  const win = { label: 'W', terms: t(100, 10, 24) };
+  const loser = { label: 'L', terms: t(150, 20, 12), review: 'readers disagree', secondRead: { terms: t(140, 20, 12) } };
+  assert.deepEqual(blockingFlags(rfq, [win, loser]), []); // best case 140/20d/12mo still loses
+  const close = { label: 'C', terms: t(105, 10, 24), review: 'readers disagree', secondRead: { terms: t(90, 10, 24) } };
+  assert.deepEqual(blockingFlags(rfq, [win, close]), ['C']); // at its other reading it would win
+  const amb = { label: 'A', terms: t(150, 20, 12), review: 'two figures', ambiguous: [{ field: 'total_usd', values: [150, 40] }] };
+  assert.deepEqual(blockingFlags(rfq, [win, amb]), ['A']); // the rebate figure would make it win
+  assert.deepEqual(blockingFlags(rfq, [{ ...win, review: 'repeat offender' }, loser]), ['W']); // the winner's own flag always blocks
+}
 console.log('selftest OK');
