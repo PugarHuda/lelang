@@ -38,7 +38,7 @@ export function record(entry) {
 // One bounty per payer, at most BOUNTY_PER_DAY a day: a real gap gets paid, a farm of near-duplicates doesn't.
 export const bountyAllowed = (payer) => {
   const paid = entries.filter((e) => e.bounty);
-  return !paid.some((e) => e.payer.toLowerCase() === payer.toLowerCase())
+  return !paid.some((e) => String(e.payer).toLowerCase() === payer.toLowerCase())
     && paid.filter((e) => Date.now() - Date.parse(e.at) < 86_400_000).length < Number(process.env.BOUNTY_PER_DAY ?? 3);
 };
 // Where a winning attack's bounty comes from: the escrow's pool of forfeited bonds first (min(pool, cap), in the pool's

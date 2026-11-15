@@ -120,6 +120,8 @@ createServer(async (req, res) => {
         const verdict = await judge(attack);
         const entry = recordChallenge({ at: new Date().toISOString(), payer, paymentTx, attack, ...verdict });
         if (entry.wouldWin && payer !== 'operator' && BOUNTY > 0 && kiteEnabled() && bountyAllowed(payer)) {
+          entry.bounty = { status: 'sending' }; // claimed synchronously: a second winning attempt by the same payer awaiting below can't pass bountyAllowed too
+          saveChallenges();
           // Attackers fund the defence: on the V4 escrow the bounty comes out of forfeited bonds (treasury-signed,
           // one per evidence hash, enforced on-chain); only when the pool is empty or unusable does the fee wallet pay.
           const tk = process.env.TREASURY_PRIVATE_KEY;
