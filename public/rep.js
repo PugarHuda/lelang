@@ -18,7 +18,7 @@ async function published() {
 async function show(addr) {
   const view = $('#result');
   if (!/^0x[0-9a-fA-F]{40}$/.test(addr)) { view.innerHTML = '<p class="bad">Enter a 0x… address (40 hex characters).</p>'; return; }
-  view.innerHTML = '<p class="kv">Reading slash events from both escrows on Kite testnet…</p>';
+  view.innerHTML = '<p class="kv">Reading slash events from every Lelang escrow on Kite testnet…</p>';
   try {
     const [{ events, trustedBuyer }, pub, erc] = await Promise.all([slashEvents(addr), published(), fetch('erc8004.json').then((r) => r.json()).catch(() => null)]);
     const agent = erc?.agents?.[addr.toLowerCase()];

@@ -11,7 +11,7 @@ Free static analysis plus a manual checklist review, with a Hardhat test behind 
 | Compiler | solc 0.8.28, optimizer 200 runs, evmVersion paris (`hardhat.config.cjs`) |
 | Dependencies | OpenZeppelin Contracts 5.1.0 (`SafeERC20`, `ReentrancyGuard`), Hardhat 2.29.2 |
 
-**Source vs deployment.** The source at HEAD is "V5": it adds the delivery timelock (`queuedDelivery`, `deliveryRound`, `executeDelivery`). The ABI in `deployments/kite-testnet.json` (address `0x2924…f952`) has no `executeDelivery`, so the deployed contract is V4. The V4→V5 diff (`git diff 3061165 7e829fa`) only touches `resolveDelivery`. Findings F1–F6 below are in code that is the same in V4 and V5, so they apply to the deployed contract. The delivery-timelock review applies to V5 source only.
+**Source vs deployment.** At the review commit the source was already past V4: it adds the delivery timelock (`queuedDelivery`, `deliveryRound`, `executeDelivery`). The ABI in `deployments/kite-testnet.json` (address `0x2924…f952`) has no `executeDelivery`, so the deployed contract is V4. (The F1–F6 fixes were added to that source afterwards and deployed as V5; see [Fixes (V5)](#fixes-v5).) The diff from V4 (`git diff 3061165 7e829fa`) only touches `resolveDelivery`. Findings F1–F6 below are in code that is the same in V4 and that source, so they apply to the deployed contract. The delivery-timelock review applies to the newer source only.
 
 Out of scope: the off-chain evaluator, agents, API, front end, and deployment keys.
 
@@ -54,7 +54,7 @@ Severities are our judgment for a testnet escrow holding faucet-sized bonds. Not
 
 Demonstrated by `F1: if nobody reveals…` and `F1: an attacker filling all MAX_BIDDERS slots…`.
 
-Proposed patch (not applied, since the contract is deployed): a bid that was never revealed forfeits in `withdraw` too, as it would at settle.
+Proposed patch (the deployed V4 can't be changed; applied in V5, see [Fixes (V5)](#fixes-v5)): a bid that was never revealed forfeits in `withdraw` too, as it would at settle.
 
 ```solidity
 function withdraw(uint256 id) external nonReentrant {
@@ -122,18 +122,18 @@ Demonstrated by `F5 (info)…`. Proposed: add `address(this), block.chainid` to 
 
 ## Tests added
 
-- `test/audit-2026-11-16.test.cjs`: 15 tests. F1 (×2), F2, F3, F4, F5 and F6 **pass by asserting the current flawed behaviour**, so they demonstrate the issue on the code as deployed; flip the assertion after a patch. D1–D8 attempt an attack or an edge case and show it fails.
+- `test/audit-2026-11-16.test.cjs`: 15 tests. F1 (×2), F2, F3, F4, F5 and F6 **pass by asserting the current flawed behaviour**, so they demonstrate the issue on the code as deployed; after the V5 fixes they assert the fixed behaviour instead. D1–D8 attempt an attack or an edge case and show it fails.
 - `contracts/test/AuditTokens.sol`: `FeeOnTransferToken`, `BlocklistToken`, `ReentrantToken` (test-only, never deployed).
-- `contracts/LelangEscrow.sol` was **not modified**.
+- `contracts/LelangEscrow.sol` was **not modified** by the review itself; the fixes came afterwards ([Fixes (V5)](#fixes-v5)).
 
-Run: `npx hardhat test` → 52 passing (37 existing + 15 new).
+Run at review time: `npx hardhat test` → 52 passing (37 existing + 15 new); 53 after the fixes.
 
 ## What this is not
 
 - **Not a professional audit.** One reviewer, a few hours, one free static analyzer (Aderyn could not be installed). No formal verification, no independent second review, no economic or game-theory model of the evaluator/bounty incentives.
 - Tests prove only the scenarios they script. Passing D-tests mean those attacks fail, not that no attack exists.
 - Only the Solidity file was reviewed. The off-chain evaluator, which decides who gets slashed, and the operator and approver key management carry most of the real-world risk and were not reviewed here.
-- The reviewed source (V5) is not byte-for-byte the deployed V4. We did not compare bytecode against Kitescan.
+- The reviewed source is not byte-for-byte the deployed V4. We did not compare bytecode against Kitescan.
 - Don't hold real value in the contract on the strength of this report. SECURITY.md's "No professional audit" line still holds.
 
 ## Fixes (V5)
