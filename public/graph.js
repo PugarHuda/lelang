@@ -180,7 +180,7 @@ if (typeof document !== 'undefined') {
   const id = new URLSearchParams(location.search).get('t') ?? '';
   try {
     const list = await fetch('tenders.json').then((r) => (r.ok ? r.json() : []));
-    sel.innerHTML = `<option value="">Choose a tender…</option>${list.map((t) => `<option value="${esc(t.id)}"${t.id === id ? ' selected' : ''}>${esc(t.label ?? t.id)}</option>`).join('')}`;
+    sel.innerHTML = `<option value="">Choose a tender…</option>${list.map((t) => `<option value="${esc(t.id)}"${t.id === id ? ' selected' : ''}>${esc(String(t.label ?? t.id).replace(/^(#\d+) · /, '$1 (escrow V1) · '))}</option>`).join('')}`;
     sel.addEventListener('change', () => { if (sel.value) location.search = `?t=${encodeURIComponent(sel.value)}`; });
     const t = id || list.find((x) => x.featured)?.id || list[0]?.id;
     if (!t || !/^rfq-[\w-]+$/.test(t)) throw new Error('No tender given.');

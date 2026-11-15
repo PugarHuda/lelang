@@ -1,0 +1,279 @@
+{
+ "viewport": {
+  "w": 1280,
+  "h": 720
+ },
+ "scale": 1,
+ "scenes": [
+  {
+   "id": "intro",
+   "start": 0.875,
+   "dur": 19.368,
+   "end": 21.089
+  },
+  {
+   "id": "slash",
+   "start": 22.522,
+   "dur": 19.056,
+   "end": 43.178
+  },
+  {
+   "id": "pool",
+   "start": 45.118,
+   "dur": 16.392,
+   "end": 66.37
+  },
+  {
+   "id": "attacks",
+   "start": 66.458,
+   "dur": 22.752,
+   "end": 90.653
+  },
+  {
+   "id": "reppo",
+   "start": 90.747,
+   "dur": 14.016,
+   "end": 107.557
+  },
+  {
+   "id": "win",
+   "start": 108.977,
+   "dur": 7.32,
+   "end": 119.301
+  },
+  {
+   "id": "stats",
+   "start": 121.496,
+   "dur": 9.312,
+   "end": 131.49
+  },
+  {
+   "id": "close",
+   "start": 131.571,
+   "dur": 6.36,
+   "end": 138.551
+  }
+ ],
+ "boxes": [
+  {
+   "scene": "intro",
+   "t": 4.372,
+   "tAbs": 6.497,
+   "x": 125.1875,
+   "y": 190.03125,
+   "w": 257.40625,
+   "h": 340.25,
+   "hold": 4,
+   "label": "Bid E hid an instruction for the AI",
+   "tVideo": 5.247
+  },
+  {
+   "scene": "intro",
+   "t": 14.275,
+   "tAbs": 16.575,
+   "x": 125.1875,
+   "y": 196.953125,
+   "w": 1029.625,
+   "h": 326.125,
+   "hold": 4.5,
+   "label": "Checked against Kite by your browser",
+   "tVideo": 15.15
+  },
+  {
+   "scene": "slash",
+   "t": 4.389,
+   "tAbs": 28.161,
+   "x": 265.1875,
+   "y": 325.0625,
+   "w": 741.5,
+   "h": 69,
+   "hold": 3.5,
+   "label": "The hidden instruction",
+   "tVideo": 26.911
+  },
+  {
+   "scene": "slash",
+   "t": 9.402,
+   "tAbs": 33.068,
+   "x": 265.1875,
+   "y": 334.640625,
+   "w": 205.96875,
+   "h": 50,
+   "hold": 1.2,
+   "label": "Verify against Kite testnet",
+   "tVideo": 31.924
+  },
+  {
+   "scene": "slash",
+   "t": 14.889,
+   "tAbs": 38.661,
+   "x": 265.1875,
+   "y": 311.640625,
+   "w": 749.625,
+   "h": 319.96875,
+   "hold": 5,
+   "label": "Every check matches Kite",
+   "tVideo": 37.411
+  },
+  {
+   "scene": "pool",
+   "t": 6.72,
+   "tAbs": 52.649,
+   "x": 245.1875,
+   "y": 336.75,
+   "w": 789.625,
+   "h": 147.234375,
+   "hold": 4.5,
+   "label": "Slashes on escrow V4, status read live",
+   "tVideo": 51.838
+  },
+  {
+   "scene": "pool",
+   "t": 12.502,
+   "tAbs": 58.553,
+   "x": 265.1875,
+   "y": 327.515625,
+   "w": 749.625,
+   "h": 64.5,
+   "hold": 3.5,
+   "label": "The bounty pool",
+   "tVideo": 57.62
+  },
+  {
+   "scene": "pool",
+   "t": 17.54,
+   "tAbs": 63.458,
+   "x": 265.1875,
+   "y": 344.015625,
+   "w": 749.625,
+   "h": 32.140625,
+   "hold": 3,
+   "label": "Read live from the escrow",
+   "tVideo": 62.658
+  },
+  {
+   "scene": "attacks",
+   "t": 2.251,
+   "tAbs": 69.292,
+   "x": 245.1875,
+   "y": 313.015625,
+   "w": 789.625,
+   "h": 94.5,
+   "hold": 4.5,
+   "label": "40/40 caught, 0 false alarms",
+   "tVideo": 68.709
+  },
+  {
+   "scene": "attacks",
+   "t": 9.54,
+   "tAbs": 76.431,
+   "x": 245.1875,
+   "y": 302.46875,
+   "w": 789.625,
+   "h": 114.140625,
+   "hold": 4.5,
+   "label": "Two prices for one term: would have won",
+   "tVideo": 75.998
+  },
+  {
+   "scene": "attacks",
+   "t": 15.687,
+   "tAbs": 82.449,
+   "x": 245.1875,
+   "y": 340.59375,
+   "w": 789.625,
+   "h": 39.59375,
+   "hold": 3,
+   "label": "After the fix: 0 of 6",
+   "tVideo": 82.145
+  },
+  {
+   "scene": "attacks",
+   "t": 20.3,
+   "tAbs": 86.841,
+   "x": 245.1875,
+   "y": 173.1875,
+   "w": 789.625,
+   "h": 39.59375,
+   "hold": 3.5,
+   "label": "Break Lelang: live, paid challenge",
+   "tVideo": 86.758
+  },
+  {
+   "scene": "reppo",
+   "t": 2.715,
+   "tAbs": 93.579,
+   "x": 125.1875,
+   "y": 297.609375,
+   "w": 1029.625,
+   "h": 124.53125,
+   "hold": 4.5,
+   "label": "Reppo audit gates settlement",
+   "tVideo": 93.462
+  },
+  {
+   "scene": "reppo",
+   "t": 9.377,
+   "tAbs": 100.091,
+   "x": 666,
+   "y": 399.015625,
+   "w": 50,
+   "h": 50,
+   "hold": 0.8,
+   "label": "Next miss",
+   "tVideo": 100.124
+  },
+  {
+   "scene": "reppo",
+   "t": 11.748,
+   "tAbs": 102.458,
+   "x": 482,
+   "y": 246.72967529296875,
+   "w": 316,
+   "h": 225.7125244140625,
+   "hold": 4.5,
+   "label": "A published negative result",
+   "tVideo": 102.495
+  },
+  {
+   "scene": "win",
+   "t": 1.028,
+   "tAbs": 109.842,
+   "x": 271.1875,
+   "y": 332.65625,
+   "w": 737.625,
+   "h": 55.25,
+   "hold": 2.5,
+   "label": "Clean win, verified",
+   "tVideo": 110.005
+  },
+  {
+   "scene": "win",
+   "t": 5.953,
+   "tAbs": 114.513,
+   "x": 265.1875,
+   "y": 260.03125,
+   "w": 749.625,
+   "h": 333.5625,
+   "hold": 4,
+   "label": "Checked in your browser",
+   "tVideo": 114.93
+  },
+  {
+   "scene": "stats",
+   "t": 1.98,
+   "tAbs": 123.088,
+   "x": 125.1875,
+   "y": 138.734375,
+   "w": 1029.625,
+   "h": 442.09375,
+   "hold": 5,
+   "label": "Counted from escrow events on Kite",
+   "tVideo": 123.476
+  }
+ ],
+ "synced": {
+  "a": -1.7074508610587884,
+  "b": 1.0170253376639218
+ }
+}

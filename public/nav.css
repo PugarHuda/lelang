@@ -13,7 +13,9 @@
 .mast nav a.cta { background: #0c0d10; color: #fff; padding: 9px 14px; border-radius: 10px; margin-left: 2px; }
 .mast nav a.cta:hover { background: #26282e; color: #fff; }
 .mast nav a.cta[aria-current="page"] { background: #7b5cff; color: #fff; }
-@media (max-width: 720px) { .mark-word { margin-right: 2px; } .mast nav .sep { display: none; } }
+@media (max-width: 720px) { .mark-word { margin-right: 2px; } .mast nav .sep { display: none; }
+  /* fade the right edge so a cut-off link reads as "scroll for more" */
+  .mast nav { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); } }
 @media (prefers-color-scheme: dark) {
   .mast-in { background: rgba(24,25,30,.86); border-color: rgba(255,255,255,.08); }
   .mark-word { color: #f1f2f5; }

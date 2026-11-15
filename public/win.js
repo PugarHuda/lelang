@@ -118,7 +118,7 @@ try {
   view.innerHTML = `
     <section class="cert">
       <p class="kv">Clean win certificate · escrow tender #${esc(rfq.chainId)} on Kite testnet</p>
-      <h1>${esc(bid.label)} won this tender<span id="clean"></span></h1>
+      <h1>${esc(bid.label)} won this tender<span id="clean">: checking…</span></h1>
       <p class="lede">${esc(rfq.title)}</p>
       <p class="kv">Winner <code>${esc(bid.supplier)}</code> · score ${esc(rfq.award.scores?.[bid.label] ?? '–')} · <a href="index.html">all tenders</a></p>
       <p id="verdict" class="verdict">Checking Kite testnet…</p>
@@ -131,12 +131,12 @@ try {
   const run = async () => {
     go.disabled = true;
     const v = document.querySelector('#verdict'), list = document.querySelector('#checks');
-    v.className = 'verdict'; v.textContent = 'Checking Kite testnet…'; list.innerHTML = '';
+    v.className = 'verdict'; v.textContent = 'Checking Kite testnet…'; list.innerHTML = ''; document.querySelector('#clean').textContent = ': checking…';
     try {
       const { rows, block } = await verify(rfq, bid);
       const all = rows.every((r) => r.ok);
       document.querySelector('.cert').classList.toggle('ok', all);
-      document.querySelector('#clean').textContent = all ? ' cleanly' : ', but the clean-win checks did not all pass';
+      document.querySelector('#clean').textContent = all ? (rfq.humanApproval ? ' cleanly, released by a named approver after escalation' : ' cleanly') : ', but the clean-win checks did not all pass';
       v.className = `verdict ${all ? 'ok' : 'bad'}`;
       v.innerHTML = all ? `✓ Verified clean win · ${rows.length}/${rows.length} checks pass at block ${esc(block)}` : `✗ Not a verified clean win: ${rows.filter((r) => !r.ok).length} check(s) failed`;
       list.innerHTML = rows.map((r) => `<li><span class="t"></span><span class="s ${r.ok ? 'ok' : 'bad'}">${r.ok ? 'PASS' : 'FAIL'}</span><span><strong>${esc(r.title)}.</strong> ${r.text} ${txLink(r.tx)}</span></li>`).join('');

@@ -41,7 +41,7 @@ try {
   if (!bid?.slash) throw new Error('That bid was not slashed.');
   const settle = rfq.settlement.find((s) => s.tx)?.tx;
   view.innerHTML = `
-    <h1>${esc(bid.label)}'s bond was slashed</h1>
+    <h1>${bid.appeal?.outcome === 'overturned' ? `${esc(bid.label)}'s slash was overturned on appeal: bond refunded` : `${esc(bid.label)}'s bond was slashed`}</h1>
     <p class="kv">Escrow tender #${esc(rfq.chainId)} · ${esc(rfq.title)} · <a href="${esc(settle)}" target="_blank" rel="noopener">settle transaction on Kitescan</a></p>
     ${share(rfq.id, bid.label, bid.appeal?.outcome === 'overturned')}
     <div class="card"><strong>Why:</strong> ${esc(bid.disqualified)}</div>

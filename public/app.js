@@ -1,6 +1,25 @@
 // Dashboard (classic script, so render() and approveHeld() are globals the proof module can reach).
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]));
+// Readable tender terms instead of raw JSON, and a tiny safe Markdown subset (escape first, then **bold** and "- " bullets).
+const UNITS = { ram_gb: 'GB RAM', storage_gb: 'GB storage', battery_hours: 'h battery' };
+const specsText = (m) => Object.entries(m ?? {}).map(([k, v]) => `${v} ${UNITS[k] ?? k}`).join(', ');
+const weightsText = (w) => Object.entries(w ?? {}).map(([k, v]) => `${k} ${Math.round(v * 100)}%`).join(', ');
+const md = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').split('\n')
+  .map((l) => (/^\s*- /.test(l) ? `<li>${l.replace(/^\s*- /, '')}</li>` : `${l}<br>`)).join('')
+  .replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+// ponytail: tenders.json labels without an escrow version are all on the first escrow (V1); label them in display only
+const tenderLabel = (s) => String(s).replace(/^(#\d+) · /, '$1 (escrow V1) · ');
+// What the header says: an approved release still rewrites award.decision to 'award', so humanApproval marks an escalation.
+function decisionHead(rfq) {
+  const a = rfq.award;
+  if (a.decision === 'escalate') return ['warn', 'ESCALATED · no automatic award'];
+  if (rfq.humanApproval) return ['warn', `ESCALATED · released to ${a.winner} by a human approver (signed)`];
+  return [a.decision === 'award' ? 'ok' : 'warn', `${a.decision?.toUpperCase() ?? ''} ${a.winner ?? ''}`];
+}
+// Certificate only for a tender that settled on-chain with an Awarded event paying the recorded winner.
+const settledWin = (rfq) => rfq.phase === 'settled' && rfq.award?.decision === 'award'
+  && (rfq.settlement ?? []).some((s) => s.event === 'Awarded' && s.label === rfq.award.winner && s.tx);
 let current = null;
 let lastBody = '';
 
@@ -31,17 +50,17 @@ function render(rfq) {
   $('#view').innerHTML = `
     <h2>Tender · ${esc(rfq.phase)}</h2>
     <div class="card"><strong>${esc(rfq.title)}</strong>
-      <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · min ${esc(JSON.stringify(rfq.minSpecs))} · weights ${esc(JSON.stringify(rfq.weights))}
+      <div class="kv">Cap $${rfq.budgetCapUsd} · max ${rfq.maxDeliveryDays} days · ${specsText(rfq.minSpecs) ? `min ${esc(specsText(rfq.minSpecs))} · ` : ''}weights ${esc(weightsText(rfq.weights))}
       ${rfq.anchorTx ? ` · <a href="https://testnet.kitescan.ai/tx/${esc(rfq.anchorTx)}" target="_blank">${rfq.chainId ? 'commits closed on-chain' : 'sealed commits on Kite'}</a>` : ''}
       ${rfq.escrow ? ` · bonds held by <a href="https://testnet.kitescan.ai/address/${esc(rfq.escrow)}" target="_blank">escrow contract</a> (tender #${esc(rfq.chainId)})` : ''}
       ${rfq.paidBy ? `<br>Opened by agent <code>${esc(rfq.paidBy.payer.slice(0, 10))}…</code>, which paid the ${esc(rfq.paidBy.fee)} ${esc(rfq.paidBy.asset)} tender fee over <a id="x402" href="${esc(rfq.paidBy.txUrl ?? `https://testnet.kitescan.ai/tx/${rfq.paidBy.tx}`)}" target="_blank">x402</a> on ${esc(rfq.paidBy.network ?? 'Kite testnet')} (settled by the ${esc(rfq.paidBy.settledBy)})` : ''}
       · <a id="ocds" href="${staticMode ? `tenders/${esc(rfq.id)}.ocds.json` : `/api/rfqs/${esc(rfq.id)}/ocds`}" target="_blank">export OCDS 1.1</a></div></div>
     <h2>Bids</h2><div class="grid">${bids.map((b) => bidCard(b, rfq)).join('')}</div>
     ${rfq.award ? `<h2>Decision</h2><div class="card">
-      <strong class="${rfq.award.decision === 'award' ? 'ok' : 'warn'}">${esc(rfq.award.decision?.toUpperCase())} ${esc(rfq.award.winner ?? '')}</strong>
+      <strong class="${decisionHead(rfq)[0]}">${esc(decisionHead(rfq)[1])}</strong>
       <span class="kv"> · ${esc(rfq.award.engine)} · confidence ${rfq.award.confidence?.toFixed?.(2) ?? '-'}</span>
-      ${rfq.award.rationale ? `<pre style="margin-top:10px">${esc(rfq.award.rationale)}</pre>` : ''}
-      ${staticMode ? `<div class="kv" style="margin-top:8px"><a href="graph.html?t=${encodeURIComponent(rfq.id)}">decision graph: which step was code, LLM, decision node, audit, human, chain →</a>${rfq.phase === 'settled' && rfq.award.decision === 'award' ? ` · <a href="win.html?t=${encodeURIComponent(rfq.id)}">clean-win certificate, verified on Kite →</a>` : ''}</div>` : ''}</div>` : ''}
+      ${rfq.award.rationale ? `<div style="margin-top:10px">${md(rfq.award.rationale)}</div>` : ''}
+      ${staticMode ? `<div class="kv" style="margin-top:8px"><a href="graph.html?t=${encodeURIComponent(rfq.id)}">decision graph: which step was code, LLM, decision node, audit, human, chain →</a>${settledWin(rfq) ? ` · <a href="win.html?t=${encodeURIComponent(rfq.id)}">clean-win certificate, verified on Kite →</a>` : ''}</div>` : ''}</div>` : ''}
     ${r ? `<h2>Independent audit (Reppo)</h2><div class="card">
       <strong class="${r.route === 'ship' ? 'ok' : r.route === 'block' ? 'bad' : 'warn'}">${esc(r.route ?? r.status)}</strong>
       <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p>
@@ -72,12 +91,15 @@ async function loadStatic() {
   let wanted = null;
   const show = async (id) => {
     wanted = id;
+    const u = new URL(location.href);
+    u.searchParams.set('t', id);
+    history.replaceState(null, '', u); // Back and shared links keep the chosen tender
     for (const b of document.querySelectorAll('#tenders button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
     const rfq = await (await fetch(`tenders/${encodeURIComponent(id)}.json`)).json();
     if (wanted === id) render(rfq); // a slower earlier click must not overwrite the tab the visitor chose last
   };
   const nav = $('#tenders');
-  nav.innerHTML = index.map((t) => `<button type="button" data-id="${esc(t.id)}" aria-pressed="false">${esc(t.label)}</button>`).join('');
+  nav.innerHTML = index.map((t) => `<button type="button" data-id="${esc(t.id)}" aria-pressed="false">${esc(tenderLabel(t.label))}</button>`).join('');
   nav.hidden = index.length < 2;
   nav.onclick = (e) => { const id = e.target.closest('button')?.dataset.id; if (id) show(id); };
   const deep = new URLSearchParams(location.search).get('t'); // deep link from graph.html / win.html
@@ -117,6 +139,8 @@ Open a tender as a buyer: POST ${LIVE}/api/rfqs answers 402 with x402 terms
 
 async function tick() {
   if (staticMode) return;
+  // Only a local operator server has /api/rfqs; a hosted static deploy goes straight to the published record (no 404 probe).
+  if (!['localhost', '127.0.0.1'].includes(location.hostname)) return loadStatic();
   try {
     const res = await fetch('/api/rfqs');
     if (!res.ok) return loadStatic();

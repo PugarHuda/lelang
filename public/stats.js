@@ -85,11 +85,12 @@ const tile = (label, href, res, what, value, sub) => `<a class="card tile" href=
 
 const v4url = C ? `${X}/address/${C.v4.address}?tab=logs` : X;
 const live = A ? A.entries.filter((e) => !e.wouldWin && /^(slashed|held)/.test(e.outcome)).length : 0;
+const liveSlashed = A ? A.entries.filter((e) => !e.wouldWin && /^slashed/.test(e.outcome)).length : 0;
 $('tiles').innerHTML = [
   tile('Tenders opened', v4url, c, 'Kite testnet', () => C.tenders, () => `TenderOpened on ${plural(C.escrows.length, 'escrow')} · fees ${esc(C.fees(null))}`),
   tile('Sealed bids committed', v4url, c, 'Kite testnet', () => C.bids, () => 'Committed events: a hash on-chain, the document stays sealed until reveal'),
   tile('Red-team attacks caught', 'attacks.html', r, 'attacks.json', () => `${esc(R.caught)}/${esc(R.attackTrials)}`,
-    () => `${esc(R.slashedWithProof)} slashed with proof, ${esc(R.missed)} missed, ${esc(R.falsePositives)} false alarms on ${esc(R.cleanTrials)} honest runs${A ? ` · Break Lelang: ${live} of ${A.entries.length} public attempts caught` : ''}`),
+    () => `${esc(R.slashedWithProof)} slashed with proof, ${esc(R.missed)} missed, ${esc(R.falsePositives)} false alarms on ${esc(R.cleanTrials)} honest runs${A ? ` · Break Lelang: ${live} of ${A.entries.length} public attempts stopped (${liveSlashed} slashed with proof, ${live - liveSlashed} held for a human)` : ''}`),
   tile('Slashes verified on Kite', 'pool.html', c, 'Kite testnet', () => C.proven,
     () => `BondSlashed with an evidence hash · ${plural(C.forfeited, 'unrevealed bond')} forfeited · ${C.pending} pending · ${C.overturned} overturned on appeal${C.offChainOverturns ? ` (${C.offChainOverturns} on an escrow before V4, which can't un-slash on-chain: the event stays, the bond was refunded by the buyer)` : ''}`),
   tile('Bounty pool (V4)', 'pool.html', c, 'Kite testnet', () => esc(C.pool ?? 'n/a'), () => `bountyPool() on the V4 escrow at block ${esc(C.latest.number)}`),
@@ -115,10 +116,10 @@ if (A) {
   const rows = [...by.values()].sort((x, y) => y.won - x.won || y.attempts - x.attempts);
   const note = `<p class="kv">${plural(A.attempts, 'attempt')} so far, ${plural(A.wins, 'win')}, ${plural(A.bountiesPaid, 'bounty', 'bounties')} sent${A.entries.length < A.attempts ? ` (table covers the latest ${A.entries.length})` : ''}. Each attempt costs a small x402 fee; a win pays up to ${esc(A.poolCap)} ${esc(A.poolToken ?? '')} from the pool. <a href="attacks.html">Try it</a>.</p>`;
   $('board').innerHTML = rows.length
-    ? `<table><tr><th>Attacker</th><th class="n">Attempts</th><th class="n">Caught</th><th class="n">Won</th><th class="n">Bounty paid</th></tr>${rows.map((p) => `<tr><td>${addr(p.payer)}</td><td class="n">${p.attempts}</td><td class="n">${p.caught}</td><td class="n ${p.won ? 'bad' : ''}">${p.won}</td><td class="n">${p.paid ? `${esc(p.paid)} ${esc(p.asset)}` : '–'}</td></tr>`).join('')}</table>${note}`
+    ? `<table><tr><th>Attacker</th><th class="n">Attempts</th><th class="n">Stopped</th><th class="n">Won</th><th class="n">Bounty paid</th></tr>${rows.map((p) => `<tr><td>${addr(p.payer)}</td><td class="n">${p.attempts}</td><td class="n">${p.caught}</td><td class="n ${p.won ? 'bad' : ''}">${p.won}</td><td class="n">${p.paid ? `${esc(p.paid)} ${esc(p.asset)}` : '–'}</td></tr>`).join('')}</table>${note}`
     : `<p class="kv">Nobody has tried yet. Be the first: <a href="attacks.html">Break Lelang</a>.</p>${note}`;
   $('attempts').innerHTML = A.entries.length
-    ? `<table><tr><th>When (UTC)</th><th>Who</th><th>Outcome</th><th></th></tr>${A.entries.map((e) => { const [cls, label] = verdict(e); return `<tr><td>${esc(String(e.at ?? '').slice(0, 16).replace('T', ' '))}</td><td>${addr(e.payer)}</td><td class="${cls}">${esc(label)}</td><td>${/^https:\/\/testnet\.kitescan\.ai\//.test(e.paymentTx ?? '') ? `<a href="${esc(e.paymentTx)}">payment</a>` : ''}${/^https:\/\/testnet\.kitescan\.ai\//.test(e.bounty?.tx ?? '') ? ` · <a href="${esc(e.bounty.tx)}">bounty</a>` : ''}</td></tr>`; }).join('')}</table>`
+    ? `<table><tr><th>When (UTC)</th><th>Who</th><th>Outcome</th><th>Payment</th></tr>${A.entries.map((e) => { const [cls, label] = verdict(e); return `<tr><td>${esc(String(e.at ?? '').slice(0, 16).replace('T', ' '))}</td><td>${addr(e.payer)}</td><td class="${cls}">${esc(label)}</td><td>${/^https:\/\/testnet\.kitescan\.ai\//.test(e.paymentTx ?? '') ? `<a href="${esc(e.paymentTx)}">payment</a>` : ''}${/^https:\/\/testnet\.kitescan\.ai\//.test(e.bounty?.tx ?? '') ? ` · <a href="${esc(e.bounty.tx)}">bounty</a>` : ''}</td></tr>`; }).join('')}</table>`
     : '<p class="kv">No attempts recorded yet.</p>';
 } else {
   $('board').innerHTML = $('attempts').innerHTML = `<p>${down(a, 'the Break Lelang API')}</p>`;
