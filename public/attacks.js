@@ -43,7 +43,7 @@ fetch('attacks.json').then((r) => r.json()).then((d) => {
     <p class="kv">· marks a zero-width space hidden in the text.</p>
     ${adaptiveList(d.adaptiveBefore, 'Adaptive attacker, before the ambiguity check', `${esc(d.adaptiveBefore.attacker)} wrote new paragraphs each round, saw how each was handled and tried again. Its best trick held no instruction to the AI at all: two figures for the same term.`)}
     ${adaptiveList(d.adaptiveAfter, 'Same attacker, after the ambiguity check', 'A bid that states more than one value for price, delivery or warranty no longer wins automatically.')}
-    <p class="kv">Raw data: <a href="https://github.com/PugarHuda/lelang/tree/main/docs/reports">docs/reports</a>. Reproduce: <code>npm run redteam -- --runs 5</code>, <code>node --env-file=.env scripts/redteam-adaptive.js</code>.</p>`;
+    <p class="kv">Raw data: <a href="https://github.com/PugarHuda/lelang/tree/master/docs/reports">docs/reports</a>. Reproduce: <code>npm run redteam -- --runs 5</code>, <code>node --env-file=.env scripts/redteam-adaptive.js</code>.</p>`;
   window.__attacksDone = true;
   liveChallenge();
 }).catch((e) => { $('#view').innerHTML = `<p class="bad">Couldn't load the gallery: ${esc(e.message)}</p>`; });

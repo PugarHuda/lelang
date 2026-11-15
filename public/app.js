@@ -104,7 +104,7 @@ Open a tender as a buyer: POST ${LIVE}/api/rfqs answers 402 with x402 terms
       setTimeout(() => ctl.abort(), 70_000);
       const { rfqs, running } = await (await fetch(`${LIVE}/api/rfqs`, { signal: ctl.signal })).json();
       const rows = rfqs.slice(0, 6).map((r) => `<li><code>${esc(r.id)}</code> · ${esc(r.title)} · <b>${esc(r.phase)}</b>${r.id === running ? ' (being evaluated now)' : ''}</li>`).join('');
-      draw(`<p class="kv" style="margin:0 0 6px">${esc(LIVE.replace('https://', ''))} is up · ${rfqs.length} tender${rfqs.length === 1 ? '' : 's'} since its last restart (settled ones are also published above)</p>${rows ? `<ul style="margin:0 0 8px;padding-left:18px">${rows}</ul>` : '<p class="kv">No tender running right now: open one, or bid in the next.</p>'}`);
+      draw(`<p class="kv" style="margin:0 0 6px">${esc(LIVE.replace('https://', ''))} is up · ${rfqs.length} tender${rfqs.length === 1 ? '' : 's'} on record (live and archived; settled ones are also published above)</p>${rows ? `<ul style="margin:0 0 8px;padding-left:18px">${rows}</ul>` : '<p class="kv">No tender running right now: open one, or bid in the next.</p>'}`);
       window.__liveDone = { up: true, count: rfqs.length };
     } catch {
       draw(`<p class="kv">The public API didn't answer in time (it may be waking up). It is at <code>${esc(LIVE)}</code>.</p>`);

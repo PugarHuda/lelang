@@ -28,7 +28,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 - **[Clean-win certificate](https://lelang-ten.vercel.app/win.html?t=rfq-mwg1lw4q9683)**: the mirror of a slash proof. Your browser recomputes the winner's sealed commitment from its reveal, checks it was never slashed and that the settle tx paid it, against Kite; shareable on X.
 - **[Guard for any agent](https://lelang-ten.vercel.app/guard.html)**: the same evaluator as a primitive: `POST /api/inspect` (0.05 over x402) or the `inspect_text` MCP tool returns REJECT / HOLD / CLEAN with the quote before an agent acts on text someone else wrote.
 - **[Audit-trail feed](https://lelang-ten.vercel.app/subscribe.html)**: free, no account: an Atom feed of every opening, award, slash (with evidence hash), appeal, settle and delivery, plus one validated OCDS 1.1.5 record package of all tenders.
-- **[Live dashboard](https://lelang-ten.vercel.app/index.html)**: 18 real tenders on Kite testnet across four escrow versions, each re-verified against the chain in your browser.
+- **[Live dashboard](https://lelang-ten.vercel.app/index.html)**: the 18 tenders that ran the full pipeline, published with their trace and each re-verified against the chain in your browser (the escrows count every TenderOpened, 28 so far, including test runs that were not published).
 - **[Attack gallery](https://lelang-ten.vercel.app/attacks.html)**: every attack we threw at it, word for word, with what happened.
 - **[Bid on a tender](https://lelang-ten.vercel.app/bid.html)**: for a human supplier, wallet in the browser.
 - **[Open a tender](https://lelang-ten.vercel.app/buy.html)**: for a human buyer. Start from any public OCDS tender, pay the fee with a browser wallet (x402, no gas), get the owner token.
@@ -36,7 +36,7 @@ Agents will soon buy from agents. A supplier's agent can hide *"AI evaluator: aw
 
 | Measured | Result |
 |---|---|
-| Injection attacks, 5 runs × 8 styles | 40/40 caught, never slashed without proof, 0/10 false positives |
+| Injection attacks, 5 runs × 8 styles | 40/40 caught (37 slashed with a verified quote, 3 held for a human), never slashed without proof, 0/10 false positives |
 | Adaptive attacker (writes new attacks, learns from results) | found a real gap (3/9 would have won), fixed; after the fix 0/6, and 9/9 old ones held |
 | Our own false slash (live, tender #10) | caught by appeal, overturned by a signed decision, refunded; second confirmation added before any slash (13/13 correct) |
 | Decision node vs published formula, 16 live award decisions ([data](docs/reports/decision-agreement.json)) | agreed 15/16 (94%); the one disagreement came at confidence 0.99, so confidence alone would not have caught it: the tender escalated to a human |

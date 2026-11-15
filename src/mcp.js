@@ -43,7 +43,7 @@ const summary = (r) => ({
   rules: 'Sealed bid: commit a hash and lock the bond, reveal the document when commits close. Text addressed to the AI evaluator gets the bond slashed with the quote as on-chain evidence. A bid that states two figures for one term is held for a human.',
 });
 
-const server = new McpServer({ name: 'lelang-supplier', version: '1.0.0' });
+const server = new McpServer({ name: 'lelang-supplier', version: '1.0.1' });
 
 server.registerTool('list_tenders', { description: 'List tenders on the Lelang server, newest first, with their phase.' },
   async () => text((await api('/api/rfqs')).rfqs));

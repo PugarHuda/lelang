@@ -53,11 +53,16 @@ async function chain() {
   const key = (l) => `${l.address.toLowerCase()}:${l.args.id}:${l.args.bidder.toLowerCase()}`;
   const closed = new Set([...of('BondSlashed'), ...of('SlashOverturned')].map(key));
   const slashed = of('BondSlashed');
+  // Escrows before V4 can't un-slash on-chain: an appeal there is refunded by the buyer and recorded in the published tender.
+  const idx = await fetch('tenders.json').then((r) => r.json()).catch(() => []);
+  const recs = await Promise.all(idx.map((t) => fetch(`tenders/${encodeURIComponent(t.id)}.json`).then((r) => r.json()).catch(() => null)));
+  const offChainOverturns = recs.filter((r) => r && String(r.escrow).toLowerCase() !== v4.address.toLowerCase())
+    .flatMap((r) => Object.values(r.bids ?? {})).filter((b) => b.appeal?.outcome === 'overturned').length;
   return {
     escrows, latest, meta, fees, pool, v4,
     tenders: of('TenderOpened').length, bids: of('Committed').length,
     proven: slashed.filter((l) => BigInt(l.args.evidenceHash) !== 0n).length, forfeited: slashed.filter((l) => BigInt(l.args.evidenceHash) === 0n).length,
-    pending: of('SlashPending').filter((l) => !closed.has(key(l))).length, overturned: of('SlashOverturned').length,
+    pending: of('SlashPending').filter((l) => !closed.has(key(l))).length, overturned: of('SlashOverturned').length + offChainOverturns, offChainOverturns,
     bounties: of('BountyPaid'), bountyTotal: sum(of('BountyPaid').map((l) => [l.args.token.toLowerCase(), l.args.amount])),
     perEscrow: escrows.map((e) => ({ ...e, tenders: of('TenderOpened', e.address).length, bids: of('Committed', e.address).length, slashes: of('BondSlashed', e.address).length, fees: fees(e.address) })),
   };
@@ -86,7 +91,7 @@ $('tiles').innerHTML = [
   tile('Red-team attacks caught', 'attacks.html', r, 'attacks.json', () => `${esc(R.caught)}/${esc(R.attackTrials)}`,
     () => `${esc(R.slashedWithProof)} slashed with proof, ${esc(R.missed)} missed, ${esc(R.falsePositives)} false alarms on ${esc(R.cleanTrials)} honest runs${A ? ` · Break Lelang: ${live} of ${A.entries.length} public attempts caught` : ''}`),
   tile('Slashes verified on Kite', 'pool.html', c, 'Kite testnet', () => C.proven,
-    () => `BondSlashed with an evidence hash · ${plural(C.forfeited, 'unrevealed bond')} forfeited · ${C.pending} pending · ${C.overturned} overturned on appeal`),
+    () => `BondSlashed with an evidence hash · ${plural(C.forfeited, 'unrevealed bond')} forfeited · ${C.pending} pending · ${C.overturned} overturned on appeal${C.offChainOverturns ? ` (${C.offChainOverturns} on an escrow before V4, which can't un-slash on-chain: the event stays, the bond was refunded by the buyer)` : ''}`),
   tile('Bounty pool (V4)', 'pool.html', c, 'Kite testnet', () => esc(C.pool ?? 'n/a'), () => `bountyPool() on the V4 escrow at block ${esc(C.latest.number)}`),
   tile('Bounties paid', 'pool.html', c, 'Kite testnet', () => C.bounties.length, () => `BountyPaid events, ${esc(C.bountyTotal)} in total`),
 ].join('');
