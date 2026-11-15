@@ -63,16 +63,17 @@ const Scene: React.FC<{ s: any }> = ({ s }) => {
   }
   const chunks = chunksFor(s.id);
   const chunk = chunks.find((c, i) => t >= c[0].s - 0.05 && t < (chunks[i + 1]?.[0].s ?? c[c.length - 1].e + 0.8));
-  const boxBottom = active && active.p > 0.3 ? ty + s1 * (active.z.by + active.z.bh) : 0;
-  const boxTop = active && active.p > 0.3 ? ty + s1 * active.z.by : H;
-  const top = boxBottom > H * 0.8 && boxTop > H * 0.3;
+  // subtitles go to the top while the target (as zoomed now) reaches the bottom third, unless it fills the whole frame
+  const boxBottom = active ? ty + s1 * (active.z.by + active.z.bh) : 0;
+  const boxTop = active ? ty + s1 * active.z.by : H;
+  const top = boxBottom > H * 0.66 && boxTop > H * 0.2;
   return (
     <AbsoluteFill style={{ backgroundColor: '#111' }}>
       <AbsoluteFill style={{ transform: `translate(${tx}px, ${ty}px) scale(${s1})`, transformOrigin: '0 0' }}>
         <OffthreadVideo src={staticFile("footage.mp4")} startFrom={Math.round(s.start * FPS)} muted style={{ width: W, height: H }} />
       </AbsoluteFill>
       <Audio src={staticFile(`${s.id}.mp3`)} />
-      {chunk ? (
+      {chunk && s.id !== 'close' ? ( /* the end card carries the closing line and URL */
         <div style={{ position: 'absolute', left: 0, right: 0, [top ? 'top' : 'bottom']: 56, display: 'flex', justifyContent: 'center' }}>
           <div style={{ maxWidth: 1500, padding: '16px 30px', background: 'rgba(12,12,14,.86)', borderRadius: 16, font: '600 46px/1.3 "Segoe UI", system-ui, sans-serif', textAlign: 'center', boxShadow: '0 10px 40px rgba(0,0,0,.4)' }}>
             {chunk.map((w, i) => (

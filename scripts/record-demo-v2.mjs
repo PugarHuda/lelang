@@ -75,7 +75,15 @@ const highlight = async (loc, label, hold = 2.6, { click = false, pad = 6 } = {}
     await el.scrollIntoViewIfNeeded();
     await wait(400);
   }
-  const r = await el.evaluate((e) => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; });
+  // long smooth scrolls outlast the wait: re-measure until the element has stopped moving
+  const rect = () => el.evaluate((e) => { const b = e.getBoundingClientRect(); return { x: b.x, y: b.y, w: b.width, h: b.height }; });
+  let r = await rect();
+  for (let i = 0, same = 0; i < 40 && same < 3; i++) {
+    await wait(100);
+    const n = await rect();
+    same = JSON.stringify(n) === JSON.stringify(r) ? same + 1 : 0;
+    r = n;
+  }
   const box = { x: Math.max(4, r.x - pad), y: Math.max(4, r.y - pad) };
   box.w = Math.min(W - 4, r.x + r.w + pad) - box.x;
   box.h = Math.min(H - 4, r.y + r.h + pad) - box.y;
@@ -87,8 +95,9 @@ const highlight = async (loc, label, hold = 2.6, { click = false, pad = 6 } = {}
   }, box);
   boxes.push({ scene: cur.id, t: +(now() - cur.start).toFixed(3), tAbs: +now().toFixed(3), ...box, hold, label });
   await travel(Math.min(r.x + r.w / 2, box.x + box.w - 20), Math.min(r.y + Math.min(r.h / 2, 40), box.y + box.h - 10));
-  if (click) await page.mouse.click(mouse.x, mouse.y);
   await wait(hold * 1000);
+  // click last, then drop the box at once: a click can re-layout the page (Verify collapses the result) and the box would float
+  if (click) await page.mouse.click(mouse.x, mouse.y);
   await page.evaluate(() => document.querySelectorAll('.__hl').forEach((d) => d.remove()));
 };
 

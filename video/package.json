@@ -2,7 +2,7 @@
   "name": "lelang-demo-video",
   "private": true,
   "type": "module",
-  "scripts": { "render": "remotion render src/index.ts Demo ../public/demo-v2.mp4 --codec h264 --crf 26" },
+  "scripts": { "render": "remotion render src/index.ts Demo ../public/demo-v3.mp4 --codec h264 --crf 27 --audio-codec aac" },
   "dependencies": {
     "@remotion/cli": "4.0.290",
     "react": "18.3.1",
