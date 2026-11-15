@@ -15,7 +15,9 @@ export async function guard(text) {
     if (!process.env.PAYER_PRIVATE_KEY) return { action: 'UNPAID', challenge };
     const { pay } = await import('../src/x402.js');
     const { privateKeyToAccount } = await import('viem/accounts');
-    const terms = challenge.accepts.find((a) => a.network === 'eip155:2368' && a.extra?.name === 'PYUSD');
+    // pin Lelang's PYUSD address too, as src/mcp.js does: a server must not swap in another token under the same name
+    const terms = challenge.accepts?.find((a) => a.network === 'eip155:2368' && a.extra?.name === 'PYUSD' && String(a.asset).toLowerCase() === '0x8e04d099b1a8dd20e6cad4b2ab2b405b98242ec9');
+    if (!terms) throw new Error('guard offers no PYUSD option on Kite testnet');
     if (BigInt(terms.amount) > 10n ** 17n) throw new Error(`guard asks ${terms.amount}, more than 0.1`); // never sign more than 0.1
     res = await fetch(`${GUARD}/api/inspect`, { ...init, headers: { ...init.headers, 'payment-signature': await pay(privateKeyToAccount(process.env.PAYER_PRIVATE_KEY), terms) } });
   }
