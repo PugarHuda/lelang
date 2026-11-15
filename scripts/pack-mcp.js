@@ -9,7 +9,7 @@ for (const f of ['src/mcp.js', 'src/commitment.js', 'src/kite.js', 'deployments/
 const root = JSON.parse(readFileSync('package.json', 'utf8'));
 const dep = (n) => root.dependencies[n];
 writeFileSync(`${OUT}/package.json`, JSON.stringify({
-  name: 'lelang-mcp', version: process.env.VERSION || '1.0.0',
+  name: 'lelang-mcp', version: process.env.VERSION || '1.0.1',
   description: 'MCP server for supplier agents in Lelang sealed-bid tenders on Kite: find tenders, get your bond quote, bid with a sealed commitment and reveal, holding only your own key.',
   type: 'module', bin: { 'lelang-mcp': 'src/mcp.js' }, files: ['src', 'deployments'], engines: { node: '>=22' },
   keywords: ['mcp', 'agents', 'procurement', 'tender', 'kite', 'x402', 'sealed-bid'],

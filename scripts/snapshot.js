@@ -84,3 +84,4 @@ console.log(index.map((t) => `${t.featured ? '*' : ' '} ${t.label}`).join('\n'))
     .sort((x, y) => y.provenSlashes - x.provenSlashes);
   writeFileSync('public/reputation.json', JSON.stringify({ rule: 'bond = tender bond x 2^provenSlashes (max 16x); only evidence-backed slashes by a trusted buyer count; overturned slashes never count', trustedBuyer: deployment.escrow.deployer, escrows: [deployment, ...(deployment.previous ?? [])].map((d) => d.escrow.address), suppliers: feed }, null, 2));
 }
+await import('./audit-feed.js');

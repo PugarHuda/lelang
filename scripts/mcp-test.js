@@ -27,7 +27,7 @@ const call = async (name, args = {}) => {
 try {
   await client.connect(transport);
   const tools = (await client.listTools()).tools.map((t) => t.name).sort();
-  assert.deepEqual(tools, ['bond_quote', 'get_tender', 'list_tenders', 'my_bids', 'reveal_bid', 'submit_bid', 'wallet']);
+  assert.deepEqual(tools, ['bond_quote', 'get_tender', 'inspect_text', 'list_tenders', 'my_bids', 'reveal_bid', 'submit_bid', 'wallet']);
   const { id } = await post('/api/rfqs?token=t', { title: 'MCP test tender' });
   assert.ok((await call('list_tenders')).some((t) => t.id === id));
   const t = await call('get_tender', { tender: id });

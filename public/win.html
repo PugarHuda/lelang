@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clean win certificate · Lelang</title>
+<meta property="og:type" content="website"><meta property="og:site_name" content="Lelang"><meta property="og:title" content="Clean win certificate · Lelang"><meta property="og:description" content="This supplier won an AI-run sealed-bid tender cleanly: its commit matches its reveal, its bond was never slashed and the escrow paid it on Kite testnet. Verify it yourself in your browser."><meta property="og:image" content="https://lelang-ten.vercel.app/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Clean win certificate · Lelang"><meta name="theme-color" content="#ebedf0">
+<meta name="description" content="This supplier won an AI-run sealed-bid tender cleanly: its commit matches its reveal, its bond was never slashed and the escrow paid it on Kite testnet. Verify it yourself in your browser.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+  .cert { border: 2px solid var(--rule); border-radius: 14px; background: var(--paper); box-shadow: var(--shadow); padding: 24px; margin: 8px 0 24px; position: relative; overflow-wrap: anywhere; }
+  .cert.ok { border-color: var(--ok); }
+  .cert.ok::after { content: "CLEAN WIN"; position: absolute; top: 16px; right: 16px; font: 600 11px/1 var(--mono); letter-spacing: .12em; color: var(--ok); border: 1.5px solid var(--ok); border-radius: 999px; padding: 6px 10px; background: var(--ok-bg); }
+  .cert h1 { margin-top: 28px; }
+  .verdict { font-weight: 600; padding: 10px 12px; border-radius: 8px; background: var(--tint); }
+  .verdict.ok { color: var(--ok); background: var(--ok-bg); }
+  .verdict.bad { color: var(--bad); background: var(--bad-bg); }
+  .cert a.cta { display: inline-block; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 600; }
+  #checks li > span:last-child { overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="/">Lelang</a>
+  <nav aria-label="Site"><a href="/">Overview</a><a href="index.html" aria-current="page">Tenders</a><a href="attacks.html">Attacks</a><a href="pool.html">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a><span class="sep" aria-hidden="true"></span><a href="bid.html">Bid</a><a href="buy.html" class="cta">Open a tender</a></nav>
+</div></header>
+<main class="narrow stacked">
+  <div id="view" aria-live="polite"><p class="kv">Loading…</p></div>
+</main>
+<script type="module" src="win.js"></script>
+</body>
+</html>

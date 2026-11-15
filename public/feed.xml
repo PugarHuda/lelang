@@ -1,0 +1,1053 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>https://lelang-ten.vercel.app/feed.xml</id>
+  <title>Lelang audit trail</title>
+  <subtitle>Every tender opened, award, slash (with its evidence hash), appeal, settlement and delivery outcome on Lelang, with Kitescan proof. Free, no account.</subtitle>
+  <updated>2026-11-14T10:18:53.228Z</updated>
+  <author><name>Lelang</name><uri>https://lelang-ten.vercel.app/</uri></author>
+  <link rel="self" type="application/atom+xml" href="https://lelang-ten.vercel.app/feed.xml"/>
+  <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/subscribe.html"/>
+  <link rel="related" type="application/json" href="https://lelang-ten.vercel.app/ocds-feed.json"/>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/settlement/2026-11-14T10:18:53.228Z</id>
+    <title>Settlement · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-14T10:18:53.228Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.0002
+Bid B wins: down payment: 0.01
+On-chain: https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945ca2a53bb4c30321e78fda973225</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/human-approver-signed/2026-11-14T10:18:46.181Z</id>
+    <title>Human approver signed · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-14T10:18:46.181Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because Bid C under human review; released to Bid B, first on the published formula (0.965) (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/settlement/2026-11-14T10:18:42.207Z</id>
+    <title>Settlement · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-14T10:18:42.207Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=escalate, Reppo=review. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/award-decision/2026-11-14T10:16:27.959Z</id>
+    <title>Award decision · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-14T10:16:27.959Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), formula says Bid B: escalated to a human because Bid C under human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/tender-opened/2026-11-14T10:14:05.122Z</id>
+    <title>Tender opened · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-14T10:14:05.122Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x45bddcb48daf52c6b20d539e0df028f6337242b1670b3e98b8bf1cf2be98a03e"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 15 lab microscopes for 3 vocational schools in East Nusa Tenggara (escrow tender #9 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x45bddcb48daf52c6b20d539e0df028f6337242b1670b3e98b8bf1cf2be98a03e</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/settlement/2026-11-14T10:02:25.697Z</id>
+    <title>Settlement · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T10:02:25.697Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.01
+Operator success fee to the Lelang treasury: 0.0002
+Bid A wins: down payment: 0.01
+On-chain: https://testnet.kitescan.ai/tx/0x5f7937d444315b1b8c977ba5d65be16e9848e5e5379ac277ba1707161a77f999</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/human-approver-signed/2026-11-14T10:02:18.394Z</id>
+    <title>Human approver signed · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T10:02:18.394Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid A: held because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that; released to Bid A, first on the published formula (1); skipped Bid A: two figures  (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/delivery-disputed/2026-11-14T10:02:07.814Z</id>
+    <title>Delivery disputed · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T10:02:07.814Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x7c737fdf5ee55dca506e52216275981f21c2aaf0e723b5241a15d319d869a44a"/>
+    <category term="Delivery disputed"/>
+    <content type="text">Buyer disputed delivery by Bid B: Dolphin (DeepSeek V4.1 Flash) not met; gpt-6-luna not met. Advice to approvers: refund-buyer. The held balance moves only if the buyer confirms delivery, or after the deadline (2026-11-15T10:01:55.000Z) by the escrow&apos;s on-chain approver quorum (resolveDelivery)
+Inspection evidence hash: 0xe7b3397e0805fa04c7c3d9056eea7d50faa9010f2d213256b81962489f1107ac
+On-chain: https://testnet.kitescan.ai/tx/0x7c737fdf5ee55dca506e52216275981f21c2aaf0e723b5241a15d319d869a44a</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/settlement/2026-11-14T10:01:53.562Z</id>
+    <title>Settlement · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T10:01:53.562Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.0004
+Bid B balance held in escrow until delivery is confirmed: 0.03
+Bid B wins: down payment: 0.02
+On-chain: https://testnet.kitescan.ai/tx/0x2e265efa3dc092fe8f5199cca005ef13a49a2a0b32379c2a446d344edb89feee</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/human-approver-signed/2026-11-14T10:01:47.066Z</id>
+    <title>Human approver signed · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T10:01:47.066Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because of a review flag; released to Bid B, first on the published formula (0.971) (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7mj8ra35a/delivery-disputed/2026-11-14T09:38:37.085Z</id>
+    <title>Delivery disputed · #8 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:38:37.085Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x1e61035ad53e7fe5b1076d0bb35017589165f341779e7261797accc2d569d700"/>
+    <category term="Delivery disputed"/>
+    <content type="text">Buyer disputed delivery by Bid B: Dolphin (DeepSeek V4.1 Flash) not met; gpt-6-luna not met. Advice to approvers: refund-buyer. The held balance moves only if the buyer confirms delivery, or after the deadline (2026-11-15T09:38:17.000Z) by the escrow&apos;s on-chain approver quorum (resolveDelivery)
+Inspection evidence hash: 0xe7b3397e0805fa04c7c3d9056eea7d50faa9010f2d213256b81962489f1107ac
+On-chain: https://testnet.kitescan.ai/tx/0x1e61035ad53e7fe5b1076d0bb35017589165f341779e7261797accc2d569d700</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7mj8ra35a/settlement/2026-11-14T09:38:18.844Z</id>
+    <title>Settlement · #8 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:38:18.844Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d"/>
+    <category term="Settlement"/>
+    <content type="text">Bid B bond refunded: 0.05
+Bid A bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.0004
+Bid B balance held in escrow until delivery is confirmed: 0.03
+Bid B wins: down payment: 0.02
+On-chain: https://testnet.kitescan.ai/tx/0x5fbb87f1d6204205c668117203adf56817d2ad2c4edcf800348a901513a2e41d</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7mj8ra35a/award-decision/2026-11-14T09:36:28.630Z</id>
+    <title>Award decision · #8 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:36:28.630Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 0.99), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7mj8ra35a/tender-opened/2026-11-14T09:35:14.220Z</id>
+    <title>Tender opened · #8 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:35:14.220Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7mj8ra35a.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xa9ee819068d7b6ee720415a4f45e2bb4f8b9fdf1924cb7fa4f6cf20d83d415fb"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 12 classroom document cameras for 3 vocational schools (escrow tender #8 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xa9ee819068d7b6ee720415a4f45e2bb4f8b9fdf1924cb7fa4f6cf20d83d415fb</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/human-approver-signed/2026-11-14T09:33:50.222Z</id>
+    <title>Human approver signed · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:33:50.222Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because of a review flag; released to Bid B, first on the published formula (0.971) (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/settlement/2026-11-14T09:33:45.684Z</id>
+    <title>Settlement · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:33:45.684Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=award, Reppo=review. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/award-decision/2026-11-14T09:32:11.313Z</id>
+    <title>Award decision · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:32:11.313Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 0.98), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/tender-opened/2026-11-14T09:30:59.687Z</id>
+    <title>Tender opened · #7 12 classroom document cameras for 3 vocational schools</title>
+    <updated>2026-11-14T09:30:59.687Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x9387b9d5c8b0039f337f68536f8e514ee3f6611a5e8d34c2c282814d25b565fc"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 12 classroom document cameras for 3 vocational schools (escrow tender #7 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x9387b9d5c8b0039f337f68536f8e514ee3f6611a5e8d34c2c282814d25b565fc</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg1lw4q9683/settlement/2026-11-14T06:50:31.607Z</id>
+    <title>Settlement · #6 10 classroom projectors: a human supplier against two agents</title>
+    <updated>2026-11-14T06:50:31.607Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x6a67ca024bed2b6acf0928aa6fb61732c9f832ee12705d363691ea10d2b8204f"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.01
+Bid B bond refunded: 0.01
+Bid C bond refunded: 0.01
+Operator success fee to the Lelang treasury: 0.0002
+Bid A wins: down payment: 0.01
+On-chain: https://testnet.kitescan.ai/tx/0x6a67ca024bed2b6acf0928aa6fb61732c9f832ee12705d363691ea10d2b8204f</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg1lw4q9683/award-decision/2026-11-14T06:48:39.517Z</id>
+    <title>Award decision · #6 10 classroom projectors: a human supplier against two agents</title>
+    <updated>2026-11-14T06:48:39.517Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg1lw4q9683/tender-opened/2026-11-14T06:46:46.615Z</id>
+    <title>Tender opened · #6 10 classroom projectors: a human supplier against two agents</title>
+    <updated>2026-11-14T06:46:46.615Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg1lw4q9683.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x428822b7fb37e75c55497b421b4fba2529ec28d53e94f3f8cc44db4218e95658"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 10 classroom projectors: a human supplier against two agents (escrow tender #6 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x428822b7fb37e75c55497b421b4fba2529ec28d53e94f3f8cc44db4218e95658</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/settlement/2026-11-14T06:45:34.272Z</id>
+    <title>Settlement · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T06:45:34.272Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/award-decision/2026-11-14T06:42:07.154Z</id>
+    <title>Award decision · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T06:42:07.154Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 1.00), formula says Bid A: escalated to a human because Bid A under human review; an earlier evaluation of this tender escalated, and a re-run cannot undo that</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/award-decision/2026-11-14T06:40:07.128Z</id>
+    <title>Award decision · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T06:40:07.128Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 1.00), formula says Bid A: escalated to a human because Bid A under human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/tender-opened/2026-11-14T05:58:30.047Z</id>
+    <title>Tender opened · #5 Browser supplier test: 10 classroom projectors</title>
+    <updated>2026-11-14T05:58:30.047Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x5d0abdca71c2387b56639ae1b6bc9eaa8de8779f3df30486b6ec8eab1e330812"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: Browser supplier test: 10 classroom projectors (escrow tender #5 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x5d0abdca71c2387b56639ae1b6bc9eaa8de8779f3df30486b6ec8eab1e330812</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/slash/2026-11-14T05:23:31.155Z</id>
+    <title>Slash · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-14T05:23:31.155Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwfb6biw36a7&amp;b=Bid%20A"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xb2450d25cf1106ca758aac7e32a6cc905c6539bb19dcf4c2c5c11eadb646ae44"/>
+    <category term="Slash"/>
+    <content type="text">Bid A slash final after the challenge window: bond to the bounty pool
+Evidence hash (keccak256 of the quoted evidence): 0xbea3f7e160aa82574225bdcb25ac72d64c9d01d6f9a8ce539fdaf0b46e20acb8
+On-chain: https://testnet.kitescan.ai/tx/0xb2450d25cf1106ca758aac7e32a6cc905c6539bb19dcf4c2c5c11eadb646ae44</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/settlement/2026-11-13T18:44:41.946Z</id>
+    <title>Settlement · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-13T18:44:41.946Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x14f921e986bce14180584b3d95f0d3ca75e1fbfab02e6fa423a8f89a2f9a5ff9"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.0002
+Bid C wins: down payment: 0.01
+On-chain: https://testnet.kitescan.ai/tx/0x14f921e986bce14180584b3d95f0d3ca75e1fbfab02e6fa423a8f89a2f9a5ff9</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/human-approver-signed/2026-11-13T18:44:34.110Z</id>
+    <title>Human approver signed · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-13T18:44:34.110Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid C: held because Bid A under human review; released to Bid C, first on the published formula (0.965) (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/settlement/2026-11-13T18:44:32.420Z</id>
+    <title>Settlement · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-13T18:44:32.420Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/award-decision/2026-11-13T18:41:47.459Z</id>
+    <title>Award decision · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-13T18:41:47.459Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid C (confidence 1.00), formula says Bid C: escalated to a human because Bid A under human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/tender-opened/2026-11-13T18:38:16.469Z</id>
+    <title>Tender opened · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <updated>2026-11-13T18:38:16.469Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xed6844595207b41370509152d0f30e63379bcb3efc5b8eeca2b0a2e067ddfdad"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 15 lab microscopes for 3 vocational schools in East Nusa Tenggara (escrow tender #3 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xed6844595207b41370509152d0f30e63379bcb3efc5b8eeca2b0a2e067ddfdad</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/delivery-confirmed/2026-11-13T18:33:36.063Z</id>
+    <title>Delivery confirmed · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-13T18:33:36.063Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x72e906f1e4f3d337b99111e9f95ebd651c8ad3b90b0fde8faf234967dee11cd5"/>
+    <category term="Delivery confirmed"/>
+    <content type="text">Buyer confirmed delivery: the escrow paid Bid B the balance of 0.05
+On-chain: https://testnet.kitescan.ai/tx/0x72e906f1e4f3d337b99111e9f95ebd651c8ad3b90b0fde8faf234967dee11cd5</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/settlement/2026-11-13T18:32:42.478Z</id>
+    <title>Settlement · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-13T18:32:42.478Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534"/>
+    <category term="Settlement"/>
+    <content type="text">Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.0006
+Bid B balance held in escrow until delivery is confirmed: 0.05
+Bid B wins: down payment: 0.03
+On-chain: https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/slash/2026-11-13T18:32:42.476Z</id>
+    <title>Slash · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-13T18:32:42.476Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwfb6biw36a7&amp;b=Bid%20A"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534"/>
+    <category term="Slash"/>
+    <content type="text">Bid A bond slash pending (evidence 0xbea3f7e1…): final at 2026-11-13T19:32:39.000Z unless a quorum of approvers overturns it on-chain; then it goes to the bounty pool, not to the buyer: 0.05
+Evidence hash (keccak256 of the quoted evidence): 0xbea3f7e160aa82574225bdcb25ac72d64c9d01d6f9a8ce539fdaf0b46e20acb8
+On-chain: https://testnet.kitescan.ai/tx/0x84686045f378ac0555d91bcffeb0214a4c709db99605b3bc0352603e4433c534</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/award-decision/2026-11-13T18:31:05.218Z</id>
+    <title>Award decision · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-13T18:31:05.218Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfb6biw36a7/tender-opened/2026-11-13T18:26:49.985Z</id>
+    <title>Tender opened · #1 20 classroom document cameras for 4 vocational schools</title>
+    <updated>2026-11-13T18:26:49.985Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfb6biw36a7.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xb7493a81589dd33e4071aeb052a97546217461c1537971902e81025083f31406"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 20 classroom document cameras for 4 vocational schools (escrow tender #1 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xb7493a81589dd33e4071aeb052a97546217461c1537971902e81025083f31406</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/settlement/2026-11-13T06:02:25.924Z</id>
+    <title>Settlement · #6 12 smart boards for 3 village schools</title>
+    <updated>2026-11-13T06:02:25.924Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid B wins: down payment: 0
+On-chain: https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf7ed4cc52911a03ba8f137703971</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/human-approver-signed/2026-11-13T06:02:24.090Z</id>
+    <title>Human approver signed · #6 12 smart boards for 3 village schools</title>
+    <updated>2026-11-13T06:02:24.090Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held by Reppo review (89; safety 75, reversibility 68). Checked: both bids clean, readers agree, decision node matches formula; releasing Bid B (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/settlement/2026-11-13T06:01:46.191Z</id>
+    <title>Settlement · #6 12 smart boards for 3 village schools</title>
+    <updated>2026-11-13T06:01:46.191Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=award, Reppo=review. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/award-decision/2026-11-13T05:59:25.966Z</id>
+    <title>Award decision · #6 12 smart boards for 3 village schools</title>
+    <updated>2026-11-13T05:59:25.966Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/tender-opened/2026-11-13T05:57:58.874Z</id>
+    <title>Tender opened · #6 12 smart boards for 3 village schools</title>
+    <updated>2026-11-13T05:57:58.874Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xdfa4d44b0a0f8b3a6aeb833519d0dd54ceea023b3a4caf9ee616817aa36de2a4"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 12 smart boards for 3 village schools (escrow tender #6 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xdfa4d44b0a0f8b3a6aeb833519d0dd54ceea023b3a4caf9ee616817aa36de2a4</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwegzyl1/settlement/2026-11-13T04:26:13.634Z</id>
+    <title>Settlement · #3 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-13T04:26:13.634Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x1c37dfd366de797aa4b659f64b20d78eff99955bf92720eed9b5c8283d77b271"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Bid B wins: down payment: 0
+On-chain: https://testnet.kitescan.ai/tx/0x1c37dfd366de797aa4b659f64b20d78eff99955bf92720eed9b5c8283d77b271</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwegzyl1/award-decision/2026-11-13T04:24:50.985Z</id>
+    <title>Award decision · #3 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-13T04:24:50.985Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwegzyl1/tender-opened/2026-11-13T04:22:05.660Z</id>
+    <title>Tender opened · #3 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-13T04:22:05.660Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwegzyl1.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x9f46243f7641dd008f633270c677f091eeba15a017252fa01fc59094c8768761"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 30 document cameras for 6 vocational schools (escrow tender #3 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x9f46243f7641dd008f633270c677f091eeba15a017252fa01fc59094c8768761</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/settlement/2026-11-13T04:21:01.100Z</id>
+    <title>Settlement · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:21:01.100Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9c16f16ebb5cc02ff65dc2970f94"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid C bond refunded: 0.05
+Operator success fee to the Lelang treasury: 0.002
+Bid C wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9c16f16ebb5cc02ff65dc2970f94</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/slash/2026-11-13T04:21:01.097Z</id>
+    <title>Slash · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:21:01.097Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mweguzqa&amp;b=Bid%20B"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9c16f16ebb5cc02ff65dc2970f94"/>
+    <category term="Slash"/>
+    <content type="text">Bid B bond slashed (evidence 0xec98386d…): 0.2
+Evidence hash (keccak256 of the quoted evidence): 0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423
+On-chain: https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9c16f16ebb5cc02ff65dc2970f94</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/human-approver-signed/2026-11-13T04:20:55.468Z</id>
+    <title>Human approver signed · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:20:55.468Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid C: held because Bid A under human review; released to Bid C, first on the published formula (0.949) (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/settlement/2026-11-13T04:20:50.721Z</id>
+    <title>Settlement · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:20:50.721Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/award-decision/2026-11-13T04:19:49.145Z</id>
+    <title>Award decision · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:19:49.145Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid C (confidence 1.00), formula says Bid C: escalated to a human because Bid A under human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/tender-opened/2026-11-13T04:18:13.886Z</id>
+    <title>Tender opened · #2 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T04:18:13.886Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xf37be21ed0451a6c4cbee1cc9899d607bb4c44c97879d6b62b6c785d3de2a44e"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 40 classroom projectors for 8 vocational schools (escrow tender #2 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xf37be21ed0451a6c4cbee1cc9899d607bb4c44c97879d6b62b6c785d3de2a44e</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwefdu6g/settlement/2026-11-13T03:42:26.186Z</id>
+    <title>Settlement · #3 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T03:42:26.186Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xbf230c665ca2747405b73139fd5a88f66b0d8815654f1337071d311a4cc12e99"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid B wins: down payment: 0
+On-chain: https://testnet.kitescan.ai/tx/0xbf230c665ca2747405b73139fd5a88f66b0d8815654f1337071d311a4cc12e99</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwefdu6g/slash/2026-11-13T03:42:26.183Z</id>
+    <title>Slash · #3 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T03:42:26.183Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwefdu6g&amp;b=Bid%20C"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xbf230c665ca2747405b73139fd5a88f66b0d8815654f1337071d311a4cc12e99"/>
+    <category term="Slash"/>
+    <content type="text">Bid C bond slashed (evidence 0xec98386d…): 0.1
+Evidence hash (keccak256 of the quoted evidence): 0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423
+On-chain: https://testnet.kitescan.ai/tx/0xbf230c665ca2747405b73139fd5a88f66b0d8815654f1337071d311a4cc12e99</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwefdu6g/award-decision/2026-11-13T03:41:14.307Z</id>
+    <title>Award decision · #3 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T03:41:14.307Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 0.95), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwefdu6g/award-decision/2026-11-13T03:38:35.739Z</id>
+    <title>Award decision · #3 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T03:38:35.739Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 0.99), formula says Bid B: escalated to a human because decision node chose Bid A but formula ranks Bid B first</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwefdu6g/tender-opened/2026-11-13T03:36:53.614Z</id>
+    <title>Tender opened · #3 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-13T03:36:53.614Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwefdu6g.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x1e7d251acc8121840be669fecf3925d664f22c998262e3644c106856a44a46f5"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 40 classroom projectors for 8 vocational schools (escrow tender #3 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x1e7d251acc8121840be669fecf3925d664f22c998262e3644c106856a44a46f5</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweep1w6/settlement/2026-11-13T03:22:38.208Z</id>
+    <title>Settlement · #2 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-13T03:22:38.208Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.1
+Bid B bond refunded: 0.05
+Bid A wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x771d357c0c98672a72c97626d254edec6c25f9befc15148c9ab6bf39052b93a1</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweep1w6/award-decision/2026-11-13T03:21:20.457Z</id>
+    <title>Award decision · #2 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-13T03:21:20.457Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 0.99), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweep1w6/tender-opened/2026-11-13T03:17:36.467Z</id>
+    <title>Tender opened · #2 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-13T03:17:36.467Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweep1w6.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x7df8d799912713eb55a386f3acc159b7c42621fc96e9fbef68384ebc6c73ea33"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 25 interactive whiteboards for 5 vocational schools (escrow tender #2 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x7df8d799912713eb55a386f3acc159b7c42621fc96e9fbef68384ebc6c73ea33</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/appeal/2026-11-12T19:47:44.510Z</id>
+    <title>Appeal · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:47:44.510Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdydhws&amp;b=Bid%20A"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xc06dbeac8b31a1d3d001b9a54ed7530a55a76763a21797585c12e7fb6385f9ed"/>
+    <category term="Appeal"/>
+    <content type="text">Bid A bond refunded after the overturned slash: 0.05
+Evidence hash (keccak256 of the quoted evidence): 0x0ae5736e7c454d7810960555e7d8bfa35b900d25f0e4edde6a5bae0ec0446fc6
+On-chain: https://testnet.kitescan.ai/tx/0xc06dbeac8b31a1d3d001b9a54ed7530a55a76763a21797585c12e7fb6385f9ed</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/appeal/2026-11-12T19:47:41.930Z</id>
+    <title>Appeal · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:47:41.930Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <category term="Appeal"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed: overturn Bid A&apos;s slash</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/appeal/2026-11-12T19:47:40.241Z</id>
+    <title>Appeal · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:47:40.241Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <category term="Appeal"/>
+    <content type="text">Panel did not confirm Bid A&apos;s slash (review, score 66): a named approver decides, signed</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/appeal/2026-11-12T19:46:07.034Z</id>
+    <title>Appeal · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:46:07.034Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdydhws&amp;b=Bid%20A"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <category term="Appeal"/>
+    <content type="text">Bid A appealed its slash (signed by the supplier); an independent panel re-checks the evidence
+Evidence hash (keccak256 of the quoted evidence): 0x0ae5736e7c454d7810960555e7d8bfa35b900d25f0e4edde6a5bae0ec0446fc6</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/settlement/2026-11-12T19:44:18.119Z</id>
+    <title>Settlement · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:44:18.119Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x32e04e40b2028576be5beb781bde2a23f80a9172d82c9ca7b7d81a6f2bb25198"/>
+    <category term="Settlement"/>
+    <content type="text">Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Bid B wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x32e04e40b2028576be5beb781bde2a23f80a9172d82c9ca7b7d81a6f2bb25198</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/slash/2026-11-12T19:44:18.116Z</id>
+    <title>Slash · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:44:18.116Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdydhws&amp;b=Bid%20A"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x32e04e40b2028576be5beb781bde2a23f80a9172d82c9ca7b7d81a6f2bb25198"/>
+    <category term="Slash"/>
+    <content type="text">Bid A bond slashed (evidence 0x0ae5736e…): 0.05
+Evidence hash (keccak256 of the quoted evidence): 0x0ae5736e7c454d7810960555e7d8bfa35b900d25f0e4edde6a5bae0ec0446fc6
+On-chain: https://testnet.kitescan.ai/tx/0x32e04e40b2028576be5beb781bde2a23f80a9172d82c9ca7b7d81a6f2bb25198</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/award-decision/2026-11-12T19:42:27.977Z</id>
+    <title>Award decision · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:42:27.977Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdydhws/tender-opened/2026-11-12T19:40:44.467Z</id>
+    <title>Tender opened · #10 30 document cameras for 6 vocational schools</title>
+    <updated>2026-11-12T19:40:44.467Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdydhws.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xa15044695f926a9b7dcff2a4f7a0130c23811b29e4b3013afa2d2761a53a4acb"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 30 document cameras for 6 vocational schools (escrow tender #10 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xa15044695f926a9b7dcff2a4f7a0130c23811b29e4b3013afa2d2761a53a4acb</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/appeal/2026-11-12T19:22:48.568Z</id>
+    <title>Appeal · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T19:22:48.568Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <category term="Appeal"/>
+    <content type="text">Panel upheld Bid E&apos;s slash (ship, score 93)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/appeal/2026-11-12T19:21:42.931Z</id>
+    <title>Appeal · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T19:21:42.931Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&amp;b=Bid%20E"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <category term="Appeal"/>
+    <content type="text">Bid E appealed its slash (signed by the supplier); an independent panel re-checks the evidence
+Evidence hash (keccak256 of the quoted evidence): 0x6fbbe4dfc288c91569a30202ba2059e49f56fcb1176382cf1a88aa665509febf</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/settlement/2026-11-12T19:12:15.467Z</id>
+    <title>Settlement · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-12T19:12:15.467Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x7dcb1d2a4c81fd7618f514bbd917c643d7ae6089c4e1269f185681a4bc623c1f"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid A wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x7dcb1d2a4c81fd7618f514bbd917c643d7ae6089c4e1269f185681a4bc623c1f</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/human-approver-signed/2026-11-12T19:12:07.798Z</id>
+    <title>Human approver signed · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-12T19:12:07.798Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
+    <category term="Human approver signed"/>
+    <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid A: checked: clean bid, best on every criterion; the earlier slash was in another tender (EIP-191 signature verified)</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/settlement/2026-11-12T19:12:04.679Z</id>
+    <title>Settlement · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-12T19:12:04.679Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
+    <category term="Settlement"/>
+    <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/award-decision/2026-11-12T19:10:38.681Z</id>
+    <title>Award decision · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-12T19:10:38.681Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 1.00), formula says Bid A: escalated to a human</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/tender-opened/2026-11-12T19:05:04.415Z</id>
+    <title>Tender opened · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <updated>2026-11-12T19:05:04.415Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xe6053bf7dd698e314f771ec9935a66e5d68f0af8c5fcd156cfedcc5c3fd9065d"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 25 interactive whiteboards for 5 vocational schools (escrow tender #9 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xe6053bf7dd698e314f771ec9935a66e5d68f0af8c5fcd156cfedcc5c3fd9065d</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/settlement/2026-11-12T17:17:40.209Z</id>
+    <title>Settlement · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T17:17:40.209Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xc90e54074d8e1e8eb583898ec843d9c65a7b05c005e780d9427685d81a6c5f12"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Bid D bond refunded: 0.05
+Bid C wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0xc90e54074d8e1e8eb583898ec843d9c65a7b05c005e780d9427685d81a6c5f12</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/slash/2026-11-12T17:17:40.208Z</id>
+    <title>Slash · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T17:17:40.208Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdt4xm3&amp;b=Bid%20E"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xc90e54074d8e1e8eb583898ec843d9c65a7b05c005e780d9427685d81a6c5f12"/>
+    <category term="Slash"/>
+    <content type="text">Bid E bond slashed (evidence 0x6fbbe4df…): 0.05
+Evidence hash (keccak256 of the quoted evidence): 0x6fbbe4dfc288c91569a30202ba2059e49f56fcb1176382cf1a88aa665509febf
+On-chain: https://testnet.kitescan.ai/tx/0xc90e54074d8e1e8eb583898ec843d9c65a7b05c005e780d9427685d81a6c5f12</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/award-decision/2026-11-12T17:16:17.242Z</id>
+    <title>Award decision · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T17:16:17.242Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid C (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdt4xm3/tender-opened/2026-11-12T17:14:05.904Z</id>
+    <title>Tender opened · #8 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T17:14:05.904Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdt4xm3.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xc5c1ddbd933f55d575f3d6a5705f98608d58b7f1bc3ff3add9be7ac422250465"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 200 student laptops for 10 rural schools (escrow tender #8 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xc5c1ddbd933f55d575f3d6a5705f98608d58b7f1bc3ff3add9be7ac422250465</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdsz7vo/settlement/2026-11-12T17:12:35.534Z</id>
+    <title>Settlement · #7 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-12T17:12:35.534Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid B wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdsz7vo/slash/2026-11-12T17:12:35.532Z</id>
+    <title>Slash · #7 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-12T17:12:35.532Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdsz7vo&amp;b=Bid%20C"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648"/>
+    <category term="Slash"/>
+    <content type="text">Bid C bond slashed (evidence 0xec98386d…): 0.05
+Evidence hash (keccak256 of the quoted evidence): 0xec98386d297e2058ae6383e3aa8b86cbc76ff3dbeecf9d3fed118abfe2167423
+On-chain: https://testnet.kitescan.ai/tx/0x2705db35fc98a7a8885eadf5e32ae6d90a6dfd9ac5125063253f44f7b60d7648</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdsz7vo/award-decision/2026-11-12T17:10:56.226Z</id>
+    <title>Award decision · #7 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-12T17:10:56.226Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid B (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdsz7vo/tender-opened/2026-11-12T17:09:39.291Z</id>
+    <title>Tender opened · #7 40 classroom projectors for 8 vocational schools</title>
+    <updated>2026-11-12T17:09:39.291Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdsz7vo.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xb3a5690378d074c7607428223d8c6947d978f47ba65070816fd1702be6a2be88"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 40 classroom projectors for 8 vocational schools (escrow tender #7 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xb3a5690378d074c7607428223d8c6947d978f47ba65070816fd1702be6a2be88</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdrcmbl/settlement/2026-11-12T16:26:26.188Z</id>
+    <title>Settlement · #6 20 classroom projectors (external agent test)</title>
+    <updated>2026-11-12T16:26:26.188Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid A wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x75fb1e50e6d69857cb1adeafccd901c946ab73568178c197816924085bf72dc0</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdrcmbl/award-decision/2026-11-12T16:25:12.786Z</id>
+    <title>Award decision · #6 20 classroom projectors (external agent test)</title>
+    <updated>2026-11-12T16:25:12.786Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid A (confidence 1.00), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdrcmbl/tender-opened/2026-11-12T16:24:06.249Z</id>
+    <title>Tender opened · #6 20 classroom projectors (external agent test)</title>
+    <updated>2026-11-12T16:24:06.249Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdrcmbl.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x5e2ae3dceb2de0209e6712027d2ae09bef39116d80e8475451a6cf89b6f4106c"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 20 classroom projectors (external agent test) (escrow tender #6 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0x5e2ae3dceb2de0209e6712027d2ae09bef39116d80e8475451a6cf89b6f4106c</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdqcnnx/settlement/2026-11-12T16:00:32.106Z</id>
+    <title>Settlement · #4 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T16:00:32.106Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2"/>
+    <category term="Settlement"/>
+    <content type="text">Bid A bond refunded: 0.05
+Bid B bond refunded: 0.05
+Bid C bond refunded: 0.05
+Bid D bond refunded: 0.05
+Bid C wins: down payment: 0.1
+On-chain: https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdqcnnx/slash/2026-11-12T16:00:32.105Z</id>
+    <title>Slash · #4 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T16:00:32.105Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/slash.html?t=rfq-mwdqcnnx&amp;b=Bid%20E"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2"/>
+    <category term="Slash"/>
+    <content type="text">Bid E bond slashed (evidence 0xad1dd8ef…): 0.05
+Evidence hash (keccak256 of the quoted evidence): 0xad1dd8ef8236090f7804800b5bae95f714ba101091e0f83aa39277af36b830ce
+On-chain: https://testnet.kitescan.ai/tx/0x6b5fba1ddadce9ae566fc9b3e54b7476677a7542fb4897712b0281dae9509fa2</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdqcnnx/award-decision/2026-11-12T15:58:44.476Z</id>
+    <title>Award decision · #4 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T15:58:44.476Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.ocds.json"/>
+    <category term="Award decision"/>
+    <content type="text">gpt-6-luna decision node chose Bid C (confidence 0.98), matching the published formula</content>
+  </entry>
+  <entry>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdqcnnx/tender-opened/2026-11-12T15:56:08.566Z</id>
+    <title>Tender opened · #4 200 student laptops for 10 rural schools</title>
+    <updated>2026-11-12T15:56:08.566Z</updated>
+    <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
+    <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.json"/>
+    <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdqcnnx.ocds.json"/>
+    <link rel="via" type="text/html" title="Kitescan transaction" href="https://testnet.kitescan.ai/tx/0xec929c092c81dfa967fe071530e01926f49002e6d2de657a13a6159858780308"/>
+    <category term="Tender opened"/>
+    <content type="text">Tender opened: 200 student laptops for 10 rural schools (escrow tender #4 on Kite)
+On-chain: https://testnet.kitescan.ai/tx/0xec929c092c81dfa967fe071530e01926f49002e6d2de657a13a6159858780308</content>
+  </entry>
+</feed>

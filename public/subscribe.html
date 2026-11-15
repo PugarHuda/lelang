@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Subscribe to the audit trail</title>
+<meta property="og:type" content="website"><meta property="og:site_name" content="Lelang"><meta property="og:title" content="Subscribe to the Lelang audit trail"><meta property="og:description" content="A free feed of every Lelang tender: openings, awards, slashes with their evidence hash, appeals, settlements and delivery outcomes, each with on-chain proof. No account needed."><meta property="og:image" content="https://lelang-ten.vercel.app/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="theme-color" content="#ebedf0">
+<meta name="description" content="A free feed of every Lelang tender: openings, awards, slashes with their evidence hash, appeals, settlements and delivery outcomes, each with on-chain proof. No account needed.">
+<link rel="icon" href="data:,">
+<link rel="alternate" type="application/atom+xml" title="Lelang audit trail" href="feed.xml">
+<link rel="alternate" type="application/json" title="Lelang OCDS record package" href="ocds-feed.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="/">Lelang</a>
+  <nav aria-label="Site"><a href="/">Overview</a><a href="index.html">Tenders</a><a href="attacks.html">Attacks</a><a href="pool.html">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a><span class="sep" aria-hidden="true"></span><a href="bid.html">Bid</a><a href="buy.html" class="cta">Open a tender</a></nav>
+</div></header>
+<main>
+  <h1>Subscribe to the audit trail</h1>
+  <p class="lede">Public bodies, watchdogs and journalists can follow every Lelang tender as it happens: when a tender opens, who wins, which bid was slashed and on what evidence, how appeals ended, and whether the goods arrived. It is free and needs no account, no key and no sign-up. Every item links to the transaction on Kitescan, so you can check it without trusting us.</p>
+
+  <h2>Three ways to subscribe</h2>
+  <div class="card">
+    <p><strong>In a feed reader (people).</strong> Paste <a href="feed.xml"><code>https://lelang-ten.vercel.app/feed.xml</code></a> into any reader that takes Atom or RSS: Feedly, Inoreader, NetNewsWire, Thunderbird, or a Slack or Teams RSS app. You get one item per event.</p>
+    <p><strong>As open contracting data (analysts and data tools).</strong> <a href="ocds-feed.json"><code>https://lelang-ten.vercel.app/ocds-feed.json</code></a> is a single OCDS 1.1.5 record package with every tender, using the official Bids extension. It validates against the official schema and loads into any OCDS tool, such as the OCDS Data Review Tool, Kingfisher or Flatten Tool for spreadsheets. Each tender also has its own release under <code>tenders/&lt;id&gt;.ocds.json</code>.</p>
+    <p><strong>From the live API (agents).</strong> <a href="https://lelang-6k05.onrender.com/api/rfqs"><code>https://lelang-6k05.onrender.com/api/rfqs</code></a> returns the tenders running right now, and <code>/api/rfqs/&lt;id&gt;/ocds</code> returns one as OCDS. It is a free instance that sleeps when idle, so the first call can take a while. Poll it, or poll the feed.</p>
+  </div>
+
+  <h2>What each event means</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Event</th><th>What happened</th><th>What you can check</th></tr></thead>
+      <tbody>
+        <tr><td>Tender opened</td><td>A buyer published a tender: what it wants, the budget cap, minimum specs and the scoring weights, all fixed before any bid arrives.</td><td>The tender transaction on the escrow.</td></tr>
+        <tr><td>Award decision</td><td>The decision node picked a winner and said whether that matches the published formula. If the two disagree, or a bid is under review, the award goes to a human.</td><td>Formula scores and the full tender record.</td></tr>
+        <tr><td>Human approver signed</td><td>A named approver signed off on a held award. Their address is in the entry.</td><td>The signed message in the tender record.</td></tr>
+        <tr><td>Settlement</td><td>The escrow paid out: bonds refunded, the winner paid, the fee taken, or a balance held until delivery. A settlement can also be held for human review.</td><td>The settle transaction on Kitescan.</td></tr>
+        <tr><td>Slash</td><td>A bidder lost its bond, usually for hiding instructions to the AI evaluator in its bid. The entry includes the evidence hash, which is the keccak256 of the quoted evidence and is recorded on-chain.</td><td>The proof page recomputes the hash in your browser and compares it with the chain.</td></tr>
+        <tr><td>Appeal</td><td>A slashed bidder appealed with a signed statement. An independent panel re-checked the evidence and the slash was upheld, or it was overturned by a named approver and the bond refunded.</td><td>The panel verdict, the signatures and the refund transaction.</td></tr>
+        <tr><td>Delivery confirmed</td><td>The buyer confirmed delivery and the escrow released the held balance to the winner.</td><td>The release transaction.</td></tr>
+        <tr><td>Delivery disputed</td><td>The buyer reported that the delivery did not meet the offer. Two independent models read the inspection report, and approvers decide what happens to the held balance.</td><td>The hash of the inspection evidence, anchored on Kite.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>What it is built from</h2>
+  <p class="kv">The feed lists only what is in the published tender records: the tender logs and the escrow events on Kite testnet. Nothing is summarised or edited by hand. Timestamps come from those records, so an item never changes once published. The feed is rebuilt each time the tenders are published.</p>
+</main>
+</body>
+</html>

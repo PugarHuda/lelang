@@ -40,7 +40,8 @@ function render(rfq) {
     ${rfq.award ? `<h2>Decision</h2><div class="card">
       <strong class="${rfq.award.decision === 'award' ? 'ok' : 'warn'}">${esc(rfq.award.decision?.toUpperCase())} ${esc(rfq.award.winner ?? '')}</strong>
       <span class="kv"> · ${esc(rfq.award.engine)} · confidence ${rfq.award.confidence?.toFixed?.(2) ?? '-'}</span>
-      ${rfq.award.rationale ? `<pre style="margin-top:10px">${esc(rfq.award.rationale)}</pre>` : ''}</div>` : ''}
+      ${rfq.award.rationale ? `<pre style="margin-top:10px">${esc(rfq.award.rationale)}</pre>` : ''}
+      ${staticMode ? `<div class="kv" style="margin-top:8px"><a href="graph.html?t=${encodeURIComponent(rfq.id)}">decision graph: which step was code, LLM, decision node, audit, human, chain →</a>${rfq.phase === 'settled' && rfq.award.decision === 'award' ? ` · <a href="win.html?t=${encodeURIComponent(rfq.id)}">clean-win certificate, verified on Kite →</a>` : ''}</div>` : ''}</div>` : ''}
     ${r ? `<h2>Independent audit (Reppo)</h2><div class="card">
       <strong class="${r.route === 'ship' ? 'ok' : r.route === 'block' ? 'bad' : 'warn'}">${esc(r.route ?? r.status)}</strong>
       <span class="kv"> · score ${esc(r.score ?? '-')}</span><p class="kv">${esc(r.reason ?? '')}</p>
