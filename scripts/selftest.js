@@ -358,4 +358,13 @@ assert.equal(wasEscalated([{ step: 'award', msg: 'gpt-6-luna chose Bid B (confid
   const requoted = structuredClone(bids); requoted[1].quality.readers[0].quote = 'email support only!';
   assert.notEqual(qualityHash(requoted), qualityHash(bids));
 }
+// Bounty rules re-checked against the chain history: a wiped disk can't reset them; unreadable history refuses.
+{
+  const { chainBountyRefusal } = await import('../src/challenge.js');
+  const now = Date.now();
+  assert.match(chainBountyRefusal(null, '0xA'), /could not read/);
+  assert.match(chainBountyRefusal([{ to: '0xa', at: 0, kind: 'fee wallet' }], '0xA'), /already paid/);
+  assert.match(chainBountyRefusal([1, 2, 3].map((i) => ({ to: `0x${i}`, at: now - 1000, kind: 'pool' })), '0xB', 3, now), /daily/);
+  assert.equal(chainBountyRefusal([1, 2, 3].map((i) => ({ to: `0x${i}`, at: now - 1000, kind: 'fee wallet' })), '0xB', 3, now), null);
+}
 console.log('selftest OK');

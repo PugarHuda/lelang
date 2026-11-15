@@ -12,7 +12,7 @@ const forBid = (label) => (e) => e.msg?.startsWith(`${label} `) || e.msg?.starts
 export const KINDS = {
   code: { name: 'code', what: 'deterministic rule, same input same output' },
   chain: { name: 'on-chain', what: 'Kite testnet transaction' },
-  llm: { name: 'LLM read', what: 'Dolphin / SERV reads text into fixed fields' },
+  llm: { name: 'LLM read', what: 'a model reads or screens text into fixed fields or a fixed label (Dolphin, SERV, Prompt Guard)' },
   decision: { name: 'decision node', what: 'SERV strict-schema choice with probabilities' },
   audit: { name: 'independent audit', what: 'Reppo panel scores the action' },
   human: { name: 'human', what: 'named approver or supplier signs' },
@@ -33,7 +33,7 @@ function bidLane(rfq, b) {
   const skip = (k, title, why) => n.push({ k, title, v: why, skip: true });
 
   n.push({ k: 'chain', title: 'Sealed commit + bond', v: b.bondTx ? `bond ${b.bondPie ?? rfq.bondPie ?? '?'} locked` : NR, tx: b.bondTx });
-  n.push({ k: 'code', title: 'Reveal matches commit', v: b.revealOk == null ? NR : b.revealOk ? 'hash matches' : 'does not match', tone: b.revealOk ? 'ok' : b.revealOk === false ? 'bad' : '', tx: b.revealTx });
+  n.push({ k: b.revealTx ? 'chain' : 'code', title: b.revealTx ? 'Reveal matches commit (enforced by the escrow)' : 'Reveal matches commit', v: b.revealOk == null ? NR : b.revealOk ? 'hash matches' : 'does not match', tone: b.revealOk ? 'ok' : b.revealOk === false ? 'bad' : '', tx: b.revealTx });
   if (stoppedAtReveal) { skip('code', 'Rest of evaluation', 'skipped: bid not valid at reveal'); return n; }
 
   const rep = ev(rfq, 'reputation', forBid(b.label));
@@ -42,7 +42,7 @@ function bidLane(rfq, b) {
     tone: b.priorSlashes?.length || rep.length ? 'warn' : 'ok', d: rep[0]?.msg?.replace(`${b.label}: `, ''), tx: b.priorSlashes?.[0]?.tx });
 
   const pg = g.servPromptGuard;
-  n.push({ k: 'llm', title: 'SERV Prompt Guard', v: pg ? (pg.blocked ? 'blocked' : 'passed') : NR, tone: pg ? (pg.blocked ? 'warn' : 'ok') : '' });
+  n.push({ k: 'llm', tag: 'classifier', title: 'SERV Prompt Guard', v: pg ? (pg.blocked ? 'blocked' : 'passed') : NR, tone: pg ? (pg.blocked ? 'warn' : 'ok') : '' });
   n.push({ k: 'decision', title: 'Manipulation check', v: m ? `p = ${Number(m.p).toFixed(2)}` : NR, tone: m ? (m.p > 0.8 ? 'bad' : 'ok') : '', d: m?.engine });
   if (m) {
     const aimed = g.addressedToEvaluator;
@@ -66,7 +66,7 @@ function bidLane(rfq, b) {
 
   n.push({ k: 'llm', title: 'Stated alternatives (ambiguity)', v: b.ambiguous?.length ? b.ambiguous.map((a) => `${a.field} ${a.values.join(' / ')}`).join(', ') : 'no second figure recorded', tone: b.ambiguous?.length ? 'warn' : '' });
 
-  if (rfq.qualitative?.criterion) {
+  if (rfq.qualitative?.criterion && rfq.weights?.quality) { // same condition as src/lelang.js: only a weighted criterion is read
     const q = b.quality;
     n.push({ k: 'llm', title: 'Quality readers', v: q ? `${q.score}/10${q.disagree ? ', readers disagree' : ''}` : NR, tone: q?.disagree ? 'warn' : '',
       d: q?.readers?.map((r) => `${r.engine} ${r.score}${r.verified ? '' : ' (quote not found → 0)'}`).join(' · ') });

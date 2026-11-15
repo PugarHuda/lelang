@@ -246,3 +246,22 @@ export async function addressHistory(addr, here) {
 
 export const escrowAddress = () => ESCROW();
 export const explorerAddress = (a) => `${kiteTestnet.blockExplorers.default.url}/address/${a}`;
+
+// Bounties already paid, read from the chain so a wiped server disk can't forget them: BountyPaid on every escrow that
+// has it (the pool path) plus tender-token transfers from the fee wallet (the fallback path). ponytail: the fee-wallet
+// read also counts any other transfer from that wallet to the address, which can only refuse a bounty, never pay twice.
+export async function bountiesPaidOnChain(feeWallet) {
+  const out = [];
+  const from = escrows().reduce((m, e) => (BigInt(e.block ?? 0) < m ? BigInt(e.block ?? 0) : m), BigInt(escrows()[0]?.block ?? 0));
+  for (const e of escrows().filter((x) => x.abi?.some((f) => f.name === 'BountyPaid'))) {
+    const logs = await pub.getContractEvents({ address: e.address, abi: e.abi, eventName: 'BountyPaid', fromBlock: BigInt(e.block ?? 0) });
+    out.push(...logs.map((l) => ({ to: l.args.to, block: l.blockNumber, kind: 'pool' })));
+  }
+  if (feeWallet) {
+    const logs = await pub.getContractEvents({ address: TOKEN, abi: erc20Abi, eventName: 'Transfer', args: { from: feeWallet }, fromBlock: from });
+    out.push(...logs.map((l) => ({ to: l.args.to, block: l.blockNumber, kind: 'fee wallet' })));
+  }
+  const times = new Map();
+  for (const b of new Set(out.map((x) => x.block))) times.set(b, Number((await pub.getBlock({ blockNumber: b })).timestamp) * 1000);
+  return out.map((x) => ({ to: x.to.toLowerCase(), at: times.get(x.block), kind: x.kind }));
+}

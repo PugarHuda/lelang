@@ -24,8 +24,9 @@ function kindOf(e) {
   if (e.step === 'appeal') return 'Appeal';
   if (e.step === 'dispute') return 'Delivery disputed';
   if (e.step === 'settle') {
-    if (/slash/i.test(e.msg)) return 'Slash';
+    if (/slash/i.test(e.msg) || /forfeited \(evidence/i.test(e.msg)) return 'Slash'; // V1-V3 wording: "bond forfeited (evidence ...)"
     if (/confirmed delivery/i.test(e.msg)) return 'Delivery confirmed';
+    if (/^Settlement HELD/i.test(e.msg)) return 'Settlement held for a human';
     return 'Settlement';
   }
   return null;
@@ -39,7 +40,7 @@ for (const rfq of tenders) {
     const kind = kindOf(e);
     if (!kind) continue;
     const tx = e.data?.tx ?? null;
-    if (kind === 'Settlement') {
+    if (kind === 'Settlement' || kind === 'Settlement held for a human') {
       const key = tx ?? e.t;
       if (!settleGroups.has(key)) settleGroups.set(key, { rfq, kind, t: e.t, tx, lines: [], link: `${SITE}/index.html` });
       settleGroups.get(key).lines.push(e.msg);

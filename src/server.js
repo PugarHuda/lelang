@@ -1,14 +1,14 @@
 import { createServer } from 'node:http';
 import { listRfqs, getRfq, approve, buyerAddress, createRfq, submitCommit, closeCommits, reveal, evaluate, settle, bidOf, publicView, appeal, decideAppeal, bondQuote, finalizeDue, recordOverturnTx, confirmDelivery, disputeDelivery, deliveryReceipt, publishedTenders } from './lelang.js';
 import { toOcds } from './ocds.js';
-import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo } from './kite.js';
+import { deployment, kiteEnabled, balances, transferPie, escrowEnabled, bountyPool, escrowPayBounty, tokenInfo, bountiesPaidOnChain } from './kite.js';
 import { privateKeyToAccount } from 'viem/accounts';
 import { keccak256, toHex } from 'viem';
 import { serveStatic } from './static.js';
 import { allRequirements, collect, refund, paymentRequired } from './x402.js';
 import { randomBytes, createHash } from 'node:crypto';
 import { runDemo, DEMO_RFQ } from './demo.js';
-import { judge, inspect, record as recordChallenge, list as challengeList, bountyAllowed, saveChallenges, bountyPlan } from './challenge.js';
+import { judge, inspect, record as recordChallenge, list as challengeList, bountyAllowed, chainBountyRefusal, saveChallenges, bountyPlan } from './challenge.js';
 
 const CHALLENGE_FEE = Number(process.env.CHALLENGE_FEE ?? 0.05);
 // A paid attack that would have won earns a bounty: from the escrow's pool of forfeited bonds when it holds anything
@@ -122,6 +122,14 @@ createServer(async (req, res) => {
         if (entry.wouldWin && payer !== 'operator' && BOUNTY > 0 && kiteEnabled() && bountyAllowed(payer)) {
           entry.bounty = { status: 'sending' }; // claimed synchronously: a second winning attempt by the same payer awaiting below can't pass bountyAllowed too
           saveChallenges();
+          // The local list resets when Render wipes its disk; the chain doesn't. Unreadable history refuses (fails closed).
+          const history = await bountiesPaidOnChain(buyerAddress()).catch(() => null);
+          const refusal = chainBountyRefusal(history, payer, Number(process.env.BOUNTY_PER_DAY ?? 3));
+          if (refusal) {
+            entry.bounty = { status: 'refused', reason: refusal };
+            saveChallenges();
+            return json(res, 200, entry);
+          }
           // Attackers fund the defence: on the V4 escrow the bounty comes out of forfeited bonds (treasury-signed,
           // one per evidence hash, enforced on-chain); only when the pool is empty or unusable does the fee wallet pay.
           const tk = process.env.TREASURY_PRIVATE_KEY;

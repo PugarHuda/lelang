@@ -35,13 +35,13 @@ On-chain: https://testnet.kitescan.ai/tx/0xfb5fad0df6e8b4738d6d97de1a5070cc1d945
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because Bid C under human review; released to Bid B, first on the published formula (0.965) (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/settlement/2026-11-14T10:18:42.207Z</id>
-    <title>Settlement · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg90h7fc694/settlement-held-for-a-human/2026-11-14T10:18:42.207Z</id>
+    <title>Settlement held for a human · #9 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
     <updated>2026-11-14T10:18:42.207Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg90h7fc694.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=escalate, Reppo=review. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -191,13 +191,13 @@ On-chain: https://testnet.kitescan.ai/tx/0xa9ee819068d7b6ee720415a4f45e2bb4f8b9f
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held because of a review flag; released to Bid B, first on the published formula (0.971) (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/settlement/2026-11-14T09:33:45.684Z</id>
-    <title>Settlement · #7 12 classroom document cameras for 3 vocational schools</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwg7h2g6d285/settlement-held-for-a-human/2026-11-14T09:33:45.684Z</id>
+    <title>Settlement held for a human · #7 12 classroom document cameras for 3 vocational schools</title>
     <updated>2026-11-14T09:33:45.684Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwg7h2g6d285.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=award, Reppo=review. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -261,13 +261,13 @@ On-chain: https://testnet.kitescan.ai/tx/0x6a67ca024bed2b6acf0928aa6fb61732c9f83
 On-chain: https://testnet.kitescan.ai/tx/0x428822b7fb37e75c55497b421b4fba2529ec28d53e94f3f8cc44db4218e95658</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/settlement/2026-11-14T06:45:34.272Z</id>
-    <title>Settlement · #5 Browser supplier test: 10 classroom projectors</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfzvt5vdd50/settlement-held-for-a-human/2026-11-14T06:45:34.272Z</id>
+    <title>Settlement held for a human · #5 Browser supplier test: 10 classroom projectors</title>
     <updated>2026-11-14T06:45:34.272Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfzvt5vdd50.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -342,13 +342,13 @@ On-chain: https://testnet.kitescan.ai/tx/0x14f921e986bce14180584b3d95f0d3ca75e1f
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid C: held because Bid A under human review; released to Bid C, first on the published formula (0.965) (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/settlement/2026-11-13T18:44:32.420Z</id>
-    <title>Settlement · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwfbl18l45cf/settlement-held-for-a-human/2026-11-13T18:44:32.420Z</id>
+    <title>Settlement held for a human · #3 15 lab microscopes for 3 vocational schools in East Nusa Tenggara</title>
     <updated>2026-11-13T18:44:32.420Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwfbl18l45cf.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -461,13 +461,13 @@ On-chain: https://testnet.kitescan.ai/tx/0xf681ffe9995f5056637b4fc1232a074b94edf
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid B: held by Reppo review (89; safety 75, reversibility 68). Checked: both bids clean, readers agree, decision node matches formula; releasing Bid B (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/settlement/2026-11-13T06:01:46.191Z</id>
-    <title>Settlement · #6 12 smart boards for 3 village schools</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwekfbc95c00/settlement-held-for-a-human/2026-11-13T06:01:46.191Z</id>
+    <title>Settlement held for a human · #6 12 smart boards for 3 village schools</title>
     <updated>2026-11-13T06:01:46.191Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwekfbc95c00.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=award, Reppo=review. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -568,13 +568,13 @@ On-chain: https://testnet.kitescan.ai/tx/0x40bf39925bd08a894bab0b3d802f1d43d3bc9
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid C: held because Bid A under human review; released to Bid C, first on the published formula (0.949) (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/settlement/2026-11-13T04:20:50.721Z</id>
-    <title>Settlement · #2 40 classroom projectors for 8 vocational schools</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mweguzqa/settlement-held-for-a-human/2026-11-13T04:20:50.721Z</id>
+    <title>Settlement held for a human · #2 40 classroom projectors for 8 vocational schools</title>
     <updated>2026-11-13T04:20:50.721Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mweguzqa.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>
@@ -833,13 +833,13 @@ On-chain: https://testnet.kitescan.ai/tx/0x7dcb1d2a4c81fd7618f514bbd917c643d7ae6
     <content type="text">0xF1008508215a8Fbdf2c47f7C03d7C444cD36E75f signed the release of Bid A: checked: clean bid, best on every criterion; the earlier slash was in another tender (EIP-191 signature verified)</content>
   </entry>
   <entry>
-    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/settlement/2026-11-12T19:12:04.679Z</id>
-    <title>Settlement · #9 25 interactive whiteboards for 5 vocational schools</title>
+    <id>tag:lelang-ten.vercel.app,2026:rfq-mwdx3myt/settlement-held-for-a-human/2026-11-12T19:12:04.679Z</id>
+    <title>Settlement held for a human · #9 25 interactive whiteboards for 5 vocational schools</title>
     <updated>2026-11-12T19:12:04.679Z</updated>
     <link rel="alternate" type="text/html" href="https://lelang-ten.vercel.app/index.html"/>
     <link rel="related" type="application/json" title="Tender record" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.json"/>
     <link rel="related" type="application/json" title="OCDS release" href="https://lelang-ten.vercel.app/tenders/rfq-mwdx3myt.ocds.json"/>
-    <category term="Settlement"/>
+    <category term="Settlement held for a human"/>
     <content type="text">Settlement HELD: award=escalate, Reppo=ship. Bonds stay in escrow pending human review</content>
   </entry>
   <entry>

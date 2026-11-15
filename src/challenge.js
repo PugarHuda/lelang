@@ -41,6 +41,14 @@ export const bountyAllowed = (payer) => {
   return !paid.some((e) => String(e.payer).toLowerCase() === payer.toLowerCase())
     && paid.filter((e) => Date.now() - Date.parse(e.at) < 86_400_000).length < Number(process.env.BOUNTY_PER_DAY ?? 3);
 };
+// The same two rules checked against the chain (bountiesPaidOnChain), so a wiped server disk can't reset them.
+// Only pool payouts count toward the daily cap: the fee wallet also sends test tokens for other reasons.
+export function chainBountyRefusal(history, payer, perDay = 3, now = Date.now()) {
+  if (!history) return 'could not read bounty history from Kite; a human will review';
+  if (history.some((h) => h.to === payer.toLowerCase())) return 'this address was already paid a bounty (on-chain)';
+  if (history.filter((h) => h.kind === 'pool' && now - h.at < 86_400_000).length >= perDay) return 'daily bounty cap reached (on-chain)';
+  return null;
+}
 // Where a winning attack's bounty comes from: the escrow's pool of forfeited bonds first (min(pool, cap), in the pool's
 // token), else the fee wallet pays the base bounty. The pool path needs the treasury key and KITE for its gas.
 export function bountyPlan({ pool, cap, hasTreasury, treasuryGas, base }) {
