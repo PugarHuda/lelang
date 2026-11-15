@@ -80,7 +80,8 @@ async function loadStatic() {
   nav.innerHTML = index.map((t) => `<button type="button" data-id="${esc(t.id)}" aria-pressed="false">${esc(t.label)}</button>`).join('');
   nav.hidden = index.length < 2;
   nav.onclick = (e) => { const id = e.target.closest('button')?.dataset.id; if (id) show(id); };
-  await show((index.find((t) => t.featured) ?? index[0]).id);
+  const wanted = new URLSearchParams(location.search).get('t'); // deep link from graph.html / win.html
+  await show((index.find((t) => t.id === wanted) ?? index.find((t) => t.featured) ?? index[0]).id);
   live();
 }
 
