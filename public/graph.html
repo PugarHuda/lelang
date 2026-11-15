@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision graph · Lelang</title>
+<meta name="description" content="Every step of one Lelang tender as a graph: which steps are fixed code, which are bounded AI reads and strict-schema decisions, which are independent audits, human signatures and on-chain transactions.">
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="nav.css">
+<link rel="stylesheet" href="theme.css">
+<style>
+  :root { --k-code: #4a5260; --k-llm: #6a4cf0; --k-decision: #c26a00; --k-audit: #0b7fa8; --k-human: #b8327a; --k-chain: #17824f; }
+  @media (prefers-color-scheme: dark) {
+    :root { --k-code: #a7afbd; --k-llm: #a996ff; --k-decision: #f0b75a; --k-audit: #5cc6ec; --k-human: #f27fbd; --k-chain: #4ccb8a; }
+  }
+  .pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 20px; }
+  .pick select { max-width: 100%; min-width: 0; flex: 1 1 260px; }
+  .legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 16px 0 8px; }
+  .band { background: var(--sheet); border-radius: 16px; padding: 14px 16px; }
+  .band h3 { margin: 0 0 4px; font-size: 14px; }
+  .band p { margin: 0 0 8px; font-size: 13px; color: var(--mute); }
+  .lg { display: flex; align-items: center; gap: 8px; font-size: 13.5px; margin-top: 6px; }
+  .lg b { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .ratio { display: flex; height: 12px; border-radius: 99px; overflow: hidden; margin: 14px 0 4px; background: var(--tint); }
+  .ratio i { display: block; height: 100%; }
+  .sw { width: 22px; height: 16px; flex: none; background: var(--paper); border: 2px solid var(--kc); }
+  .k-code { --kc: var(--k-code); } .k-chain { --kc: var(--k-chain); } .k-llm { --kc: var(--k-llm); }
+  .k-decision { --kc: var(--k-decision); } .k-audit { --kc: var(--k-audit); } .k-human { --kc: var(--k-human); }
+  /* shape per kind: code square, on-chain square + mono, LLM pill, decision notched, audit dashed, human double */
+  .sw.k-code, .node.k-code, .sw.k-chain, .node.k-chain { border-radius: 3px; }
+  .sw.k-llm, .node.k-llm { border-radius: 18px; }
+  .sw.k-decision, .node.k-decision { border-radius: 3px 16px 3px 16px; border-width: 3px; }
+  .sw.k-audit, .node.k-audit { border-style: dashed; border-radius: 10px; }
+  .sw.k-human, .node.k-human { border-style: double; border-width: 4px; border-radius: 10px; }
+  .flowg { display: flex; flex-direction: column; align-items: stretch; margin-top: 12px; }
+  .node { position: relative; background: var(--paper); border: 2px solid var(--kc); padding: 10px 12px; margin-bottom: 26px; min-width: 0; }
+  .node::after { content: ""; position: absolute; left: 50%; bottom: -24px; width: 2px; height: 20px; background: var(--rule); }
+  .node::before { content: ""; position: absolute; left: calc(50% - 5px); bottom: -26px; border: 5px solid transparent; border-top-color: var(--rule); border-bottom: 0; }
+  .node.last::after, .node.last::before { display: none; }
+  .node .kind { font: 600 10.5px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--kc); }
+  .node .ti { font-weight: 600; margin: 4px 0 2px; font-size: 14px; }
+  .node .v { font-size: 13.5px; overflow-wrap: anywhere; }
+  .node .d { font-size: 12.5px; color: var(--mute); overflow-wrap: anywhere; margin-top: 2px; }
+  .node.k-chain .v { font-family: var(--mono); font-size: 12.5px; }
+  .node.skip { opacity: .45; border-style: dotted; }
+  .v.ok { color: var(--ok); } .v.bad { color: var(--bad); } .v.warn { color: var(--warn); }
+  .tag { display: inline-block; font: 600 10.5px/1 var(--mono); padding: 3px 6px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); margin-left: 6px; vertical-align: 1px; }
+  .fan { background: var(--sheet); border-radius: 18px; padding: 14px; margin-bottom: 26px; position: relative; }
+  .fan::after { content: ""; position: absolute; left: 50%; bottom: -24px; width: 2px; height: 20px; background: var(--rule); }
+  .fan > .kv { margin: 0 0 10px; }
+  .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .lane h3 { margin: 0 0 8px; font-size: 14px; }
+  .lane .node { margin-bottom: 22px; }
+  .lane .node::after { bottom: -20px; height: 16px; }
+  .lane .node::before { bottom: -22px; }
+</style>
+</head>
+<body>
+<header class="mast"><div class="mast-in">
+  <a class="mark-word" href="/">Lelang</a>
+  <nav aria-label="Site"><a href="/">Overview</a><a href="index.html" aria-current="page">Tenders</a><a href="attacks.html">Attacks</a><a href="pool.html">Bounty pool</a><a href="approver.html">Approvers</a><a href="stats.html">Numbers</a><span class="sep" aria-hidden="true"></span><a href="bid.html">Bid</a><a href="buy.html" class="cta">Open a tender</a></nav>
+</div></header>
+<main>
+  <h1>Decision graph</h1>
+  <p class="lede">One tender, every step. Each box says what made that call: fixed code, a bounded AI read, a strict-schema decision node, an independent audit, a signed human, or a Kite transaction. Values are the ones recorded for this tender.</p>
+  <form class="pick" id="pick"><label class="kv" for="t">Tender</label><select id="t" name="t"></select></form>
+  <div id="view"><p class="kv">Loading…</p></div>
+</main>
+<script type="module" src="graph.js"></script>
+</body>
+</html>
