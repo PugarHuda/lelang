@@ -65,7 +65,7 @@ Escrows V1-V3 sent a slashed bond to the buyer. That made the party that lists a
 - **The pool pays bounties.** `payBounty` (treasury only, one payment per evidence hash, never above the pool) pays whoever finds a hole in the evaluator: money taken from attackers pays the people who test the defence. Break Lelang pays a winning attack from the pool whenever it holds anything, `min(pool, POOL_BOUNTY_CAP)` (default 1) in the pool's own token, and falls back to the fee wallet only when the pool is empty or the treasury can't sign (no key, no KITE for gas). *ponytail:* the treasury decides what earns a bounty; every payment is public with its evidence hash. Requiring approver votes per bounty is the upgrade if the pool grows.
 - **The rest of the price waits for delivery.** `settle` can lock the balance after the down payment (plus its success fee); `confirmDelivery` by the buyer pays the winner and the treasury. A buyer who stays silent past the delivery deadline is resolved by the approver quorum, either way.
 
-Tests: 30 Hardhat tests; the 200-tender fuzz adds random overturns and held balances and checks that **settle never pays the buyer anything** and that, once everything is resolved, the escrow holds exactly the bounty pool. Live:
+Tests: 52 Hardhat tests (15 from the [free review](reports/free-audit-2026-11-16.md));  the 200-tender fuzz adds random overturns and held balances and checks that **settle never pays the buyer anything** and that, once everything is resolved, the escrow holds exactly the bounty pool. Live:
 
 | V4 tender | What happened |
 |---|---|
