@@ -11,7 +11,7 @@ const ERC20 = [
 ];
 // ---- motion (modelled on the CoreShift shot: blur-in words, parallax, rotating arc, fanned cards) ----
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-// headings are split into words by i18n.js (it runs first and again on a language switch)
+// English only: the Indonesian toggle was removed so every visitor (and judge) sees the same, complete text
 const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: 0.15 });
 document.querySelectorAll('[data-words], .rise, .card').forEach((el) => io.observe(el));
 
