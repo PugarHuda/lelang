@@ -7,7 +7,8 @@ import { createWalletClient, createPublicClient, http, isAddress } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { kiteTestnet, explorerTx } from '../src/kite.js';
 
-const OUT = 'deployments/kite-testnet.json';
+// DEPLOY_OUT writes a separate escrow (e.g. deployments/kite-testnet-v5.json) without touching what the live system reads
+const OUT = process.env.DEPLOY_OUT ?? 'deployments/kite-testnet.json';
 const art = JSON.parse(readFileSync('hh-artifacts/contracts/LelangEscrow.sol/LelangEscrow.json', 'utf8'));
 const buildInfo = readdirSync('hh-artifacts/build-info').map((f) => JSON.parse(readFileSync(`hh-artifacts/build-info/${f}`, 'utf8')))
   // stale build-info files survive recompiles: take the one that produced the artifact we deploy

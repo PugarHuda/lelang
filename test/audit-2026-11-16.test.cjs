@@ -1,6 +1,5 @@
-// Free audit 2026-11-16 (docs/reports/free-audit-2026-11-16.md). Each test either DEMONSTRATES a finding (F*) on the
-// deployed contract as-is, or tries an attack and shows it fails (D*). Tests for findings pass because they assert the
-// current (flawed) behaviour; if the contract is patched, flip the assertion.
+// Free audit 2026-11-16 (docs/reports/free-audit-2026-11-16.md). The F* tests replay each finding against the V5 source and
+// assert the fix (the attack now fails; on the deployed V4 they would fail). D* tests try an attack and show it fails.
 const { expect } = require('chai');
 const { ethers } = require('hardhat');
 const { time } = require('@nomicfoundation/hardhat-toolbox/network-helpers');
@@ -31,19 +30,21 @@ async function commitAs(escrow, s, id, doc, n, amount = BOND) {
 const reveal = (escrow, s, id, doc, n) => escrow.connect(s).reveal(id, H(doc), salt(n));
 
 describe('Free audit 2026-11-16', () => {
-  describe('findings (demonstrated on the deployed code)', () => {
-    it('F1: if nobody reveals, settle is impossible and every non-revealer withdraws its full bond (no penalty)', async () => {
-      const { escrow, token, a, b, c, id } = await setup();
+  describe('findings, fixed in V5 (each attack now fails)', () => {
+    it('F1 fixed: if nobody reveals, every non-revealer forfeits its bond to the bounty pool on withdraw (never the buyer)', async () => {
+      const { escrow, token, buyer, a, b, c, id } = await setup();
       for (const [i, s] of [a, b, c].entries()) await commitAs(escrow, s, id, `d${i}`, i);
       await time.increase(COMMIT + REVEAL);
       for (const s of [a, b, c]) await expect(escrow.settle(id, s.address, [], [], 0, 0, 0)).to.be.revertedWithCustomError(escrow, 'InvalidWinner');
       await time.increase(SETTLE);
-      const a0 = await token.balanceOf(a.address);
-      await escrow.connect(a).withdraw(id);
-      expect(await token.balanceOf(a.address)).to.equal(a0 + BOND); // full bond back, never revealed
+      const a0 = await token.balanceOf(a.address), buyer0 = await token.balanceOf(buyer.address);
+      await expect(escrow.connect(a).withdraw(id)).to.emit(escrow, 'BondSlashed').withArgs(id, a.address, BOND, ethers.ZeroHash);
+      expect(await token.balanceOf(a.address)).to.equal(a0); // nothing back
+      expect(await token.balanceOf(buyer.address)).to.equal(buyer0); // and nothing to the buyer
+      expect(await escrow.bountyPool(await token.getAddress())).to.equal(BOND);
     });
 
-    it('F1: an attacker filling all MAX_BIDDERS slots and never revealing blocks the tender at no cost but gas', async () => {
+    it('F1 fixed: an attacker filling all MAX_BIDDERS slots and never revealing loses every bond', async () => {
       const { escrow, token, addr, buyer, a, id } = await setup();
       const wallets = [];
       for (let i = 0; i < 100; i++) {
@@ -57,63 +58,80 @@ describe('Free audit 2026-11-16', () => {
       await expect(commitAs(escrow, a, id, 'honest', 999)).to.be.revertedWithCustomError(escrow, 'TooManyBidders');
       await time.increase(COMMIT + REVEAL + SETTLE);
       for (const w of wallets) await escrow.connect(w).withdraw(id);
-      for (const w of wallets.slice(0, 5)) expect(await token.balanceOf(w.address)).to.equal(BOND); // attacker made whole
+      for (const w of wallets.slice(0, 5)) expect(await token.balanceOf(w.address)).to.equal(0n); // the attack cost 100 bonds
+      expect(await escrow.bountyPool(await token.getAddress())).to.equal(100n * BOND);
+      expect(await token.balanceOf(addr)).to.equal(100n * BOND);
     });
 
-    it('F2: one revealed bidder the token refuses to pay (blocklist) reverts the whole settle; listing it as a slash is the only way out', async () => {
-      const { escrow, token, a, b, approvers, id } = await setup('BlocklistToken');
+    it('F2 fixed: a revealed bidder the token refuses to pay no longer blocks settle; its refund is credited and claimed to another address', async () => {
+      const { escrow, token, addr, a, b, c, id } = await setup('BlocklistToken');
+      const tok = await token.getAddress();
       await commitAs(escrow, a, id, 'a', 1);
       await commitAs(escrow, b, id, 'b', 2);
       await escrow.closeCommits(id);
       await reveal(escrow, a, id, 'a', 1);
       await reveal(escrow, b, id, 'b', 2);
       await token.setBlocked(b.address, true);
-      await expect(escrow.settle(id, a.address, [], [], 0, 0, 0)).to.be.revertedWith('blocked');
-      // Workaround: the buyer lists b as a slash (b did nothing wrong); then even a quorum overturn cannot pay b.
-      await escrow.settle(id, a.address, [b.address], [H('cannot pay b')], 0, 0, 0);
-      await escrow.connect(approvers[0]).overturnSlash(id, b.address);
-      await expect(escrow.connect(approvers[1]).overturnSlash(id, b.address)).to.be.revertedWith('blocked');
+      const a0 = await token.balanceOf(a.address), c0 = await token.balanceOf(c.address);
+      await expect(escrow.settle(id, a.address, [], [], 0, 0, 0)).to.emit(escrow, 'RefundCredited').withArgs(tok, b.address, BOND);
+      expect(await token.balanceOf(a.address)).to.equal(a0 + BOND); // everyone else is paid in the same tx
+      expect(await escrow.claimable(tok, b.address)).to.equal(BOND);
+      await expect(escrow.connect(b).claim(tok, b.address)).to.be.revertedWith('blocked'); // the credit is kept
+      await escrow.connect(b).claim(tok, c.address);
+      expect(await token.balanceOf(c.address)).to.equal(c0 + BOND);
+      expect(await token.balanceOf(addr)).to.equal(0n);
+      await expect(escrow.connect(b).claim(tok, c.address)).to.be.revertedWithCustomError(escrow, 'InvalidParams'); // only once
     });
 
-    it('F3: fee-on-transfer tokens: the escrow books more than it received, so the last refund fails (one bidder pays for another)', async () => {
-      const { escrow, token, addr, a, b, id } = await setup('FeeOnTransferToken');
-      await commitAs(escrow, a, id, 'a', 1, 10_000n);
-      await commitAs(escrow, b, id, 'b', 2, 10_000n);
-      expect(await token.balanceOf(addr)).to.equal(19_800n); // 20_000 booked
+    it('F2 fixed: a quorum overturn for a blocked bidder succeeds and credits the bond', async () => {
+      const { escrow, token, a, b, approvers, id } = await setup('BlocklistToken');
+      await commitAs(escrow, a, id, 'a', 1);
+      await commitAs(escrow, b, id, 'b', 2);
       await escrow.closeCommits(id);
       await reveal(escrow, a, id, 'a', 1);
       await reveal(escrow, b, id, 'b', 2);
-      await expect(escrow.settle(id, a.address, [], [], 0, 0, 0)).to.be.revertedWithCustomError(token, 'ERC20InsufficientBalance');
-      await time.increase(REVEAL + SETTLE);
-      await escrow.connect(a).withdraw(id); // a gets its 10_000 out, partly from b's bond
-      await expect(escrow.connect(b).withdraw(id)).to.be.revertedWithCustomError(token, 'ERC20InsufficientBalance');
+      await escrow.settle(id, a.address, [b.address], [H('wrong slash')], 0, 0, 0);
+      await token.setBlocked(b.address, true);
+      await escrow.connect(approvers[0]).overturnSlash(id, b.address);
+      await expect(escrow.connect(approvers[1]).overturnSlash(id, b.address)).to.emit(escrow, 'SlashOverturned');
+      expect(await escrow.claimable(await token.getAddress(), b.address)).to.equal(BOND);
     });
 
-    it('F4: a zero commitment is accepted, can be repeated, and strands the earlier bonds (not in any pool, unwithdrawable)', async () => {
-      const { escrow, token, addr, a, b, id } = await setup();
-      await escrow.connect(a).commit(id, ethers.ZeroHash, BOND);
-      await escrow.connect(a).commit(id, ethers.ZeroHash, BOND); // no AlreadyCommitted
-      expect((await escrow.tenders(id)).committed).to.equal(2n);
-      expect(await escrow.biddersOf(id)).to.deep.equal([a.address, a.address]);
-      await commitAs(escrow, b, id, 'b', 2);
-      await time.increase(COMMIT);
-      await reveal(escrow, b, id, 'b', 2);
-      await expect(reveal(escrow, a, id, 'x', 0)).to.be.revertedWithCustomError(escrow, 'BadReveal');
-      await time.increase(REVEAL);
-      await escrow.settle(id, b.address, [], [], 0, 0, 0);
-      const pool = await escrow.bountyPool(await token.getAddress());
-      expect(pool).to.equal(BOND); // only one of a's two bonds reached the pool
-      expect(await token.balanceOf(addr)).to.equal(pool + BOND); // the other BOND is stranded for good
+    it('F3 fixed: a fee-on-transfer deposit is refused, so nothing is booked that did not arrive', async () => {
+      const { escrow, token, addr, a, id } = await setup('FeeOnTransferToken');
+      await expect(commitAs(escrow, a, id, 'a', 1, 10_000n)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      expect(await token.balanceOf(addr)).to.equal(0n);
+      expect((await escrow.tenders(id)).committed).to.equal(0n);
     });
 
-    it('F5 (info): the commitment does not bind the escrow address or chain, so it is valid on every deployment', async () => {
-      const { escrow, a, approvers } = await setup();
+    it('F4 fixed: a zero commitment is rejected, and a second commit from the same bidder is refused', async () => {
+      const { escrow, token, addr, a, id } = await setup();
+      await expect(escrow.connect(a).commit(id, ethers.ZeroHash, BOND)).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      expect((await escrow.tenders(id)).committed).to.equal(0n);
+      await commitAs(escrow, a, id, 'a', 1);
+      await expect(commitAs(escrow, a, id, 'a2', 2)).to.be.revertedWithCustomError(escrow, 'AlreadyCommitted');
+      expect(await escrow.biddersOf(id)).to.deep.equal([a.address]);
+      expect(await token.balanceOf(addr)).to.equal(BOND);
+    });
+
+    it('F5 fixed: the commitment binds the escrow address and chain, so it is not valid on another deployment', async () => {
+      const { escrow, token, a, approvers } = await setup();
       const other = await ethers.deployContract('LelangEscrow', [TREASURY, approvers.map((x) => x.address), 2, CHALLENGE]);
-      expect(await other.commitmentOf(H('doc'), salt(1), a.address, 1n)).to.equal(await escrow.commitmentOf(H('doc'), salt(1), a.address, 1n));
+      const c1 = await escrow.commitmentOf(H('doc'), salt(1), a.address, 1n);
+      expect(await other.commitmentOf(H('doc'), salt(1), a.address, 1n)).to.not.equal(c1);
+      const { chainId } = await ethers.provider.getNetwork();
+      expect(c1).to.equal(ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(
+        ['bytes32', 'bytes32', 'address', 'uint256', 'address', 'uint256'], [H('doc'), salt(1), a.address, 1n, await escrow.getAddress(), chainId])));
+      // a commitment made for escrow 1, replayed in tender 1 of escrow 2, cannot be revealed there
+      await other.open(await token.getAddress(), BOND, COMMIT, REVEAL, SETTLE, 0);
+      await token.connect(a).approve(await other.getAddress(), ethers.MaxUint256);
+      await other.connect(a).commit(1n, c1, BOND);
+      await time.increase(COMMIT);
+      await expect(other.connect(a).reveal(1n, H('doc'), salt(1))).to.be.revertedWithCustomError(other, 'BadReveal');
     });
 
-    it('F6 (info): the treasury alone can move the whole bounty pool to any address, itself included', async () => {
-      const { escrow, token, a, b, id } = await setup();
+    it('F6 fixed: the treasury cannot pay a bounty to itself, an approver or any buyer; an outside finder still gets paid', async () => {
+      const { escrow, token, buyer, a, b, c, approvers, id } = await setup();
       await commitAs(escrow, a, id, 'a', 1);
       await commitAs(escrow, b, id, 'b', 2);
       await time.increase(COMMIT);
@@ -122,9 +140,15 @@ describe('Free audit 2026-11-16', () => {
       await escrow.settle(id, a.address, [], [], 0, 0, 0); // b forfeits
       await ethers.provider.send('hardhat_impersonateAccount', [TREASURY]);
       await ethers.provider.send('hardhat_setBalance', [TREASURY, '0xde0b6b3a7640000']);
-      const t = await ethers.getSigner(TREASURY);
-      await escrow.connect(t).payBounty(await token.getAddress(), TREASURY, BOND, H('anything'));
-      expect(await token.balanceOf(TREASURY)).to.equal(BOND);
+      const t = await ethers.getSigner(TREASURY), tok = await token.getAddress();
+      for (const to of [TREASURY, approvers[0].address, buyer.address]) {
+        await expect(escrow.connect(t).payBounty(tok, to, BOND, H('anything'))).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      }
+      await escrow.connect(c).open(tok, BOND, COMMIT, REVEAL, SETTLE, 0); // c opens a tender: now a buyer, also refused
+      await expect(escrow.connect(t).payBounty(tok, c.address, BOND, H('anything'))).to.be.revertedWithCustomError(escrow, 'InvalidParams');
+      const finder = ethers.Wallet.createRandom().address;
+      await escrow.connect(t).payBounty(tok, finder, BOND, H('anything'));
+      expect(await token.balanceOf(finder)).to.equal(BOND);
     });
   });
 

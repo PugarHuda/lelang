@@ -13,9 +13,11 @@ const view = document.querySelector('#view');
 const txHash = (s) => String(s ?? '').split('/tx/').pop();
 const txLink = (h, text = 'tx') => (h ? `<a href="${TX}${esc(h)}" target="_blank" rel="noopener">${esc(text)} ${esc(h.slice(0, 10))}…</a>` : '');
 
-// Same formula as LelangEscrow.commitmentOf and src/commitment.js commitHash.
-const commitmentOf = (docHash, salt, bidder, id) =>
-  keccak256(encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256'), [docHash, salt, bidder, BigInt(id)]));
+// Same formula as LelangEscrow.commitmentOf and src/commitment.js commitHash. V1-V4 escrows hash (docHash, salt, bidder, id);
+// a V5 escrow also binds its own address and the chain id (audit F5), so pass `escrow` for those.
+const commitmentOf = (docHash, salt, bidder, id, escrow) => keccak256(escrow
+  ? encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256, address, uint256'), [docHash, salt, bidder, BigInt(id), escrow, BigInt(kite.id)])
+  : encodeAbiParameters(parseAbiParameters('bytes32, bytes32, address, uint256'), [docHash, salt, bidder, BigInt(id)]));
 
 // The award passed Reppo either outright ("ship"), or it was routed to review and a named approver released it, signed.
 async function auditCheck(rfq) {
@@ -54,7 +56,9 @@ async function verify(rfq, bid) {
   // 1. Commit matches reveal: the reveal tx calldata carries (id, docHash, salt); recompute the commitment.
   const { functionName, args } = decodeFunctionData({ abi, data: revealTx.input });
   const [rid, docHash, salt] = args;
-  const computed = commitmentOf(docHash, salt, revealTx.from, rid);
+  // ponytail: no version flag in the published JSON, so try the V1-V4 form, then the V5 form bound to the escrow revealed to
+  let computed = commitmentOf(docHash, salt, revealTx.from, rid);
+  if (computed !== stored[0] && revealTx.to) computed = commitmentOf(docHash, salt, revealTx.from, rid, revealTx.to);
   const docComputed = keccak256(toHex(bid.doc ?? ''));
   rows.push({
     ok: functionName === 'reveal' && rid === id && revealRcpt.status === 'success' && isAddressEqual(revealTx.to, rfq.escrow)

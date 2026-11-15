@@ -107,15 +107,19 @@ describe('LelangEscrow', () => {
       const { escrow, token, a, id } = await loadFixture(fixture);
       const a0 = await token.balanceOf(a.address);
       await commitAs(escrow, a, id, 'bid a', salt(1), BOND * 3n);
-      await time.increase(COMMIT + REVEAL + SETTLE);
+      await time.increase(COMMIT);
+      await escrow.connect(a).reveal(id, H('bid a'), salt(1)); // V5: only a revealed bid gets its bond back
+      await time.increase(REVEAL + SETTLE);
       await expect(escrow.connect(a).withdraw(id)).to.emit(escrow, 'BondWithdrawn').withArgs(id, a.address, BOND * 3n);
       expect(await token.balanceOf(a.address)).to.equal(a0);
     });
-    it('matches the JS commitment used by the agents', async () => {
+    it('matches the JS commitment used by the agents (V5: bound to this escrow and chain)', async () => {
       const { escrow, a } = await loadFixture(fixture);
-      const docHash = H('doc'), s = salt(7);
-      const js = ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['bytes32', 'bytes32', 'address', 'uint256'], [docHash, s, a.address, 1n]));
-      expect(await escrow.commitmentOf(docHash, s, a.address, 1n)).to.equal(js);
+      const { commitHash } = await import('../src/commitment.js');
+      const s = salt(7), { chainId } = await ethers.provider.getNetwork();
+      const js = commitHash('doc', s, a.address, 1n, { escrow: await escrow.getAddress(), chainId });
+      expect(await escrow.commitmentOf(H('doc'), s, a.address, 1n)).to.equal(js);
+      expect(commitHash('doc', s, a.address, 1n)).to.not.equal(js); // the V1-V4 form (no domain) stays as it was
     });
   });
 
@@ -438,7 +442,9 @@ describe('LelangEscrow', () => {
       const { escrow, token, a, outsider, id } = await loadFixture(fixture);
       await commitAs(escrow, a, id, 'bid a', salt(1));
       await expect(escrow.connect(a).withdraw(id)).to.be.revertedWithCustomError(escrow, 'WrongPhase');
-      await time.increase(COMMIT + REVEAL + SETTLE);
+      await time.increase(COMMIT);
+      await escrow.connect(a).reveal(id, H('bid a'), salt(1));
+      await time.increase(REVEAL + SETTLE);
       const before = await token.balanceOf(a.address);
       await expect(escrow.connect(a).withdraw(id)).to.emit(escrow, 'BondWithdrawn').withArgs(id, a.address, BOND);
       expect(await token.balanceOf(a.address)).to.equal(before + BOND);
@@ -525,7 +531,15 @@ describe('LelangEscrow', () => {
       await escrow.closeCommits(id);
       const revealed = bidders.filter(() => rnd(4) !== 0);
       for (const s of revealed) { const i = bidders.indexOf(s); await escrow.connect(s).reveal(id, H(`doc ${round} ${i}`), salt(round * 100 + i)); }
-      if (!revealed.length) { await time.increase(REVEAL + SETTLE); for (const s of bidders) await escrow.connect(s).withdraw(id); }
+      // no reveal, or (sometimes) a buyer that disappears: everyone withdraws; V5: unrevealed bonds go to the pool
+      if (!revealed.length || rnd(8) === 0) {
+        await time.increase(REVEAL + SETTLE);
+        const pool0 = await escrow.bountyPool(await token.getAddress());
+        for (const s of bidders) await escrow.connect(s).withdraw(id);
+        const forfeit = bidders.filter((s) => !revealed.includes(s)).length;
+        if (!forfeit) expect(await escrow.bountyPool(await token.getAddress())).to.equal(pool0);
+        else expect(await escrow.bountyPool(await token.getAddress())).to.be.greaterThan(pool0);
+      }
       else {
         if (revealed.length < bidders.length) await time.increase(REVEAL);
         const winner = revealed[rnd(revealed.length)];

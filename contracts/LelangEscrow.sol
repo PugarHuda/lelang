@@ -16,6 +16,10 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 ///      delivery (or, if the buyer stays silent past the deadline, a quorum of approvers decides).
 ///      V5: the approvers' delivery decision is queued for DELIVERY_TIMELOCK before anyone can execute it, so a wrong or
 ///      captured quorum can be seen (and outvoted, or pre-empted by the buyer confirming) before the money moves.
+///      V5 also fixes the free audit of 2026-11-16 (docs/reports/free-audit-2026-11-16.md): an unrevealed bid forfeits on
+///      withdraw too (F1); a refund the token refuses is credited and claimed later instead of blocking settle (F2);
+///      deposits must arrive in full (F3); a zero commitment is rejected (F4); the commitment binds this escrow and
+///      chain (F5); the treasury can't pay a bounty to itself, an approver or any buyer (F6).
 contract LelangEscrow is ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -86,6 +90,10 @@ contract LelangEscrow is ReentrancyGuard {
     mapping(address => uint256) public bountyPool;
     /// @notice Evidence hashes a bounty was already paid for (one bounty per finding).
     mapping(bytes32 => bool) public bountyPaid;
+    /// @notice Refunds the token refused to deliver, by token and bidder: the bidder pulls them with `claim`.
+    mapping(address => mapping(address => uint256)) public claimable;
+    /// @notice Every address that ever opened a tender: never a bounty recipient.
+    mapping(address => bool) public isBuyer;
 
     mapping(bytes32 => mapping(address => bool)) public voted;
     mapping(bytes32 => uint256) public votes;
@@ -115,6 +123,8 @@ contract LelangEscrow is ReentrancyGuard {
     event DeliveryClosed(uint256 indexed id, address indexed to, uint256 amount, bool delivered);
     event DeliveryQueued(uint256 indexed id, bool payWinner, uint64 eta);
     event BountyPaid(address indexed token, address indexed to, uint256 amount, bytes32 evidenceHash);
+    event RefundCredited(address indexed token, address indexed bidder, uint256 amount);
+    event Claimed(address indexed token, address indexed bidder, address to, uint256 amount);
 
     error WrongPhase();
     error NotBuyer();
@@ -155,14 +165,16 @@ contract LelangEscrow is ReentrancyGuard {
             revert InvalidParams();
         }
         id = ++tenderCount;
+        isBuyer[msg.sender] = true;
         uint64 c = uint64(block.timestamp) + commitSeconds;
         tenders[id] = Tender(msg.sender, token, bond, c, c + revealSeconds, c + revealSeconds + settleSeconds, false, 0, 0, feeBps);
         emit TenderOpened(id, msg.sender, address(token), bond, c);
     }
 
-    /// @notice The commitment a bidder must submit: binds document, salt, bidder and tender (no copying, no reuse).
-    function commitmentOf(bytes32 docHash, bytes32 salt, address bidder, uint256 id) public pure returns (bytes32) {
-        return keccak256(abi.encode(docHash, salt, bidder, id));
+    /// @notice The commitment a bidder must submit: binds document, salt, bidder, tender, this escrow and chain (no copying,
+    ///         no reuse in another tender or deployment).
+    function commitmentOf(bytes32 docHash, bytes32 salt, address bidder, uint256 id) public view returns (bytes32) {
+        return keccak256(abi.encode(docHash, salt, bidder, id, address(this), block.chainid));
     }
 
     /// @notice Locks the caller's bond and records its sealed commitment. Requires prior token approval.
@@ -172,6 +184,7 @@ contract LelangEscrow is ReentrancyGuard {
         Tender storage t = tenders[id];
         if (t.buyer == address(0) || block.timestamp >= t.commitDeadline) revert WrongPhase();
         if (msg.sender == t.buyer) revert NotBidder(); // the buyer can't bid on (and then slash into) its own tender
+        if (commitment == 0) revert InvalidParams(); // zero is the "no bid" marker
         Bid storage b = bids[id][msg.sender];
         if (b.commitment != 0) revert AlreadyCommitted();
         if (t.committed >= MAX_BIDDERS) revert TooManyBidders();
@@ -180,7 +193,7 @@ contract LelangEscrow is ReentrancyGuard {
         b.bond = amount;
         t.committed++;
         bidderList[id].push(msg.sender);
-        t.token.safeTransferFrom(msg.sender, address(this), amount);
+        _pullExact(t.token, amount);
         emit Committed(id, msg.sender, commitment);
     }
 
@@ -239,19 +252,7 @@ contract LelangEscrow is ReentrancyGuard {
             pendingSlash[id][slash[i]] = PendingSlash(uint64(block.timestamp) + challengeSeconds, evidence[i]);
             emit SlashPending(id, slash[i], s.bond, evidence[i], uint64(block.timestamp) + challengeSeconds);
         }
-        address[] storage list = bidderList[id];
-        for (uint256 i; i < list.length; i++) {
-            Bid storage b = bids[id][list[i]];
-            if (b.closed) continue;
-            b.closed = true;
-            if (b.revealed) {
-                t.token.safeTransfer(list[i], b.bond);
-                emit BondRefunded(id, list[i], b.bond);
-            } else {
-                bountyPool[address(t.token)] += b.bond;
-                emit BondSlashed(id, list[i], b.bond, bytes32(0));
-            }
-        }
+        _closeBids(id, t.token);
         if (downPayment > 0) {
             t.token.safeTransferFrom(msg.sender, winner, downPayment);
             // The operator is paid in the same transaction as the winner, and only then: no award, no fee.
@@ -265,13 +266,37 @@ contract LelangEscrow is ReentrancyGuard {
         emit Awarded(id, winner, downPayment);
     }
 
+    /// @dev Settle's bidder pass: forfeits unrevealed bonds, then refunds the rest. All state is written before any transfer.
+    function _closeBids(uint256 id, IERC20 token) internal {
+        address[] storage list = bidderList[id];
+        bool[] memory refund = new bool[](list.length);
+        for (uint256 i; i < list.length; i++) {
+            Bid storage b = bids[id][list[i]];
+            if (b.closed) continue;
+            b.closed = true;
+            if (b.revealed) {
+                refund[i] = true;
+            } else {
+                bountyPool[address(token)] += b.bond;
+                emit BondSlashed(id, list[i], b.bond, bytes32(0));
+            }
+        }
+        // all state is written above; only then the refund transfers
+        for (uint256 i; i < list.length; i++) {
+            if (!refund[i]) continue;
+            uint256 bond = bids[id][list[i]].bond;
+            _refund(token, list[i], bond);
+            emit BondRefunded(id, list[i], bond);
+        }
+    }
+
     function _holdBalance(uint256 id, address winner, uint256 balance, uint64 deliverySeconds) internal {
         if (deliverySeconds == 0) revert InvalidParams();
         Tender storage t = tenders[id];
         uint256 fee = (balance * t.feeBps) / 10_000;
         uint64 deadline = uint64(block.timestamp) + deliverySeconds;
         deliveries[id] = Delivery(winner, balance, fee, deadline, false);
-        t.token.safeTransferFrom(msg.sender, address(this), balance + fee);
+        _pullExact(t.token, balance + fee);
         emit BalanceHeld(id, winner, balance, deadline);
     }
 
@@ -294,7 +319,7 @@ contract LelangEscrow is ReentrancyGuard {
         if (!_vote(keccak256(abi.encode("overturn", id, bidder)))) return;
         delete pendingSlash[id][bidder];
         uint256 bond = bids[id][bidder].bond;
-        tenders[id].token.safeTransfer(bidder, bond);
+        _refund(tenders[id].token, bidder, bond);
         emit SlashOverturned(id, bidder, bond, p.evidence);
     }
 
@@ -355,7 +380,8 @@ contract LelangEscrow is ReentrancyGuard {
     ///      evidence hash. Upgrade path: require approver votes per bounty if the pool grows large.
     function payBounty(address token, address to, uint256 amount, bytes32 evidenceHash) external nonReentrant {
         if (msg.sender != treasury) revert NotApprover();
-        if (to == address(0) || amount == 0 || evidenceHash == 0 || bountyPaid[evidenceHash] || amount > bountyPool[token]) revert InvalidParams();
+        if (to == address(0) || to == treasury || isApprover[to] || isBuyer[to]) revert InvalidParams();
+        if (amount == 0 || evidenceHash == 0 || bountyPaid[evidenceHash] || amount > bountyPool[token]) revert InvalidParams();
         bountyPaid[evidenceHash] = true;
         bountyPool[token] -= amount;
         IERC20(token).safeTransfer(to, amount);
@@ -372,15 +398,48 @@ contract LelangEscrow is ReentrancyGuard {
         return n >= quorum;
     }
 
-    /// @notice Safety valve against a buyer who disappears: bidders reclaim their bond after the settle deadline.
+    /// @notice Safety valve against a buyer who disappears: bidders reclaim their bond after the settle deadline. A bid
+    ///         that was never revealed forfeits its bond to the bounty pool, as it would at settle, so filling every slot
+    ///         and never revealing costs the bonds.
     function withdraw(uint256 id) external nonReentrant {
         Tender storage t = tenders[id];
         if (t.settled || block.timestamp < t.settleDeadline) revert WrongPhase();
         Bid storage b = bids[id][msg.sender];
         if (b.commitment == 0 || b.closed) revert WrongPhase();
         b.closed = true;
+        if (!b.revealed) {
+            bountyPool[address(t.token)] += b.bond;
+            emit BondSlashed(id, msg.sender, b.bond, bytes32(0));
+            return;
+        }
         t.token.safeTransfer(msg.sender, b.bond);
         emit BondWithdrawn(id, msg.sender, b.bond);
+    }
+
+    /// @notice Pays out the caller's refunds in `token` that were credited because the transfer failed, to `to` (e.g. a
+    ///         fresh address when the token blocks the bidder's own).
+    function claim(address token, address to) external nonReentrant {
+        uint256 amount = claimable[token][msg.sender];
+        if (amount == 0 || to == address(0)) revert InvalidParams();
+        claimable[token][msg.sender] = 0;
+        IERC20(token).safeTransfer(to, amount);
+        emit Claimed(token, msg.sender, to, amount);
+    }
+
+    /// @dev Pulls `amount` from the caller and reverts unless all of it arrived (no fee-on-transfer accounting holes).
+    function _pullExact(IERC20 token, uint256 amount) internal {
+        uint256 before = token.balanceOf(address(this));
+        token.safeTransferFrom(msg.sender, address(this), amount);
+        if (token.balanceOf(address(this)) - before != amount) revert InvalidParams();
+    }
+
+    /// @dev Pushes a refund; if the token refuses it (blocklist, reverting hook), credits it to `claim` instead, so one
+    ///      unpayable bidder can't block a settle or an overturn.
+    function _refund(IERC20 token, address to, uint256 amount) internal {
+        (bool ok, bytes memory ret) = address(token).call(abi.encodeCall(IERC20.transfer, (to, amount)));
+        if (ok && (ret.length == 0 ? address(token).code.length > 0 : (ret.length >= 32 && abi.decode(ret, (uint256)) == 1))) return;
+        claimable[address(token)][to] += amount;
+        emit RefundCredited(address(token), to, amount);
     }
 
     /// @notice All bidders of tender `id`, in commit order.
