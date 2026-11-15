@@ -46,9 +46,11 @@ function bidLane(rfq, b) {
   n.push({ k: 'decision', title: 'Manipulation check', v: m ? `p = ${Number(m.p).toFixed(2)}` : NR, tone: m ? (m.p > 0.8 ? 'bad' : 'ok') : '', d: m?.engine });
   if (m) {
     const aimed = g.addressedToEvaluator;
-    const verdict = slashed ? 'quote found verbatim: slash' : m.p > 0.8 ? (m.verified ? 'quote states terms, not aimed at evaluator: human review' : 'quote not found in document: human review, no slash') : 'nothing to verify';
-    n.push({ k: 'code', title: 'Quote verified in document', v: verdict, tone: slashed ? 'bad' : m.p > 0.8 ? 'warn' : 'ok',
-      d: [m.verified && m.evidence ? `“${m.evidence.slice(0, 140)}${m.evidence.length > 140 ? '…' : ''}”` : '', aimed ? `addressed-to-evaluator p=${Number(aimed).toFixed(2)}` : ''].filter(Boolean).join(' · ') });
+    const verdict = m.p > 0.8 ? (m.verified ? 'quote found verbatim' : 'quote not found in document: human review, no slash') : 'nothing to verify';
+    n.push({ k: 'code', title: 'Quote verified in document', v: verdict, tone: m.p > 0.8 ? (m.verified ? 'bad' : 'warn') : 'ok',
+      d: m.verified && m.evidence ? `“${m.evidence.slice(0, 140)}${m.evidence.length > 140 ? '…' : ''}”` : '' });
+    // The slash itself also needs a second SERV decision node (confirmAddressedToEvaluator in src/ai.js), not code alone.
+    if (m.p > 0.8 && m.verified) n.push({ k: 'decision', title: 'Addressed to the evaluator?', v: aimed == null ? NR : `p = ${Number(aimed).toFixed(2)}: ${slashed ? 'slash' : 'states terms, human review'}`, tone: slashed ? 'bad' : 'warn' });
   }
   if (slashed) { skip('code', 'Rest of evaluation', 'skipped: bid slashed'); appeal(n, b); return n; }
 
@@ -113,9 +115,9 @@ export function build(rfq) {
   post.push({ k: 'audit', title: 'Reppo audit', v: r ? `${r.route ?? r.status} · score ${r.score ?? '?'}` : NR, tone: r ? (r.route === 'ship' ? 'ok' : 'warn') : '',
     d: r ? [r.rubric && Object.entries(r.rubric).map(([k, v]) => `${k} ${v}`).join(', '), rounds.length > 1 ? `${rounds.length} rounds, strictest used` : ''].filter(Boolean).join(' · ') : '' });
 
-  const holds = [...ev(rfq, 'review', (e) => /still under review|under review, but/.test(e.msg)), ...ev(rfq, 'repair'), ...ev(rfq, 'award', (e) => /escalat/.test(e.msg))];
+  const holds = [...ev(rfq, 'review', (e) => /still under review|under review, but/.test(e.msg)), ...ev(rfq, 'repair'), ...ev(rfq, 'award', (e) => /escalat/.test(e.msg)), ...ev(rfq, 'settle', (e) => /Settlement HELD/.test(e.msg))];
   const human = rfq.humanApproval;
-  const held = Boolean(human) || ev(rfq, 'human').length > 0 || /escalat|still under review/.test(holds.map((h) => h.msg).join(' '));
+  const held = Boolean(human) || ev(rfq, 'human').length > 0 || /escalat|still under review|Settlement HELD/.test(holds.map((h) => h.msg).join(' '));
   post.push({ k: 'code', title: 'Auto-release gate', v: held ? 'held for a human' : 'released automatically', tone: held ? 'warn' : 'ok',
     d: holds.map((h) => h.msg).join(' · ') || `confidence ≥ ${rfq.minConfidence ?? '?'}, formula match, no flagged bid ahead` });
   if (held) post.push(human

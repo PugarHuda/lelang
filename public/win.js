@@ -24,7 +24,9 @@ async function auditCheck(rfq) {
   let ok = r.status === 'COMPLETED' && r.route === 'ship';
   let text = `Reppo audit ${esc(r.status)}: score <strong>${esc(r.score)}/100</strong>, route <strong>${esc(r.route)}</strong>.`;
   if (r.status === 'COMPLETED' && r.route === 'review') {
-    const signed = h?.message?.includes(`award ${rfq.award.winner}`) && await verifyMessage({ address: h.approver, message: h.message, signature: h.signature }).catch(() => false);
+    // bound to this tender and winner exactly (approvalMessage in src/lelang.js), so a release signed for another tender can't be pasted in
+    const want = `LELANG approve ${rfq.id} award ${rfq.award.winner}`;
+    const signed = (h?.message === want || h?.message?.startsWith(`${want} note: `)) && await verifyMessage({ address: h.approver, message: h.message, signature: h.signature }).catch(() => false);
     ok = Boolean(signed);
     text += signed ? ` Routed to human review, then released by approver <code>${esc(h.approver.slice(0, 10))}…</code> (its signature over "${esc(h.message)}" verified here).` : ' Routed to human review with no valid signed release.';
   }
@@ -33,15 +35,19 @@ async function auditCheck(rfq) {
 
 async function verify(rfq, bid) {
   const d = await fetch('deployment.json').then((r) => r.json());
-  const abi = ((d.previous ?? []).find((p) => isAddressEqual(p.escrow.address, rfq.escrow)) ?? d).abi;
+  // Only Lelang's own escrows (V1-V4): a record naming any other contract could point at a look-alike that emits anything.
+  const known = [d, ...(d.previous ?? [])].find((p) => isAddressEqual(p.escrow.address, rfq.escrow));
+  if (!known) throw new Error(`escrow ${rfq.escrow} is not a Lelang escrow listed in deployment.json`);
+  const abi = known.abi;
   const id = BigInt(rfq.chainId);
   const settleTx = txHash((rfq.settlement.find((s) => s.event === 'Awarded') ?? rfq.settlement.find((s) => s.tx)).tx);
-  const [revealTx, revealRcpt, stored, rcpt, block] = await Promise.all([
+  const [revealTx, revealRcpt, stored, rcpt, block, tender] = await Promise.all([
     client.getTransaction({ hash: bid.revealTx }),
     client.getTransactionReceipt({ hash: bid.revealTx }),
     client.readContract({ address: rfq.escrow, abi, functionName: 'bids', args: [id, bid.supplier] }),
     client.getTransactionReceipt({ hash: settleTx }),
     client.getBlockNumber(),
+    client.readContract({ address: rfq.escrow, abi, functionName: 'tenders', args: [id] }),
   ]);
   const rows = [];
 
@@ -59,7 +65,8 @@ async function verify(rfq, bid) {
   });
 
   // 2. Not slashed: settle refunded the winner's bond and no slash event for it exists on this tender, ever.
-  const logs = parseEventLogs({ abi, logs: rcpt.logs }).filter((l) => l.args.id === id);
+  // only events the escrow itself emitted: the tender token runs inside settle and could emit look-alike events
+  const logs = parseEventLogs({ abi, logs: rcpt.logs.filter((l) => isAddressEqual(l.address, rfq.escrow)) }).filter((l) => l.args.id === id);
   const mine = (l) => isAddressEqual(l.args.bidder ?? l.args.winner ?? '0x0000000000000000000000000000000000000000', bid.supplier);
   const slashNames = ['BondSlashed', 'SlashPending'].filter((n) => abi.some((x) => x.type === 'event' && x.name === n));
   const later = (await Promise.all(slashNames.map((eventName) => client.getContractEvents({ address: rfq.escrow, abi, eventName, args: { id, bidder: bid.supplier }, fromBlock: rcpt.blockNumber })))).flat();
@@ -74,7 +81,9 @@ async function verify(rfq, bid) {
   // 3. Settle paid the winner: Awarded(winner) from the escrow, and the down payment really moved to the winner.
   const award = logs.find((l) => l.eventName === 'Awarded');
   const down = award?.args.downPayment ?? 0n;
-  const paid = parseEventLogs({ abi: erc20, logs: rcpt.logs }).some((l) => isAddressEqual(l.args.to, bid.supplier) && l.args.value === down);
+  // the tender's own token, from the buyer (settle's sender) to the winner: a bond refund (from the escrow) of the same size doesn't count
+  const paid = parseEventLogs({ abi: erc20, logs: rcpt.logs.filter((l) => isAddressEqual(l.address, tender[1])) })
+    .some((l) => isAddressEqual(l.args.from, rcpt.from) && isAddressEqual(l.args.to, bid.supplier) && l.args.value === down);
   rows.push({
     ok: rcpt.status === 'success' && isAddressEqual(rcpt.to, rfq.escrow) && Boolean(award) && isAddressEqual(award.args.winner, bid.supplier) && (down === 0n || paid),
     title: 'Settle transaction paid the winner',

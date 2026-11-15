@@ -19,6 +19,7 @@ export async function guard(text) {
     const terms = challenge.accepts?.find((a) => a.network === 'eip155:2368' && a.extra?.name === 'PYUSD' && String(a.asset).toLowerCase() === '0x8e04d099b1a8dd20e6cad4b2ab2b405b98242ec9');
     if (!terms) throw new Error('guard offers no PYUSD option on Kite testnet');
     if (BigInt(terms.amount) > 10n ** 17n) throw new Error(`guard asks ${terms.amount}, more than 0.1`); // never sign more than 0.1
+    terms.maxTimeoutSeconds = Math.min(Number(terms.maxTimeoutSeconds) || 300, 300); // as src/mcp.js: a signature never outlives 5 minutes
     res = await fetch(`${GUARD}/api/inspect`, { ...init, headers: { ...init.headers, 'payment-signature': await pay(privateKeyToAccount(process.env.PAYER_PRIVATE_KEY), terms) } });
   }
   const out = await res.json();
