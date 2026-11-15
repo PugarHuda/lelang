@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { privateKeyToAccount } from 'viem/accounts';
+import { parseUnits } from 'viem';
 import { commitHash, commitMessage, docHashOf } from './commitment.js';
 import { escrowCommit, escrowReveal, balances } from './kite.js';
 
@@ -116,6 +117,16 @@ server.registerTool('my_bids', { description: 'Your bids on this machine and how
 const payer = process.env.PAYER_PRIVATE_KEY ? privateKeyToAccount(process.env.PAYER_PRIVATE_KEY) : null;
 const PAY_NETWORK = process.env.LELANG_PAY_NETWORK || 'eip155:2368'; // Kite testnet PYUSD; eip155:5042002 for Arc USDC
 const MAX_FEE = Number(process.env.LELANG_MAX_FEE ?? 0.1); // never sign for more than this, whatever a server asks
+if (!(MAX_FEE > 0 && Number.isFinite(MAX_FEE))) throw new Error('LELANG_MAX_FEE must be a positive number');
+// Only Lelang's own assets are ever signed for: a server can't swap in another token, decimals or EIP-712 domain.
+const KNOWN_ASSETS = [
+  { network: 'eip155:2368', asset: '0x8E04D099b1a8Dd20E6caD4b2Ab2B405B98242ec9', name: 'PYUSD', version: '1', decimals: 18 },
+  { network: 'eip155:2368', asset: '0x38129cf4CE5E183eFF248F42A7D345Bb1B47621A', name: 'pieUSD', version: '1', decimals: 18 },
+  { network: 'eip155:5042002', asset: '0x3600000000000000000000000000000000000000', name: 'USDC', version: '2', decimals: 6 },
+  { network: 'eip155:8453', asset: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', name: 'USD Coin', version: '2', decimals: 6 },
+];
+const knownAsset = (t) => KNOWN_ASSETS.find((k) => k.network === t.network && k.asset.toLowerCase() === String(t.asset).toLowerCase()
+  && k.name === t.extra?.name && k.version === t.extra?.version);
 const signX402 = async (req) => {
   const now = Math.floor(Date.now() / 1000);
   const authorization = { from: payer.address, to: req.payTo, value: req.amount, validAfter: '0', validBefore: String(now + req.maxTimeoutSeconds), nonce: `0x${randomBytes(32).toString('hex')}` };
@@ -138,10 +149,11 @@ server.registerTool('inspect_text', {
   const url = new URL('/api/inspect', BASE), init = { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ document: doc }) };
   let res = await fetch(url, init);
   if (res.status === 402) {
-    const terms = (await res.json()).accepts?.find((a) => a.scheme === 'exact' && a.network === PAY_NETWORK);
-    if (!terms) throw new Error(`no x402 payment option on ${PAY_NETWORK}`);
-    const decimals = terms.network === 'eip155:2368' ? 18 : 6; // ponytail: Lelang's assets only (Kite PYUSD/pieUSD 18, Arc/Base USDC 6)
-    if (Number(terms.amount) / 10 ** decimals > MAX_FEE) throw new Error(`server asks ${Number(terms.amount) / 10 ** decimals}, cap is ${MAX_FEE} (LELANG_MAX_FEE)`);
+    const terms = (await res.json()).accepts?.find((a) => a.scheme === 'exact' && a.network === PAY_NETWORK && knownAsset(a));
+    if (!terms) throw new Error(`no x402 payment option in a known Lelang asset on ${PAY_NETWORK}`);
+    const { decimals } = knownAsset(terms);
+    if (!/^\d+$/.test(String(terms.amount)) || BigInt(terms.amount) > parseUnits(String(MAX_FEE), decimals)) throw new Error(`server asks ${terms.amount} base units, cap is ${MAX_FEE} (LELANG_MAX_FEE)`);
+    terms.maxTimeoutSeconds = Math.min(Number(terms.maxTimeoutSeconds) || 300, 300); // a signature never outlives 5 minutes
     res = await fetch(url, { ...init, headers: { ...init.headers, 'payment-signature': await signX402(terms) } });
   }
   const out = await res.json().catch(() => ({}));
